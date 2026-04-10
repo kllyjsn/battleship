@@ -241,7 +241,8 @@ export function updateAIAfterResult(
   aiState: AIState,
   position: Position,
   result: 'hit' | 'miss' | 'sunk',
-  difficulty: Difficulty
+  difficulty: Difficulty,
+  sunkShipPositions?: Position[]
 ): AIState {
   if (difficulty === 'easy') return aiState;
 
@@ -268,13 +269,25 @@ export function updateAIAfterResult(
       }
     }
   } else if (result === 'sunk') {
-    // Ship is sunk, remove related hits from stack
-    newState.hitStack = [];
+    // Remove only the sunk ship's positions from the hitStack
+    if (sunkShipPositions && sunkShipPositions.length > 0) {
+      const sunkSet = new Set(sunkShipPositions.map(p => posKey(p.row, p.col)));
+      newState.hitStack = newState.hitStack.filter(
+        p => !sunkSet.has(posKey(p.row, p.col))
+      );
+    } else {
+      newState.hitStack = [];
+    }
+
     newState.orientation = 'unknown';
     newState.firstHit = null;
 
     if (newState.hitStack.length === 0) {
       newState.mode = 'hunt';
+    } else {
+      // Still have hits from another ship — stay in target mode
+      newState.mode = 'target';
+      newState.firstHit = newState.hitStack[0];
     }
   }
 

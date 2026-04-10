@@ -149,7 +149,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
             newState,
             position,
             aiResult.result.result,
-            difficulty
+            difficulty,
+            aiResult.result.shipPositions
           );
           aiStateRef.current = updatedAIState;
 

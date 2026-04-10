@@ -213,7 +213,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   const handleJoinRoom = useCallback(
     (code: string, name: string) => {
       setPlayerName(name);
-      mp.joinRoom(code);
+      mp.joinRoom(code, name);
     },
     [mp]
   );

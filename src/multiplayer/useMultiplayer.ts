@@ -146,7 +146,7 @@ export function useMultiplayer(playerName: string) {
     subscribe(channel);
   }, [cleanup, subscribe]);
 
-  const joinRoom = useCallback((roomCode: string) => {
+  const joinRoom = useCallback((roomCode: string, name: string) => {
     cleanup();
     const userId = `player-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const pn = getPubNub(userId);
@@ -166,19 +166,20 @@ export function useMultiplayer(playerName: string) {
 
     subscribe(channel);
 
-    // Send join message after subscribing
+    // Send join message after subscribing, using the name parameter directly
+    // to avoid stale closure over playerName state
     setTimeout(() => {
       pn.publish({
         channel,
           message: {
             type: 'JOIN',
-            playerName,
+            playerName: name,
             playerId: userId,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           } as any,
       });
     }, 1000);
-  }, [cleanup, subscribe, playerName]);
+  }, [cleanup, subscribe]);
 
   const sendReady = useCallback((ships: Ship[]) => {
     setState(prev => ({ ...prev, isPlayerReady: true }));
