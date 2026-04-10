@@ -259,7 +259,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
 
   const handleReady = useCallback(() => {
     if (playerShips.length !== SHIPS.length) return;
-    mp.sendReady(playerShips);
+    mp.sendReady();
     setMessage('Waiting for opponent to place ships...');
     play('click');
   }, [playerShips, mp, play]);
@@ -289,7 +289,9 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     setIsPlayerTurn(false);
     setWinner(null);
     setMessage('Place your ships on the board');
-  }, []);
+    // BUG-0002 fix: Reset multiplayer ready flags so we don't skip placement
+    mp.resetReady();
+  }, [mp]);
 
   const handleGoHome = useCallback(() => {
     mp.sendLeave();

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import PubNub from 'pubnub';
-import type { Ship, MultiplayerMessage, ChatMessage, Position } from '../engine/types';
+import type { MultiplayerMessage, ChatMessage, Position } from '../engine/types';
 import { getPubNub, resetPubNub, generateRoomCode, getChannelName } from './pubnub';
 
 interface MultiplayerState {
@@ -35,6 +35,14 @@ export function useMultiplayer(playerName: string) {
   const pubnubRef = useRef<PubNub | null>(null);
   const channelRef = useRef<string>('');
   const onMessageRef = useRef<((msg: MultiplayerMessage) => void) | null>(null);
+  const userIdRef = useRef<string>('');
+  const playerNameRef = useRef<string>(playerName);
+  const isHostRef = useRef<boolean>(false);
+
+  // Keep playerNameRef in sync with the playerName prop
+  useEffect(() => {
+    playerNameRef.current = playerName;
+  }, [playerName]);
 
   const cleanup = useCallback(() => {
     resetPubNub();
@@ -58,6 +66,9 @@ export function useMultiplayer(playerName: string) {
 
     pn.addListener({
       message: (event) => {
+        // BUG-0001 fix: Skip self-published messages
+        if (event.publisher === userIdRef.current) return;
+
         const msg = event.message as unknown as MultiplayerMessage;
 
         if (msg.type === 'JOIN' && msg.playerName) {
@@ -66,6 +77,15 @@ export function useMultiplayer(playerName: string) {
             opponentName: msg.playerName ?? null,
             isConnected: true,
           }));
+
+          // BUG-0003 fix: Host responds with their name so the guest knows who they're playing
+          if (isHostRef.current) {
+            pn.publish({
+              channel,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              message: { type: 'JOIN', playerName: playerNameRef.current } as any,
+            });
+          }
         }
 
         if (msg.type === 'CHAT' && msg.message && msg.sender) {
@@ -128,6 +148,8 @@ export function useMultiplayer(playerName: string) {
   const createRoom = useCallback(() => {
     cleanup();
     const userId = `player-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    userIdRef.current = userId;
+    isHostRef.current = true;
     const pn = getPubNub(userId);
     pubnubRef.current = pn;
 
@@ -149,6 +171,8 @@ export function useMultiplayer(playerName: string) {
   const joinRoom = useCallback((roomCode: string, name: string) => {
     cleanup();
     const userId = `player-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    userIdRef.current = userId;
+    isHostRef.current = false;
     const pn = getPubNub(userId);
     pubnubRef.current = pn;
 
@@ -181,9 +205,10 @@ export function useMultiplayer(playerName: string) {
     }, 1000);
   }, [cleanup, subscribe]);
 
-  const sendReady = useCallback((ships: Ship[]) => {
+  const sendReady = useCallback(() => {
     setState(prev => ({ ...prev, isPlayerReady: true }));
-    publish({ type: 'READY', ships });
+    // BUG-0004 fix: Don't send ship positions — opponent could inspect PubNub messages to cheat
+    publish({ type: 'READY' });
   }, [publish]);
 
   const sendAttack = useCallback((row: number, col: number) => {
@@ -230,6 +255,16 @@ export function useMultiplayer(playerName: string) {
     });
   }, [publish, cleanup]);
 
+  // BUG-0002 fix: Reset ready flags so Play Again works correctly
+  const resetReady = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      isPlayerReady: false,
+      opponentReady: false,
+      gameStarted: false,
+    }));
+  }, []);
+
   const startGame = useCallback(() => {
     setState(prev => ({
       ...prev,
@@ -256,5 +291,6 @@ export function useMultiplayer(playerName: string) {
     publish,
     startGame,
     setTurn,
+    resetReady,
   };
 }
