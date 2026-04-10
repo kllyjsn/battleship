@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { Board, Ship, Orientation, GamePhase, MultiplayerMessage } from '../engine/types';
 import { SHIPS, TOTAL_SHIP_CELLS } from '../engine/constants';
 import {
@@ -262,6 +262,25 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     play('place');
   }, [play]);
 
+  // R key to rotate orientation during placement
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (phase === 'placement' && (e.key === 'r' || e.key === 'R')) {
+        setOrientation(o => o === 'horizontal' ? 'vertical' : 'horizontal');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [phase]);
+
+  // Handle drag-select from roster
+  const handleDragSelectShip = useCallback((shipId: string) => {
+    if (phase !== 'placement') return;
+    setSelectedShipId(shipId);
+  }, [phase]);
+
+  const placingShipDef = useMemo(() => SHIPS.find(s => s.id === selectedShipId), [selectedShipId]);
+
   const handleReady = useCallback(() => {
     if (playerShips.length !== SHIPS.length) return;
     mp.sendReady();
@@ -339,9 +358,12 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
               board={playerBoard}
               isPlayerBoard={true}
               isPlacing={true}
-              placingShipSize={selectedShipId ? SHIPS.find((s) => s.id === selectedShipId)?.size : undefined}
+              placingShipSize={placingShipDef?.size}
+              placingShipId={placingShipDef?.id}
               placingOrientation={orientation}
               onCellClick={handlePlaceShip}
+              ships={playerShips}
+              onDragSelectShip={handleDragSelectShip}
               title="Your Fleet"
             />
             <ShipRoster
@@ -366,6 +388,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
                 isPlacing={false}
                 title="Your Fleet"
                 disabled={true}
+                ships={playerShips}
               />
               <ShipRoster
                 shipDefs={SHIPS}

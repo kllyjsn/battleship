@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { Board, Ship, Difficulty, Orientation, GamePhase, AttackResult } from '../engine/types';
 import { SHIPS, TOTAL_SHIP_CELLS } from '../engine/constants';
 import {
@@ -84,6 +84,25 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     setSelectedShipId(null);
     play('place');
   }, [play]);
+
+  // R key to rotate orientation during placement
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (phase === 'placement' && (e.key === 'r' || e.key === 'R')) {
+        setOrientation(o => o === 'horizontal' ? 'vertical' : 'horizontal');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [phase]);
+
+  // Handle drag-select from roster (sets selected ship so placement preview works)
+  const handleDragSelectShip = useCallback((shipId: string) => {
+    if (phase !== 'placement') return;
+    setSelectedShipId(shipId);
+  }, [phase]);
+
+  const placingShipDef = useMemo(() => SHIPS.find(s => s.id === selectedShipId), [selectedShipId]);
 
   const handleReady = useCallback(() => {
     if (playerShips.length !== SHIPS.length) return;
@@ -225,9 +244,12 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
               board={playerBoard}
               isPlayerBoard={true}
               isPlacing={true}
-              placingShipSize={selectedShipId ? SHIPS.find((s) => s.id === selectedShipId)?.size : undefined}
+              placingShipSize={placingShipDef?.size}
+              placingShipId={placingShipDef?.id}
               placingOrientation={orientation}
               onCellClick={handlePlaceShip}
+              ships={playerShips}
+              onDragSelectShip={handleDragSelectShip}
               title="Your Fleet"
             />
             <ShipRoster
@@ -252,6 +274,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
                 isPlacing={false}
                 title="Your Fleet"
                 disabled={true}
+                ships={playerShips}
               />
               <ShipRoster
                 shipDefs={SHIPS}

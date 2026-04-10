@@ -1,5 +1,7 @@
 import type { ShipDefinition, Ship, Orientation } from '../engine/types';
 import { RotateCw } from 'lucide-react';
+import { ShipSVG } from './ShipSVG';
+import React, { useCallback } from 'react';
 
 interface ShipRosterProps {
   shipDefs: ShipDefinition[];
@@ -28,6 +30,12 @@ export function ShipRoster({
 }: ShipRosterProps) {
   const allPlaced = placedShips.length === shipDefs.length;
 
+  const handleDragStart = useCallback((e: React.DragEvent, shipId: string) => {
+    e.dataTransfer.setData('text/plain', shipId);
+    e.dataTransfer.effectAllowed = 'move';
+    onSelectShip(shipId);
+  }, [onSelectShip]);
+
   if (mode === 'battle') {
     return (
       <div className="bg-slate-900/60 rounded-xl border border-cyan-900/30 p-4 backdrop-blur">
@@ -41,14 +49,26 @@ export function ShipRoster({
             return (
               <div
                 key={def.id}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg ${
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
                   sunk
                     ? 'bg-red-900/30 border border-red-800/40'
                     : 'bg-slate-800/50 border border-slate-700/30'
                 }`}
               >
+                {/* Ship image */}
+                <div
+                  className="flex-shrink-0"
+                  style={{
+                    width: `${def.size * 18}px`,
+                    height: '18px',
+                    opacity: sunk ? 0.3 : 0.8,
+                    filter: sunk ? 'saturate(0.2) brightness(0.6)' : undefined,
+                  }}
+                >
+                  <ShipSVG shipId={def.id} className="w-full h-full" />
+                </div>
                 <span
-                  className={`text-sm font-medium ${sunk ? 'text-red-400 line-through' : 'text-slate-200'}`}
+                  className={`text-sm font-medium flex-1 ${sunk ? 'text-red-400 line-through' : 'text-slate-200'}`}
                 >
                   {def.name}
                 </span>
@@ -56,7 +76,7 @@ export function ShipRoster({
                   {Array.from({ length: def.size }).map((_, i) => (
                     <div
                       key={i}
-                      className={`w-3 h-3 rounded-sm ${
+                      className={`w-2.5 h-2.5 rounded-sm ${
                         sunk
                           ? 'bg-red-600/80'
                           : ship && i < (ship.hits ?? 0)
@@ -79,38 +99,52 @@ export function ShipRoster({
       <h3 className="text-sm font-semibold text-cyan-300 uppercase tracking-widest mb-3">
         Place Your Fleet
       </h3>
+      <p className="text-xs text-slate-400 mb-3">Click to select, then click board to place. Or drag ships directly onto the board. Press <kbd className="px-1 py-0.5 bg-slate-700/60 rounded text-cyan-300 text-xs">R</kbd> to rotate.</p>
 
       <div className="space-y-2 mb-4">
         {shipDefs.map((def) => {
           const placed = placedShips.some((s) => s.id === def.id);
           const selected = selectedShipId === def.id;
           return (
-            <button
+            <div
               key={def.id}
+              draggable={!placed}
+              onDragStart={!placed ? (e) => handleDragStart(e, def.id) : undefined}
               onClick={() => !placed && onSelectShip(def.id)}
-              disabled={placed}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all ${
+              role="button"
+              tabIndex={placed ? -1 : 0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !placed) onSelectShip(def.id);
+              }}
+              className={`w-full flex flex-col gap-2 px-3 py-2.5 rounded-lg transition-all ${
                 placed
                   ? 'bg-emerald-900/30 border border-emerald-700/40 opacity-70'
                   : selected
-                    ? 'bg-cyan-800/50 border border-cyan-500/60 ring-1 ring-cyan-400/40'
-                    : 'bg-slate-800/50 border border-slate-700/30 hover:border-cyan-700/40 cursor-pointer'
+                    ? 'bg-cyan-800/50 border border-cyan-500/60 ring-1 ring-cyan-400/40 cursor-grab'
+                    : 'bg-slate-800/50 border border-slate-700/30 hover:border-cyan-700/40 cursor-grab'
               }`}
             >
-              <span className={`text-sm font-medium ${placed ? 'text-emerald-400' : 'text-slate-200'}`}>
-                {def.name}
-              </span>
-              <div className="flex gap-0.5">
-                {Array.from({ length: def.size }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-3 h-3 rounded-sm ${
-                      placed ? 'bg-emerald-500/60' : selected ? 'bg-cyan-400/60' : 'bg-slate-600/60'
-                    }`}
-                  />
-                ))}
+              <div className="flex items-center justify-between">
+                <span className={`text-sm font-medium ${placed ? 'text-emerald-400' : 'text-slate-200'}`}>
+                  {def.name}
+                </span>
+                <span className="text-xs text-slate-500">{def.size} cells</span>
               </div>
-            </button>
+              {/* Ship image preview */}
+              <div
+                className="w-full flex justify-center"
+                style={{
+                  height: '24px',
+                  opacity: placed ? 0.4 : selected ? 1 : 0.7,
+                  filter: placed ? 'saturate(0.3)' : undefined,
+                  transition: 'opacity 0.15s, filter 0.15s',
+                }}
+              >
+                <div style={{ width: `${Math.min(def.size * 36, 180)}px`, height: '100%' }}>
+                  <ShipSVG shipId={def.id} className="w-full h-full" />
+                </div>
+              </div>
+            </div>
           );
         })}
       </div>

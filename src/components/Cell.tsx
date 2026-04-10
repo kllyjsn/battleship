@@ -10,7 +10,10 @@ interface CellProps {
   isInvalid?: boolean;
   onClick?: () => void;
   onHover?: () => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
   disabled?: boolean;
+  hideShipFill?: boolean;
 }
 
 export function Cell({
@@ -21,7 +24,10 @@ export function Cell({
   isInvalid = false,
   onClick,
   onHover,
+  onDragOver,
+  onDrop,
   disabled = false,
+  hideShipFill = false,
 }: CellProps) {
   const getClassName = () => {
     const base =
@@ -41,7 +47,7 @@ export function Cell({
               : 'bg-cyan-950/60'
         }`;
       case 'ship':
-        return `${base} ${isPlayerBoard ? 'bg-slate-500/70 border-slate-400/50' : 'bg-cyan-950/60 hover:bg-cyan-700/50 cursor-crosshair'}`;
+        return `${base} ${isPlayerBoard ? (hideShipFill ? 'bg-cyan-950/20 border-cyan-800/30' : 'bg-slate-500/70 border-slate-400/50') : 'bg-cyan-950/60 hover:bg-cyan-700/50 cursor-crosshair'}`;
       case 'hit':
         return `${base} bg-red-600/70 border-red-500/60 cell-hit`;
       case 'miss':
@@ -58,6 +64,8 @@ export function Cell({
       className={getClassName()}
       onClick={!disabled ? onClick : undefined}
       onMouseEnter={onHover}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
       role={!disabled && onClick ? 'button' : undefined}
       tabIndex={!disabled && onClick ? 0 : undefined}
       onKeyDown={(e) => {
@@ -79,7 +87,7 @@ export function Cell({
           <div className="w-5 h-5 text-red-300 flex items-center justify-center font-bold text-xs">✕</div>
         </div>
       )}
-      {state === 'ship' && isPlayerBoard && (
+      {state === 'ship' && isPlayerBoard && !hideShipFill && (
         <div className="absolute inset-1 rounded-sm bg-slate-400/50" />
       )}
     </div>
