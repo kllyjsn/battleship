@@ -108,6 +108,15 @@ export function useMultiplayer(playerName: string) {
           setState(prev => ({ ...prev, opponentReady: true }));
         }
 
+        // BUG-0005 fix: REMATCH handshake — opponent wants to play again.
+        // Clear their ready flag so both sides re-enter placement cleanly.
+        if (msg.type === 'REMATCH') {
+          setState(prev => ({
+            ...prev,
+            opponentReady: false,
+          }));
+        }
+
         if (msg.type === 'LEAVE') {
           setState(prev => ({
             ...prev,
@@ -256,6 +265,21 @@ export function useMultiplayer(playerName: string) {
   }, [publish, cleanup]);
 
   // BUG-0002 fix: Reset ready flags so Play Again works correctly
+  // BUG-0005 fix: Use REMATCH handshake to prevent race condition where
+  // one player sends READY before the other clicks Play Again, causing
+  // resetReady() to wipe the already-received opponentReady flag.
+  const sendRematch = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      isPlayerReady: false,
+      gameStarted: false,
+      // Don't clear opponentReady here — if opponent already sent REMATCH,
+      // it was set to false by the REMATCH handler. If not yet, it will be
+      // cleared when their REMATCH arrives.
+    }));
+    publish({ type: 'REMATCH' });
+  }, [publish]);
+
   const resetReady = useCallback(() => {
     setState(prev => ({
       ...prev,
@@ -292,5 +316,6 @@ export function useMultiplayer(playerName: string) {
     startGame,
     setTurn,
     resetReady,
+    sendRematch,
   };
 }

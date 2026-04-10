@@ -320,8 +320,9 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     setWinner(null);
     setMessage('Place your ships on the board');
     setPlayerHitsOnOpponentCount(0);
-    // BUG-0002 fix: Reset multiplayer ready flags so we don't skip placement
-    mp.resetReady();
+    // BUG-0005 fix: Use REMATCH handshake instead of resetReady() to avoid
+    // race condition where opponent's early READY gets wiped.
+    mp.sendRematch();
   }, [mp]);
 
   const handleGoHome = useCallback(() => {
