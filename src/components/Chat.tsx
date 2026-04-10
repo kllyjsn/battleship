@@ -13,16 +13,29 @@ export function Chat({ messages, onSend, playerName }: ChatProps) {
   const [input, setInput] = useState('');
   const [unread, setUnread] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastSeenCountRef = useRef(0);
 
+  // Scroll to bottom when messages change or chat opens
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-    if (!isOpen && messages.length > 0) {
-      const last = messages[messages.length - 1];
-      if (last.sender !== playerName) {
-        setUnread(prev => prev + 1);
+  }, [messages, isOpen]);
+
+  // Track unread messages only when new messages arrive while chat is closed
+  useEffect(() => {
+    if (isOpen) {
+      lastSeenCountRef.current = messages.length;
+      setUnread(0);
+      return;
+    }
+    if (messages.length > lastSeenCountRef.current) {
+      const newMessages = messages.slice(lastSeenCountRef.current);
+      const unreadFromOthers = newMessages.filter(m => m.sender !== playerName).length;
+      if (unreadFromOthers > 0) {
+        setUnread(prev => prev + unreadFromOthers);
       }
+      lastSeenCountRef.current = messages.length;
     }
   }, [messages, isOpen, playerName]);
 

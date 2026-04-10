@@ -40,6 +40,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
 
   const playerBoardRef = useRef(playerBoard);
   const playerShipsRef = useRef(playerShips);
+  const phaseRef = useRef(phase);
 
   useEffect(() => {
     playerBoardRef.current = playerBoard;
@@ -48,6 +49,10 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   useEffect(() => {
     playerShipsRef.current = playerShips;
   }, [playerShips]);
+
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
 
   const mp = useMultiplayer(playerName);
 
@@ -165,7 +170,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
 
           setIsPlayerTurn(false);
           setTimeout(() => {
-            if (phase === 'battle') {
+            if (phaseRef.current === 'battle') {
               setMessage("Opponent's turn...");
             }
           }, 1000);
