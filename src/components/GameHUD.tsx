@@ -30,47 +30,48 @@ export function GameHUD({
   };
 
   return (
-    <div className="w-full flex items-center justify-between px-4 py-3 bg-slate-900/80 border-b border-cyan-900/30 backdrop-blur-sm">
+    <div className="w-full flex items-center justify-between px-4 py-3 metal-panel" style={{ borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>
       <button
         onClick={onBack}
-        className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+        className="flex items-center gap-2 text-slate-500 hover:text-green-400 transition-colors font-mono-crt"
       >
         <ArrowLeft size={18} />
-        <span className="text-sm hidden sm:inline">Menu</span>
+        <span className="text-sm hidden sm:inline">MENU</span>
       </button>
 
       <div className="flex flex-col items-center">
         {phase === 'battle' && (
           <div className="flex items-center gap-4 mb-1">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">YOU</span>
-              <div className="w-24 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <span className="text-xs text-green-500/70 font-mono-crt">ALLY</span>
+              <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--hull-dark)' }}>
                 <div
-                  className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 rounded-full transition-all duration-500"
-                  style={{ width: `${(opponentHits / totalShipCells) * 100}%` }}
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${(opponentHits / totalShipCells) * 100}%`, background: 'linear-gradient(90deg, #39ff14, #22cc00)' }}
                 />
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-24 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--hull-dark)' }}>
                 <div
-                  className="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full transition-all duration-500"
-                  style={{ width: `${(playerHits / totalShipCells) * 100}%` }}
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${(playerHits / totalShipCells) * 100}%`, background: 'linear-gradient(90deg, #ff3c3c, #cc0000)' }}
                 />
               </div>
-              <span className="text-xs text-slate-400">ENEMY</span>
+              <span className="text-xs text-red-500/70 font-mono-crt">ENEMY</span>
             </div>
           </div>
         )}
 
         <div
-          className={`text-sm font-medium px-4 py-1 rounded-full ${
+          className={`text-sm font-semibold px-4 py-1 rounded font-mono-crt ${
             phase === 'gameover'
-              ? 'bg-yellow-900/30 text-yellow-300 border border-yellow-700/40'
+              ? 'text-glow-amber metal-panel-light'
               : isPlayerTurn
-                ? 'bg-cyan-900/30 text-cyan-300 border border-cyan-700/40 animate-pulse'
-                : 'bg-orange-900/30 text-orange-300 border border-orange-700/40'
+                ? 'text-glow-green metal-panel-light glow-pulse'
+                : 'text-glow-amber metal-panel-light'
           }`}
+          style={{ border: '1px solid var(--steel-border)' }}
         >
           {message}
         </div>
@@ -78,8 +79,8 @@ export function GameHUD({
 
       <button
         onClick={handleToggle}
-        className="text-slate-400 hover:text-white transition-colors p-1"
-        title={soundOn ? 'Mute' : 'Unmute'}
+        className="text-slate-500 hover:text-green-400 transition-colors p-1"
+        title={soundOn ? 'Mute Sonar' : 'Enable Sonar'}
       >
         {soundOn ? <Volume2 size={18} /> : <VolumeX size={18} />}
       </button>

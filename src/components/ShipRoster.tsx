@@ -38,8 +38,8 @@ export function ShipRoster({
 
   if (mode === 'battle') {
     return (
-      <div className="bg-slate-900/60 rounded-xl border border-cyan-900/30 p-4 backdrop-blur">
-        <h3 className="text-sm font-semibold text-cyan-300 uppercase tracking-widest mb-3">
+      <div className="metal-panel rounded-lg p-4">
+        <h3 className="text-sm font-semibold uppercase tracking-widest mb-3 font-mono-crt text-glow-green">
           Fleet Status
         </h3>
         <div className="space-y-2">
@@ -49,11 +49,12 @@ export function ShipRoster({
             return (
               <div
                 key={def.id}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+                className={`flex items-center gap-3 px-3 py-2 rounded ${
                   sunk
-                    ? 'bg-red-900/30 border border-red-800/40'
-                    : 'bg-slate-800/50 border border-slate-700/30'
+                    ? 'metal-panel-light border-red-800/40'
+                    : 'metal-panel-light'
                 }`}
+                style={sunk ? { borderColor: 'rgba(185, 28, 28, 0.4)' } : undefined}
               >
                 {/* Ship image */}
                 <div
@@ -68,7 +69,7 @@ export function ShipRoster({
                   <ShipSVG shipId={def.id} className="w-full h-full" />
                 </div>
                 <span
-                  className={`text-sm font-medium flex-1 ${sunk ? 'text-red-400 line-through' : 'text-slate-200'}`}
+                  className={`text-sm font-medium flex-1 font-mono-crt ${sunk ? 'text-red-400 line-through' : 'text-green-300/80'}`}
                 >
                   {def.name}
                 </span>
@@ -80,8 +81,8 @@ export function ShipRoster({
                         sunk
                           ? 'bg-red-600/80'
                           : ship && i < (ship.hits ?? 0)
-                            ? 'bg-orange-500/80'
-                            : 'bg-slate-500/60'
+                            ? 'bg-amber-500/80'
+                            : 'bg-green-500/20'
                       }`}
                     />
                   ))}
@@ -95,11 +96,11 @@ export function ShipRoster({
   }
 
   return (
-    <div className="bg-slate-900/60 rounded-xl border border-cyan-900/30 p-4 backdrop-blur">
-      <h3 className="text-sm font-semibold text-cyan-300 uppercase tracking-widest mb-3">
+    <div className="metal-panel rounded-lg p-4">
+      <h3 className="text-sm font-semibold uppercase tracking-widest mb-3 font-mono-crt text-glow-green">
         Place Your Fleet
       </h3>
-      <p className="text-xs text-slate-400 mb-3">Click to select, then click board to place. Or drag ships directly onto the board. Press <kbd className="px-1 py-0.5 bg-slate-700/60 rounded text-cyan-300 text-xs">R</kbd> to rotate.</p>
+      <p className="text-xs text-slate-500 mb-3 font-mono-crt">Click to select, then click board to place. Or drag ships directly onto the board. Press <kbd className="px-1 py-0.5 metal-panel-light rounded text-green-400 text-xs font-mono-crt">R</kbd> to rotate.</p>
 
       <div className="space-y-2 mb-4">
         {shipDefs.map((def) => {
@@ -116,19 +117,20 @@ export function ShipRoster({
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !placed) onSelectShip(def.id);
               }}
-              className={`w-full flex flex-col gap-2 px-3 py-2.5 rounded-lg transition-all ${
+              className={`w-full flex flex-col gap-2 px-3 py-2.5 rounded transition-all ${
                 placed
-                  ? 'bg-emerald-900/30 border border-emerald-700/40 opacity-70'
+                  ? 'metal-panel-light opacity-70'
                   : selected
-                    ? 'bg-cyan-800/50 border border-cyan-500/60 ring-1 ring-cyan-400/40 cursor-grab'
-                    : 'bg-slate-800/50 border border-slate-700/30 hover:border-cyan-700/40 cursor-grab'
+                    ? 'metal-panel-light ring-1 ring-green-400/40 cursor-grab'
+                    : 'metal-panel-light hover:ring-1 hover:ring-green-500/20 cursor-grab'
               }`}
+              style={placed ? { borderColor: 'rgba(34, 197, 94, 0.3)' } : selected ? { borderColor: 'rgba(57, 255, 20, 0.4)' } : undefined}
             >
               <div className="flex items-center justify-between">
-                <span className={`text-sm font-medium ${placed ? 'text-emerald-400' : 'text-slate-200'}`}>
+                <span className={`text-sm font-medium font-mono-crt ${placed ? 'text-green-500/70' : 'text-green-300/80'}`}>
                   {def.name}
                 </span>
-                <span className="text-xs text-slate-500">{def.size} cells</span>
+                <span className="text-xs text-slate-500 font-mono-crt">{def.size} cells</span>
               </div>
               {/* Ship image preview */}
               <div
@@ -152,14 +154,14 @@ export function ShipRoster({
       <div className="flex gap-2 mb-3">
         <button
           onClick={onRotate}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-800/60 border border-slate-600/40 rounded-lg text-sm text-slate-300 hover:bg-slate-700/60 hover:border-slate-500/50 transition-all"
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 metal-panel-light rounded text-sm text-green-300/70 hover:text-green-300 transition-all font-mono-crt"
         >
           <RotateCw size={14} />
           {orientation === 'horizontal' ? 'Horizontal' : 'Vertical'}
         </button>
         <button
           onClick={onRandomize}
-          className="flex-1 px-3 py-2 bg-slate-800/60 border border-slate-600/40 rounded-lg text-sm text-slate-300 hover:bg-slate-700/60 hover:border-slate-500/50 transition-all"
+          className="flex-1 px-3 py-2 metal-panel-light rounded text-sm text-green-300/70 hover:text-green-300 transition-all font-mono-crt"
         >
           Randomize
         </button>
@@ -168,13 +170,14 @@ export function ShipRoster({
       <button
         onClick={onReady}
         disabled={!allPlaced || isReady}
-        className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-all ${
+        className={`w-full py-2.5 rounded text-sm font-semibold transition-all font-mono-crt ${
           allPlaced && !isReady
-            ? 'bg-gradient-to-r from-emerald-600 to-cyan-600 text-white hover:from-emerald-500 hover:to-cyan-500 shadow-lg shadow-emerald-900/30'
-            : 'bg-slate-800/40 text-slate-500 border border-slate-700/30 cursor-not-allowed'
+            ? 'text-glow-green metal-panel-light hover:ring-1 hover:ring-green-400/40'
+            : 'metal-panel-light text-slate-600 cursor-not-allowed'
         }`}
+        style={allPlaced && !isReady ? { borderColor: 'rgba(57, 255, 20, 0.3)' } : undefined}
       >
-        {isReady ? 'Waiting for opponent...' : allPlaced ? 'Ready for Battle!' : 'Place all ships to continue'}
+        {isReady ? 'STANDING BY...' : allPlaced ? 'BATTLE STATIONS' : 'DEPLOY ALL VESSELS'}
       </button>
     </div>
   );

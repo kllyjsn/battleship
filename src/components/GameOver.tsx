@@ -12,31 +12,28 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
   const isWin = winner === 'player';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-slate-900/95 border border-cyan-900/40 rounded-2xl p-8 max-w-md w-full mx-4 text-center shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fadeIn">
+      <div className="metal-panel rounded-xl p-8 max-w-md w-full mx-4 text-center" style={{ boxShadow: isWin ? '0 0 40px rgba(57, 255, 20, 0.1)' : '0 0 40px rgba(255, 60, 60, 0.1)' }}>
         <div
-          className={`w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center ${
-            isWin
-              ? 'bg-gradient-to-br from-yellow-500 to-amber-600 shadow-lg shadow-yellow-500/30'
-              : 'bg-gradient-to-br from-red-700 to-red-900 shadow-lg shadow-red-500/20'
-          }`}
+          className={`w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center metal-panel-light`}
+          style={{ boxShadow: isWin ? '0 0 20px rgba(57, 255, 20, 0.2)' : '0 0 20px rgba(255, 60, 60, 0.2)' }}
         >
           {isWin ? (
-            <Trophy size={40} className="text-white" />
+            <Trophy size={40} className="text-glow-green" />
           ) : (
-            <Skull size={40} className="text-white" />
+            <Skull size={40} className="text-glow-red" />
           )}
         </div>
 
         <h2
-          className={`text-3xl font-bold mb-2 ${
-            isWin ? 'text-yellow-400' : 'text-red-400'
+          className={`text-3xl font-bold mb-2 font-mono-crt ${
+            isWin ? 'text-glow-green' : 'text-glow-red'
           }`}
         >
-          {isWin ? 'Victory!' : 'Defeat'}
+          {isWin ? 'VICTORY' : 'DEFEATED'}
         </h2>
 
-        <p className="text-slate-400 mb-6">
+        <p className="text-slate-400 mb-6 font-mono-crt text-sm">
           {isWin
             ? `${playerName} sank all of ${opponentName}'s ships!`
             : `${opponentName} sank all of ${playerName.toLowerCase() === 'you' ? 'your' : playerName + "'s"} ships.`}
@@ -45,17 +42,18 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
         <div className="flex gap-3">
           <button
             onClick={onPlayAgain}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-emerald-600 text-white font-semibold hover:from-cyan-500 hover:to-emerald-500 transition-all shadow-lg"
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded metal-panel-light text-glow-green font-semibold hover:ring-1 hover:ring-green-400/40 transition-all font-mono-crt"
+            style={{ borderColor: 'rgba(57, 255, 20, 0.3)' }}
           >
             <RotateCw size={18} />
-            Play Again
+            DEPLOY AGAIN
           </button>
           <button
             onClick={onGoHome}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-800 border border-slate-600/40 text-slate-300 font-semibold hover:bg-slate-700 transition-all"
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded metal-panel-light text-slate-400 font-semibold hover:text-green-300 transition-all font-mono-crt"
           >
             <Home size={18} />
-            Menu
+            BASE
           </button>
         </div>
       </div>

@@ -31,31 +31,31 @@ export function Cell({
 }: CellProps) {
   const getClassName = () => {
     const base =
-      'w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 border border-cyan-900/30 relative transition-all duration-150 select-none';
+      'w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 border relative transition-all duration-150 select-none';
 
     if (isPreview) {
-      return `${base} ${isInvalid ? 'bg-red-500/40 border-red-400' : 'bg-emerald-500/40 border-emerald-400'} cursor-pointer`;
+      return `${base} ${isInvalid ? 'bg-red-500/30 border-red-400/60' : 'bg-green-500/20 border-green-400/50'} cursor-pointer`;
     }
 
     switch (state) {
       case 'empty':
         return `${base} ${
           !isPlayerBoard && !isPlacing && !disabled
-            ? 'bg-cyan-950/60 hover:bg-cyan-700/50 cursor-crosshair'
+            ? 'bg-[#0d1520] border-[#1a2535] hover:bg-[#142030] hover:border-green-500/30 cursor-crosshair'
             : isPlacing && isPlayerBoard
-              ? 'bg-cyan-950/60 hover:bg-cyan-800/50 cursor-pointer'
-              : 'bg-cyan-950/60'
+              ? 'bg-[#0d1520] border-[#1a2535] hover:bg-[#142030] cursor-pointer'
+              : 'bg-[#0d1520] border-[#1a2535]'
         }`;
       case 'ship':
-        return `${base} ${isPlayerBoard ? (hideShipFill ? 'bg-cyan-950/20 border-cyan-800/30' : 'bg-slate-500/70 border-slate-400/50') : 'bg-cyan-950/60 hover:bg-cyan-700/50 cursor-crosshair'}`;
+        return `${base} ${isPlayerBoard ? (hideShipFill ? 'bg-[#0d1520]/80 border-[#1a2535]' : 'bg-[#2a3040] border-[#3a4a5a]') : 'bg-[#0d1520] border-[#1a2535] hover:bg-[#142030] hover:border-green-500/30 cursor-crosshair'}`;
       case 'hit':
-        return `${base} bg-red-600/70 border-red-500/60 cell-hit`;
+        return `${base} bg-red-900/60 border-red-700/50 cell-hit`;
       case 'miss':
-        return `${base} bg-cyan-900/40 border-cyan-800/30 cell-miss`;
+        return `${base} bg-[#111a28] border-[#1a2535] cell-miss`;
       case 'sunk':
-        return `${base} bg-red-800/80 border-red-600/60 cell-sunk`;
+        return `${base} bg-red-900/70 border-red-700/50 cell-sunk`;
       default:
-        return `${base} bg-cyan-950/60`;
+        return `${base} bg-[#0d1520] border-[#1a2535]`;
     }
   };
 
@@ -74,21 +74,21 @@ export function Cell({
     >
       {state === 'hit' && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-4 h-4 rounded-full bg-red-500 animate-pulse shadow-lg shadow-red-500/50" />
+          <div className="w-4 h-4 rounded-full bg-red-500/80 animate-pulse" style={{ boxShadow: '0 0 8px rgba(255, 60, 60, 0.6)' }} />
         </div>
       )}
       {state === 'miss' && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-3 h-3 rounded-full bg-slate-400/60 ring-1 ring-slate-400/30" />
+          <div className="w-3 h-3 rounded-full bg-green-500/20 ring-1 ring-green-500/20" />
         </div>
       )}
       {state === 'sunk' && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-5 h-5 text-red-300 flex items-center justify-center font-bold text-xs">✕</div>
+          <div className="w-5 h-5 text-red-400 flex items-center justify-center font-bold text-xs font-mono-crt" style={{ textShadow: '0 0 6px rgba(255,60,60,0.5)' }}>✕</div>
         </div>
       )}
       {state === 'ship' && isPlayerBoard && !hideShipFill && (
-        <div className="absolute inset-1 rounded-sm bg-slate-400/50" />
+        <div className="absolute inset-1 rounded-sm bg-[#3a4a5a]/50" />
       )}
     </div>
   );

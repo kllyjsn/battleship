@@ -225,7 +225,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const opponentHitsOnPlayer = playerShips.reduce((sum, s) => sum + s.hits, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-cyan-950/10 to-slate-950 flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: 'radial-gradient(ellipse at center, #141c2b 0%, #0a0e1a 70%)' }}>
       <GameHUD
         isPlayerTurn={isPlayerTurn}
         message={message}

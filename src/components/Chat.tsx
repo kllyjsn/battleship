@@ -53,11 +53,12 @@ export function Chat({ messages, onSend, playerName }: ChatProps) {
           setIsOpen(true);
           setUnread(0);
         }}
-        className="fixed bottom-4 right-4 w-12 h-12 rounded-full bg-purple-600 text-white shadow-lg hover:bg-purple-500 transition-all flex items-center justify-center z-40"
+        className="fixed bottom-4 right-4 w-12 h-12 rounded-full metal-panel text-green-400 shadow-lg hover:text-green-300 transition-all flex items-center justify-center z-40"
+        style={{ boxShadow: '0 0 10px rgba(57, 255, 20, 0.1)' }}
       >
         <MessageCircle size={22} />
         {unread > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">
+          <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-600 text-white text-xs flex items-center justify-center font-bold font-mono-crt">
             {unread}
           </span>
         )}
@@ -66,13 +67,13 @@ export function Chat({ messages, onSend, playerName }: ChatProps) {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 w-80 h-96 bg-slate-900/95 border border-purple-900/40 rounded-2xl shadow-2xl flex flex-col z-40 backdrop-blur">
+    <div className="fixed bottom-4 right-4 w-80 h-96 metal-panel rounded-xl shadow-2xl flex flex-col z-40">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
-        <span className="text-sm font-semibold text-purple-300">Chat</span>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--steel-border)' }}>
+        <span className="text-sm font-semibold text-green-400 font-mono-crt">COMMS</span>
         <button
           onClick={() => setIsOpen(false)}
-          className="text-slate-400 hover:text-white transition-colors"
+          className="text-slate-500 hover:text-green-400 transition-colors"
         >
           <X size={16} />
         </button>
@@ -81,20 +82,21 @@ export function Chat({ messages, onSend, playerName }: ChatProps) {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {messages.length === 0 && (
-          <p className="text-center text-slate-600 text-sm mt-4">No messages yet</p>
+          <p className="text-center text-slate-600 text-sm mt-4 font-mono-crt">NO TRANSMISSIONS</p>
         )}
         {messages.map((msg) => (
           <div
             key={msg.id}
             className={`flex flex-col ${msg.sender === playerName ? 'items-end' : 'items-start'}`}
           >
-            <span className="text-xs text-slate-500 mb-0.5">{msg.sender}</span>
+            <span className="text-xs text-slate-600 mb-0.5 font-mono-crt">{msg.sender}</span>
             <div
-              className={`max-w-[80%] px-3 py-1.5 rounded-xl text-sm ${
+              className={`max-w-[80%] px-3 py-1.5 rounded text-sm font-mono-crt ${
                 msg.sender === playerName
-                  ? 'bg-purple-600/60 text-white rounded-br-sm'
-                  : 'bg-slate-800/80 text-slate-200 rounded-bl-sm'
+                  ? 'metal-panel-light text-green-300/80 rounded-br-sm'
+                  : 'text-slate-300 rounded-bl-sm'
               }`}
+              style={msg.sender !== playerName ? { background: 'var(--hull-dark)', border: '1px solid var(--steel-border)' } : undefined}
             >
               {msg.message}
             </div>
@@ -104,20 +106,21 @@ export function Chat({ messages, onSend, playerName }: ChatProps) {
       </div>
 
       {/* Input */}
-      <div className="p-3 border-t border-slate-800">
+      <div className="p-3" style={{ borderTop: '1px solid var(--steel-border)' }}>
         <div className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Type a message..."
-            className="flex-1 px-3 py-2 rounded-lg bg-slate-800/60 border border-slate-700/40 text-white text-sm placeholder-slate-500 focus:border-purple-500/60 focus:outline-none transition-all"
+            placeholder="Transmit..."
+            className="flex-1 px-3 py-2 rounded text-sm placeholder-slate-600 focus:ring-1 focus:ring-green-500/30 focus:outline-none transition-all font-mono-crt text-green-300"
+            style={{ background: 'var(--hull-dark)', border: '1px solid var(--steel-border)' }}
           />
           <button
             onClick={handleSend}
             disabled={!input.trim()}
-            className="p-2 rounded-lg bg-purple-600 text-white hover:bg-purple-500 transition-colors disabled:opacity-50"
+            className="p-2 rounded metal-panel-light text-green-400 hover:text-green-300 transition-colors disabled:opacity-50"
           >
             <Send size={16} />
           </button>

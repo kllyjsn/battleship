@@ -106,8 +106,8 @@ export function GameBoard({
   const resolvedPlacingShipId = placingShipId ?? guessShipId(placingShipSize);
 
   return (
-    <div className={`flex flex-col items-center ${highlight ? 'ring-2 ring-cyan-400/50 rounded-xl p-2' : 'p-2'}`}>
-      <h3 className="text-sm font-semibold text-cyan-300 uppercase tracking-widest mb-2">
+    <div className={`flex flex-col items-center ${highlight ? 'ring-2 ring-green-400/30 rounded-lg p-2' : 'p-2'}`}>
+      <h3 className="text-sm font-semibold uppercase tracking-widest mb-2 font-mono-crt text-glow-green">
         {title}
       </h3>
       <div
@@ -126,7 +126,7 @@ export function GameBoard({
           {COL_LABELS.map((label) => (
             <div
               key={label}
-              className="w-8 h-6 sm:w-9 sm:h-7 md:w-10 md:h-8 flex items-center justify-center text-xs text-cyan-400/70 font-mono"
+              className="w-8 h-6 sm:w-9 sm:h-7 md:w-10 md:h-8 flex items-center justify-center text-xs text-green-500/50 font-mono-crt"
             >
               {label}
             </div>
@@ -136,7 +136,7 @@ export function GameBoard({
         {/* Rows */}
         {board.map((row, rowIdx) => (
           <div key={rowIdx} className="flex">
-            <div className="w-6 h-8 sm:w-7 sm:h-9 md:w-8 md:h-10 flex items-center justify-center text-xs text-cyan-400/70 font-mono">
+            <div className="w-6 h-8 sm:w-7 sm:h-9 md:w-8 md:h-10 flex items-center justify-center text-xs text-green-500/50 font-mono-crt">
               {ROW_LABELS[rowIdx]}
             </div>
             {row.map((cell, colIdx) => {

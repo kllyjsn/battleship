@@ -23,19 +23,29 @@ function App() {
     setScreen('menu');
   };
 
+  let content;
   switch (screen) {
     case 'single':
-      return <SinglePlayer difficulty={difficulty} onBack={handleBack} />;
+      content = <SinglePlayer difficulty={difficulty} onBack={handleBack} />;
+      break;
     case 'multiplayer':
-      return <MultiplayerPage onBack={handleBack} />;
+      content = <MultiplayerPage onBack={handleBack} />;
+      break;
     default:
-      return (
+      content = (
         <MainMenu
           onStartSinglePlayer={handleStartSinglePlayer}
           onStartMultiplayer={handleStartMultiplayer}
         />
       );
   }
+
+  return (
+    <>
+      {content}
+      <div className="crt-overlay" />
+    </>
+  );
 }
 
 export default App;
