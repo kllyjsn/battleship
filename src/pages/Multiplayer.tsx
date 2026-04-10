@@ -29,13 +29,14 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   const [playerBoard, setPlayerBoard] = useState<Board>(createEmptyBoard());
   const [opponentBoard, setOpponentBoard] = useState<Board>(createEmptyBoard());
   const [playerShips, setPlayerShips] = useState<Ship[]>([]);
-  const [opponentShips, setOpponentShips] = useState<Ship[]>([]);
+  const [, setOpponentShips] = useState<Ship[]>([]);
   const [selectedShipId, setSelectedShipId] = useState<string | null>(SHIPS[0].id);
   const [orientation, setOrientation] = useState<Orientation>('horizontal');
   const [isPlayerTurn, setIsPlayerTurn] = useState(false);
   const [winner, setWinner] = useState<'player' | 'opponent' | null>(null);
   const [message, setMessage] = useState('Place your ships on the board');
   const [inLobby, setInLobby] = useState(true);
+  const [playerHitsOnOpponentCount, setPlayerHitsOnOpponentCount] = useState(0);
   const { play, toggle } = useSound();
 
   const playerBoardRef = useRef(playerBoard);
@@ -155,6 +156,11 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
               }
               return prev;
             });
+          }
+
+          // Track hits for progress bar
+          if (msg.result === 'hit' || msg.result === 'sunk') {
+            setPlayerHitsOnOpponentCount(prev => prev + 1);
           }
 
           if (msg.result === 'hit') {
@@ -313,6 +319,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     setIsPlayerTurn(false);
     setWinner(null);
     setMessage('Place your ships on the board');
+    setPlayerHitsOnOpponentCount(0);
     // BUG-0002 fix: Reset multiplayer ready flags so we don't skip placement
     mp.resetReady();
   }, [mp]);
@@ -335,7 +342,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     );
   }
 
-  const playerHitsOnOpponent = opponentShips.reduce((sum, s) => sum + s.hits, 0);
+  const playerHitsOnOpponent = playerHitsOnOpponentCount;
   const opponentHitsOnPlayer = playerShips.reduce((sum, s) => sum + s.hits, 0);
 
   return (
