@@ -16,8 +16,10 @@ import { GameHUD } from '../components/GameHUD';
 import { GameOver } from '../components/GameOver';
 import { MultiplayerLobby } from '../components/MultiplayerLobby';
 import { Chat } from '../components/Chat';
+import { MusicVisualizer } from '../components/MusicVisualizer';
 import { useMultiplayer } from '../multiplayer/useMultiplayer';
 import { useSound } from '../hooks/useSound';
+import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 
 interface MultiplayerPageProps {
   onBack: () => void;
@@ -38,6 +40,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   const [inLobby, setInLobby] = useState(true);
   const [playerHitsOnOpponentCount, setPlayerHitsOnOpponentCount] = useState(0);
   const { play, toggle } = useSound();
+  const music = useBackgroundMusic();
 
   const playerBoardRef = useRef(playerBoard);
   const playerShipsRef = useRef(playerShips);
@@ -423,6 +426,12 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
           </div>
         )}
       </div>
+
+      <MusicVisualizer
+        isPlaying={music.isPlaying}
+        freqData={music.freqData}
+        onToggle={music.toggle}
+      />
 
       {phase !== 'placement' && (
         <Chat

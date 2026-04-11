@@ -14,7 +14,9 @@ import { GameBoard } from '../components/GameBoard';
 import { ShipRoster } from '../components/ShipRoster';
 import { GameHUD } from '../components/GameHUD';
 import { GameOver } from '../components/GameOver';
+import { MusicVisualizer } from '../components/MusicVisualizer';
 import { useSound } from '../hooks/useSound';
+import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 
 interface SinglePlayerProps {
   difficulty: Difficulty;
@@ -35,6 +37,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const [, setLastAttack] = useState<AttackResult | null>(null);
   const aiStateRef = useRef(createAIState());
   const { play, toggle } = useSound();
+  const music = useBackgroundMusic();
   const isProcessingRef = useRef(false);
 
   // Setup opponent board
@@ -301,6 +304,12 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
           </div>
         )}
       </div>
+
+      <MusicVisualizer
+        isPlaying={music.isPlaying}
+        freqData={music.freqData}
+        onToggle={music.toggle}
+      />
 
       {phase === 'gameover' && winner && (
         <GameOver
