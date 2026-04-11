@@ -174,9 +174,9 @@ export function ShipRoster({
       {onUndoShip && (
         <button
           onClick={onUndoShip}
-          disabled={!hasPlacedShips}
+          disabled={!hasPlacedShips || isReady}
           className={`w-full flex items-center justify-center gap-2 px-3 py-2 mb-3 metal-panel-light rounded text-sm transition-all font-mono-crt ${
-            hasPlacedShips
+            hasPlacedShips && !isReady
               ? 'text-amber-400/80 hover:text-amber-300 hover:ring-1 hover:ring-amber-400/30'
               : 'text-slate-600 cursor-not-allowed'
           }`}
