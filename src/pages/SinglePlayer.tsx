@@ -57,6 +57,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const [showReplay, setShowReplay] = useState(false);
   const playerShipsSnapshotRef = useRef<Ship[]>([]);
   const opponentShipsSnapshotRef = useRef<Ship[]>([]);
+  const gameDurationRef = useRef(0);
   const [cursorPos, setCursorPos] = useState({ row: 0, col: 0 });
   const [showCursor, setShowCursor] = useState(false);
   const handlePlayerAttackRef = useRef<(row: number, col: number) => void>(() => {});
@@ -236,6 +237,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         setWinner('player');
         setMessage('You win!');
         play('win');
+        gameDurationRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
         saveGameResult({
           mode: 'single',
           difficulty,
@@ -243,7 +245,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
           playerShots: shotCountRef.current,
           playerHits: hitCountRef.current,
           opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
-          durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+          durationSeconds: gameDurationRef.current,
         });
         setReplayData({
           playerShipPlacements: playerShipsSnapshotRef.current,
@@ -321,6 +323,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
             setWinner('opponent');
             setMessage('You lose!');
             play('lose');
+            gameDurationRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
             saveGameResult({
               mode: 'single',
               difficulty,
@@ -328,7 +331,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
               playerShots: shotCountRef.current,
               playerHits: hitCountRef.current,
               opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
-              durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+              durationSeconds: gameDurationRef.current,
             });
             setReplayData({
               playerShipPlacements: playerShipsSnapshotRef.current,
@@ -498,7 +501,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
             difficulty,
             shots: shotCountRef.current,
             hits: hitCountRef.current,
-            durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+            durationSeconds: gameDurationRef.current,
           }}
         />
       )}
