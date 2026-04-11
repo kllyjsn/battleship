@@ -58,6 +58,9 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   const [replayData, setReplayData] = useState<ReplayData | null>(null);
   const [showReplay, setShowReplay] = useState(false);
   const playerShipsSnapshotRef = useRef<Ship[]>([]);
+  const [cursorPos, setCursorPos] = useState({ row: 0, col: 0 });
+  const [showCursor, setShowCursor] = useState(false);
+  const handlePlayerAttackRef = useRef<(row: number, col: number) => void>(() => {});
   const [turnTimeLeft, setTurnTimeLeft] = useState(30);
   const turnTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -412,16 +415,47 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     play('place');
   }, [play]);
 
-  // R key to rotate orientation during placement
+  // Keyboard handling: R to rotate during placement, arrow keys + Enter during battle
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (phase === 'placement' && (e.key === 'r' || e.key === 'R')) {
         setOrientation(o => o === 'horizontal' ? 'vertical' : 'horizontal');
       }
+      if (phase === 'battle' && isPlayerTurn) {
+        switch (e.key) {
+          case 'ArrowUp':
+            e.preventDefault();
+            setShowCursor(true);
+            setCursorPos(p => ({ ...p, row: Math.max(0, p.row - 1) }));
+            break;
+          case 'ArrowDown':
+            e.preventDefault();
+            setShowCursor(true);
+            setCursorPos(p => ({ ...p, row: Math.min(9, p.row + 1) }));
+            break;
+          case 'ArrowLeft':
+            e.preventDefault();
+            setShowCursor(true);
+            setCursorPos(p => ({ ...p, col: Math.max(0, p.col - 1) }));
+            break;
+          case 'ArrowRight':
+            e.preventDefault();
+            setShowCursor(true);
+            setCursorPos(p => ({ ...p, col: Math.min(9, p.col + 1) }));
+            break;
+          case 'Enter':
+          case ' ':
+            e.preventDefault();
+            if (showCursor) {
+              handlePlayerAttackRef.current(cursorPos.row, cursorPos.col);
+            }
+            break;
+        }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [phase]);
+  }, [phase, isPlayerTurn, showCursor, cursorPos]);
 
   // Handle drag-select from roster
   const handleDragSelectShip = useCallback((shipId: string) => {
@@ -455,6 +489,11 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     [phase, isPlayerTurn, opponentBoard, mp]
   );
 
+  // Keep ref in sync for keyboard handler
+  useEffect(() => {
+    handlePlayerAttackRef.current = handlePlayerAttack;
+  }, [handlePlayerAttack]);
+
   const handlePlayAgain = useCallback(() => {
     setPlayerBoard(createEmptyBoard());
     setOpponentBoard(createEmptyBoard());
@@ -474,6 +513,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     replayMovesRef.current = [];
     setReplayData(null);
     setShowReplay(false);
+    setCursorPos({ row: 0, col: 0 });
+    setShowCursor(false);
     setLastAttackPos(null);
     setLastAttackResult(null);
     setLastDefensePos(null);
@@ -593,6 +634,9 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
                 highlight={isPlayerTurn && phase === 'battle'}
                 lastAttackResult={lastAttackResult}
                 lastAttackPos={lastAttackPos}
+                cursorRow={cursorPos.row}
+                cursorCol={cursorPos.col}
+                showCursor={showCursor && isPlayerTurn && phase === 'battle'}
               />
             </div>
           </div>

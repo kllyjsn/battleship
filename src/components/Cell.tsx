@@ -16,6 +16,7 @@ interface CellProps {
   disabled?: boolean;
   hideShipFill?: boolean;
   animating?: 'hit' | 'miss' | 'sunk' | null;
+  isCursor?: boolean;
 }
 
 const PARTICLE_DIRECTIONS = [
@@ -42,6 +43,7 @@ export function Cell({
   disabled = false,
   hideShipFill = false,
   animating = null,
+  isCursor = false,
 }: CellProps) {
   const [activeAnim, setActiveAnim] = useState<'hit' | 'miss' | 'sunk' | null>(null);
   const prevStateRef = useRef<CellState>(state);
@@ -97,7 +99,7 @@ export function Cell({
 
   return (
     <div
-      className={getClassName()}
+      className={`${getClassName()}${isCursor ? ' cell-cursor' : ''}`}
       onClick={!disabled ? onClick : undefined}
       onMouseEnter={onHover}
       onDragOver={onDragOver}

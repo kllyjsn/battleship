@@ -56,6 +56,9 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const [showReplay, setShowReplay] = useState(false);
   const playerShipsSnapshotRef = useRef<Ship[]>([]);
   const opponentShipsSnapshotRef = useRef<Ship[]>([]);
+  const [cursorPos, setCursorPos] = useState({ row: 0, col: 0 });
+  const [showCursor, setShowCursor] = useState(false);
+  const handlePlayerAttackRef = useRef<(row: number, col: number) => void>(() => {});
 
   // Setup opponent board
   useEffect(() => {
@@ -105,16 +108,47 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     play('place');
   }, [play]);
 
-  // R key to rotate orientation during placement
+  // Keyboard handling: R to rotate during placement, arrow keys + Enter during battle
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (phase === 'placement' && (e.key === 'r' || e.key === 'R')) {
         setOrientation(o => o === 'horizontal' ? 'vertical' : 'horizontal');
       }
+      if (phase === 'battle' && isPlayerTurn) {
+        switch (e.key) {
+          case 'ArrowUp':
+            e.preventDefault();
+            setShowCursor(true);
+            setCursorPos(p => ({ ...p, row: Math.max(0, p.row - 1) }));
+            break;
+          case 'ArrowDown':
+            e.preventDefault();
+            setShowCursor(true);
+            setCursorPos(p => ({ ...p, row: Math.min(9, p.row + 1) }));
+            break;
+          case 'ArrowLeft':
+            e.preventDefault();
+            setShowCursor(true);
+            setCursorPos(p => ({ ...p, col: Math.max(0, p.col - 1) }));
+            break;
+          case 'ArrowRight':
+            e.preventDefault();
+            setShowCursor(true);
+            setCursorPos(p => ({ ...p, col: Math.min(9, p.col + 1) }));
+            break;
+          case 'Enter':
+          case ' ':
+            e.preventDefault();
+            if (showCursor) {
+              handlePlayerAttackRef.current(cursorPos.row, cursorPos.col);
+            }
+            break;
+        }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [phase]);
+  }, [phase, isPlayerTurn, showCursor, cursorPos]);
 
   // Handle drag-select from roster (sets selected ship so placement preview works)
   const handleDragSelectShip = useCallback((shipId: string) => {
@@ -310,6 +344,11 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play]
   );
 
+  // Keep ref in sync for keyboard handler
+  useEffect(() => {
+    handlePlayerAttackRef.current = handlePlayerAttack;
+  }, [handlePlayerAttack]);
+
   const handlePlayAgain = useCallback(() => {
     const { board: oppBoard, ships: oppShips } = randomPlacement(SHIPS);
     setOpponentBoard(oppBoard);
@@ -334,6 +373,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     replayMovesRef.current = [];
     setReplayData(null);
     setShowReplay(false);
+    setCursorPos({ row: 0, col: 0 });
+    setShowCursor(false);
     aiStateRef.current = createAIState();
     isProcessingRef.current = false;
   }, []);
@@ -421,6 +462,9 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
               highlight={isPlayerTurn && phase === 'battle'}
               lastAttackResult={lastAttackResult}
               lastAttackPos={lastAttackPos}
+              cursorRow={cursorPos.row}
+              cursorCol={cursorPos.col}
+              showCursor={showCursor && isPlayerTurn && phase === 'battle'}
             />
           </div>
         )}

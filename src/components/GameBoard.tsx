@@ -21,6 +21,9 @@ interface GameBoardProps {
   onDragSelectShip?: (shipId: string) => void;
   lastAttackResult?: 'hit' | 'miss' | 'sunk' | null;
   lastAttackPos?: { row: number; col: number } | null;
+  cursorRow?: number;
+  cursorCol?: number;
+  showCursor?: boolean;
 }
 
 export function GameBoard({
@@ -39,6 +42,9 @@ export function GameBoard({
   onDragSelectShip,
   lastAttackResult = null,
   lastAttackPos = null,
+  cursorRow,
+  cursorCol,
+  showCursor = false,
 }: GameBoardProps) {
   const [hoverPos, setHoverPos] = useState<{ row: number; col: number } | null>(null);
   const [shaking, setShaking] = useState(false);
@@ -183,6 +189,7 @@ export function GameBoard({
                         ? lastAttackResult
                         : null
                     }
+                    isCursor={showCursor && cursorRow === rowIdx && cursorCol === colIdx}
                   />
                 </div>
               );
