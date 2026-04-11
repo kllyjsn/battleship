@@ -23,6 +23,21 @@
   --hull-light: #2f3649;
   --rivet: #3a4259;
   --steel-border: #4a5568;
+  /* Theme defaults (classic) */
+  --board-bg: #0a0e1a;
+  --board-border: #1a2535;
+  --cell-empty: #0d1520;
+  --cell-empty-border: #1a2535;
+  --cell-hit: rgba(127, 29, 29, 0.6);
+  --cell-miss: #111a28;
+  --cell-sunk: rgba(127, 29, 29, 0.7);
+  --cell-ship: #2a3040;
+  --cell-ship-border: #3a4a5a;
+  --grid-line: #1a2535;
+  --cell-hover: #142030;
+  --cell-hover-border: rgba(74, 222, 128, 0.3);
+  --text-primary: #39ff14;
+  --text-secondary: rgba(74, 222, 128, 0.5);
 }
 
 body {

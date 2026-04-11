@@ -146,7 +146,8 @@ export function GameBoard({
           {COL_LABELS.map((label) => (
             <div
               key={label}
-              className="w-8 h-6 sm:w-9 sm:h-7 md:w-10 md:h-8 flex items-center justify-center text-xs text-green-500/50 font-mono-crt"
+              className="w-8 h-6 sm:w-9 sm:h-7 md:w-10 md:h-8 flex items-center justify-center text-xs font-mono-crt"
+              style={{ color: 'var(--text-secondary)' }}
             >
               {label}
             </div>
@@ -156,7 +157,7 @@ export function GameBoard({
         {/* Rows */}
         {board.map((row, rowIdx) => (
           <div key={rowIdx} className="flex">
-            <div className="w-6 h-8 sm:w-7 sm:h-9 md:w-8 md:h-10 flex items-center justify-center text-xs text-green-500/50 font-mono-crt">
+            <div className="w-6 h-8 sm:w-7 sm:h-9 md:w-8 md:h-10 flex items-center justify-center text-xs font-mono-crt" style={{ color: 'var(--text-secondary)' }}>
               {ROW_LABELS[rowIdx]}
             </div>
             {row.map((cell, colIdx) => {

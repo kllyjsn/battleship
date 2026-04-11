@@ -1,7 +1,9 @@
-import { Crosshair, Users, Anchor, Zap, Brain, Shield, Cpu, Target, BarChart3, Dice5, Swords, Gamepad2 } from 'lucide-react';
+import { Crosshair, Users, Anchor, Zap, Brain, Shield, Cpu, Target, BarChart3, Dice5, Swords, Gamepad2, Palette } from 'lucide-react';
 import type { Difficulty } from '../engine/types';
 import { useState } from 'react';
 import { StatsPanel } from './StatsPanel';
+import { ThemeSelector } from './ThemeSelector';
+import { loadTheme } from '../lib/themes';
 
 interface MainMenuProps {
   onStartSinglePlayer: (difficulty: Difficulty) => void;
@@ -11,6 +13,8 @@ interface MainMenuProps {
 export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuProps) {
   const [showDifficulty, setShowDifficulty] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [showThemes, setShowThemes] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState(loadTheme());
 
   const difficulties: { level: Difficulty; label: string; description: string; icon: React.ReactNode; color: string }[] = [
     { level: 'easy', label: 'Recruit', description: 'Random attacks, no strategy', icon: <Shield size={20} />, color: 'from-green-700 to-green-900' },
@@ -100,13 +104,22 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
           </div>
         )}
 
-        <button
-          onClick={() => setShowStats(true)}
-          className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded metal-panel text-slate-500 hover:text-green-400 hover:border-green-500/30 transition-all font-mono-crt text-sm"
-        >
-          <BarChart3 size={16} />
-          COMBAT LOG
-        </button>
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <button
+            onClick={() => setShowStats(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded metal-panel text-slate-500 hover:text-green-400 hover:border-green-500/30 transition-all font-mono-crt text-sm"
+          >
+            <BarChart3 size={16} />
+            COMBAT LOG
+          </button>
+          <button
+            onClick={() => setShowThemes(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded metal-panel text-slate-500 hover:text-amber-400 hover:border-amber-500/30 transition-all font-mono-crt text-sm"
+          >
+            <Palette size={16} />
+            THEMES
+          </button>
+        </div>
 
         <p className="mt-4 text-xs text-slate-700 font-mono-crt">
           SYSTEM ONLINE // PUBNUB LINK ACTIVE
@@ -216,6 +229,13 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
       </div>
 
       {showStats && <StatsPanel onClose={() => setShowStats(false)} />}
+      {showThemes && (
+        <ThemeSelector
+          currentTheme={currentTheme}
+          onSelectTheme={setCurrentTheme}
+          onClose={() => setShowThemes(false)}
+        />
+      )}
     </div>
   );
 }

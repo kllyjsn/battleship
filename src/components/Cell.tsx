@@ -79,21 +79,21 @@ export function Cell({
       case 'empty':
         return `${base} ${
           !isPlayerBoard && !isPlacing && !disabled
-            ? 'bg-[#0d1520] border-[#1a2535] hover:bg-[#142030] hover:border-green-500/30 cursor-crosshair'
+            ? 'bg-[var(--cell-empty)] border-[var(--cell-empty-border)] hover:bg-[var(--cell-hover)] hover:border-[var(--cell-hover-border)] cursor-crosshair'
             : isPlacing && isPlayerBoard
-              ? 'bg-[#0d1520] border-[#1a2535] hover:bg-[#142030] cursor-pointer'
-              : 'bg-[#0d1520] border-[#1a2535]'
+              ? 'bg-[var(--cell-empty)] border-[var(--cell-empty-border)] hover:bg-[var(--cell-hover)] cursor-pointer'
+              : 'bg-[var(--cell-empty)] border-[var(--cell-empty-border)]'
         }`;
       case 'ship':
-        return `${base} ${isPlayerBoard ? (hideShipFill ? 'bg-[#0d1520]/80 border-[#1a2535]' : 'bg-[#2a3040] border-[#3a4a5a]') : 'bg-[#0d1520] border-[#1a2535] hover:bg-[#142030] hover:border-green-500/30 cursor-crosshair'}`;
+        return `${base} ${isPlayerBoard ? (hideShipFill ? 'bg-[var(--cell-empty)]/80 border-[var(--cell-empty-border)]' : 'bg-[var(--cell-ship)] border-[var(--cell-ship-border)]') : 'bg-[var(--cell-empty)] border-[var(--cell-empty-border)] hover:bg-[var(--cell-hover)] hover:border-[var(--cell-hover-border)] cursor-crosshair'}`;
       case 'hit':
-        return `${base} bg-red-900/60 border-red-700/50 cell-hit`;
+        return `${base} bg-[var(--cell-hit)] border-red-700/50 cell-hit`;
       case 'miss':
-        return `${base} bg-[#111a28] border-[#1a2535] cell-miss`;
+        return `${base} bg-[var(--cell-miss)] border-[var(--cell-empty-border)] cell-miss`;
       case 'sunk':
-        return `${base} bg-red-900/70 border-red-700/50 cell-sunk`;
+        return `${base} bg-[var(--cell-sunk)] border-red-700/50 cell-sunk`;
       default:
-        return `${base} bg-[#0d1520] border-[#1a2535]`;
+        return `${base} bg-[var(--cell-empty)] border-[var(--cell-empty-border)]`;
     }
   };
 
