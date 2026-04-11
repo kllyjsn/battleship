@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { Trophy, Skull, RotateCw, Home, Play } from 'lucide-react';
+import { addLeaderboardEntry } from '../lib/leaderboard';
 
 interface GameOverProps {
   winner: 'player' | 'opponent';
@@ -7,10 +9,58 @@ interface GameOverProps {
   playerName?: string;
   opponentName?: string;
   onWatchReplay?: () => void;
+  gameStats?: {
+    mode: 'single' | 'multiplayer';
+    difficulty?: 'easy' | 'medium' | 'hard';
+    shots: number;
+    hits: number;
+    durationSeconds: number;
+  };
 }
 
-export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', opponentName = 'Opponent', onWatchReplay }: GameOverProps) {
+const SESSION_NAME_KEY = 'battleship-session-name';
+
+function loadSessionName(): string {
+  try {
+    return localStorage.getItem(SESSION_NAME_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+function saveSessionName(name: string): void {
+  try {
+    localStorage.setItem(SESSION_NAME_KEY, name);
+  } catch {
+    // ignore
+  }
+}
+
+export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', opponentName = 'Opponent', onWatchReplay, gameStats }: GameOverProps) {
   const isWin = winner === 'player';
+  const [showNamePrompt, setShowNamePrompt] = useState(isWin && !!gameStats);
+  const [sessionName, setSessionName] = useState(loadSessionName());
+  const [saved, setSaved] = useState(false);
+
+  const handleSaveScore = () => {
+    const name = sessionName.trim() || 'Anonymous';
+    saveSessionName(name);
+    if (gameStats) {
+      addLeaderboardEntry(name, {
+        mode: gameStats.mode,
+        difficulty: gameStats.difficulty,
+        shots: gameStats.shots,
+        hits: gameStats.hits,
+        durationSeconds: gameStats.durationSeconds,
+      });
+    }
+    setSaved(true);
+    setShowNamePrompt(false);
+  };
+
+  const handleSkip = () => {
+    setShowNamePrompt(false);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fadeIn">
@@ -34,11 +84,46 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
           {isWin ? 'VICTORY' : 'DEFEATED'}
         </h2>
 
-        <p className="text-slate-400 mb-8 font-mono-crt text-sm">
+        <p className="text-slate-400 mb-6 font-mono-crt text-sm">
           {isWin
             ? `${playerName} sank all of ${opponentName}'s ships!`
             : `${opponentName} sank all of ${playerName.toLowerCase() === 'you' ? 'your' : playerName + "'s"} ships.`}
         </p>
+
+        {/* Session name prompt for winners */}
+        {showNamePrompt && (
+          <div className="mb-6 p-4 rounded-lg metal-panel-light">
+            <p className="text-sm text-glow-amber font-mono-crt mb-3">ENTER YOUR CALLSIGN FOR THE LEADERBOARD</p>
+            <input
+              type="text"
+              value={sessionName}
+              onChange={(e) => setSessionName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveScore(); }}
+              placeholder="Your callsign..."
+              maxLength={20}
+              autoFocus
+              className="w-full px-3 py-2 rounded metal-panel text-green-300 font-mono-crt text-sm bg-transparent border border-slate-700 focus:border-green-500/50 focus:outline-none placeholder-slate-600 mb-3"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={handleSaveScore}
+                className="flex-1 py-2 rounded metal-panel text-glow-green font-mono-crt text-sm hover:border-green-500/40 transition-all"
+              >
+                SAVE SCORE
+              </button>
+              <button
+                onClick={handleSkip}
+                className="px-4 py-2 rounded metal-panel-light text-slate-500 font-mono-crt text-sm hover:text-slate-300 transition-all"
+              >
+                SKIP
+              </button>
+            </div>
+          </div>
+        )}
+
+        {saved && (
+          <p className="text-xs text-green-400 font-mono-crt mb-4">Score saved to leaderboard!</p>
+        )}
 
         <div className="flex flex-col sm:flex-row gap-4">
           <button

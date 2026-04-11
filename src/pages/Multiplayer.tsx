@@ -19,7 +19,6 @@ import { Chat } from '../components/Chat';
 import { useMultiplayer } from '../multiplayer/useMultiplayer';
 import { useSound } from '../hooks/useSound';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
-import { useAuth } from '../lib/AuthContext';
 import { saveGameResult } from '../lib/gameResults';
 import { BattleLog } from '../components/BattleLog';
 import { TurnTimer } from '../components/TurnTimer';
@@ -32,8 +31,7 @@ interface MultiplayerPageProps {
 }
 
 export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
-  const { user, profile } = useAuth();
-  const [playerName, setPlayerName] = useState(profile?.display_name || '');
+  const [playerName, setPlayerName] = useState('');
   const [phase, setPhase] = useState<GamePhase>('placement');
   const [playerBoard, setPlayerBoard] = useState<Board>(createEmptyBoard());
   const [opponentBoard, setOpponentBoard] = useState<Board>(createEmptyBoard());
@@ -304,16 +302,14 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
             setWinner('opponent');
             setMessage('You lose!');
             play('lose');
-            if (user) {
-              saveGameResult(user.id, {
-                mode: 'multiplayer',
-                result: 'loss',
-                playerShots: shotCountRef.current,
-                playerHits: hitCountRef.current,
-                opponentName: mp.opponentName || 'Opponent',
-                durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
-              });
-            }
+            saveGameResult({
+              mode: 'multiplayer',
+              result: 'loss',
+              playerShots: shotCountRef.current,
+              playerHits: hitCountRef.current,
+              opponentName: mp.opponentName || 'Opponent',
+              durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+            });
             mp.sendGameOver(mp.opponentName || 'Opponent');
             setReplayData({
               playerShipPlacements: playerShipsSnapshotRef.current,
@@ -433,16 +429,14 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
           setWinner('player');
           setMessage('You win!');
           play('win');
-          if (user) {
-            saveGameResult(user.id, {
-              mode: 'multiplayer',
-              result: 'win',
-              playerShots: shotCountRef.current,
-              playerHits: hitCountRef.current,
-              opponentName: mp.opponentName || 'Opponent',
-              durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
-            });
-          }
+          saveGameResult({
+            mode: 'multiplayer',
+            result: 'win',
+            playerShots: shotCountRef.current,
+            playerHits: hitCountRef.current,
+            opponentName: mp.opponentName || 'Opponent',
+            durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+          });
           setReplayData({
             playerShipPlacements: playerShipsSnapshotRef.current,
             opponentShipPlacements: [],
@@ -454,7 +448,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
         }
       }
     });
-  }, [mp, play, phase, user]);
+  }, [mp, play, phase]);
 
   // Both players ready -> start battle
   useEffect(() => {
@@ -680,7 +674,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
         roomCode={mp.roomCode}
         isConnecting={mp.isConnecting}
         error={mp.error}
-        defaultName={profile?.display_name}
+        defaultName={playerName || undefined}
       />
     );
   }
@@ -884,6 +878,12 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
           onGoHome={handleGoHome}
           opponentName={mp.opponentName || 'Opponent'}
           onWatchReplay={replayData ? () => setShowReplay(true) : undefined}
+          gameStats={{
+            mode: 'multiplayer',
+            shots: shotCountRef.current,
+            hits: hitCountRef.current,
+            durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+          }}
         />
       )}
 
