@@ -38,6 +38,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const [isPlayerTurn, setIsPlayerTurn] = useState(true);
   const [winner, setWinner] = useState<'player' | 'opponent' | null>(null);
   const [message, setMessage] = useState('Place your ships on the board');
+  const [hideEnemyShots, setHideEnemyShots] = useState(false);
   const [, setLastAttack] = useState<AttackResult | null>(null);
   const [lastAttackPos, setLastAttackPos] = useState<{ row: number; col: number } | null>(null);
   const [lastAttackResult, setLastAttackResult] = useState<'hit' | 'miss' | 'sunk' | null>(null);
@@ -109,6 +110,18 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     setSelectedShipId(null);
     play('place');
   }, [play]);
+
+  // Undo last placed ship
+  const handleUndoShip = useCallback(() => {
+    if (playerShips.length === 0) return;
+    const lastShip = playerShips[playerShips.length - 1];
+    const newBoard = removeShipFromBoard(playerBoard, lastShip.id);
+    const newShips = playerShips.slice(0, -1);
+    setPlayerBoard(newBoard);
+    setPlayerShips(newShips);
+    setSelectedShipId(lastShip.id);
+    play('click');
+  }, [playerShips, playerBoard, play]);
 
   // Keyboard handling: R to rotate during placement, arrow keys + Enter during battle
   useEffect(() => {
@@ -426,6 +439,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
               onReady={handleReady}
               isReady={false}
               mode="placement"
+              onUndoShip={handleUndoShip}
             />
           </div>
         ) : (
@@ -440,6 +454,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
                 ships={playerShips}
                 lastAttackResult={lastDefenseResult}
                 lastAttackPos={lastDefensePos}
+                hideEnemyShots={hideEnemyShots}
+                onToggleHideEnemyShots={() => setHideEnemyShots(h => !h)}
               />
               <ShipRoster
                 shipDefs={SHIPS}

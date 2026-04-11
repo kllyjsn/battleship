@@ -173,7 +173,7 @@ export function Cell({
       {/* Static miss indicator */}
       {state === 'miss' && !activeAnim && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-3 h-3 rounded-full bg-green-500/20 ring-1 ring-green-500/20" />
+          <div className="w-2 h-2 rounded-full bg-slate-400/40 ring-1 ring-slate-400/25" />
         </div>
       )}
       {/* Static sunk indicator */}

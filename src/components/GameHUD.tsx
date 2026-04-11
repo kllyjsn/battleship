@@ -58,7 +58,19 @@ export function GameHUD({
           }`}
           style={{ border: '1px solid var(--steel-border)' }}
         >
-          {message}
+          <span className="flex items-center justify-center gap-2">
+            {phase === 'battle' && (
+              <span
+                className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${
+                  isPlayerTurn
+                    ? 'bg-green-400 shadow-[0_0_6px_rgba(57,255,20,0.6)]'
+                    : 'bg-amber-400 shadow-[0_0_6px_rgba(255,176,0,0.6)]'
+                }`}
+                style={{ animation: isPlayerTurn ? 'glowPulse 1.5s ease-in-out infinite' : undefined }}
+              />
+            )}
+            {message}
+          </span>
         </div>
 
         {/* Audio controls */}

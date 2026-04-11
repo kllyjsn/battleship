@@ -44,6 +44,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   const [isPlayerTurn, setIsPlayerTurn] = useState(false);
   const [winner, setWinner] = useState<'player' | 'opponent' | null>(null);
   const [message, setMessage] = useState('Place your ships on the board');
+  const [hideEnemyShots, setHideEnemyShots] = useState(false);
   const [inLobby, setInLobby] = useState(true);
   const [playerHitsOnOpponentCount, setPlayerHitsOnOpponentCount] = useState(0);
   const [lastAttackPos, setLastAttackPos] = useState<{ row: number; col: number } | null>(null);
@@ -536,6 +537,18 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     play('place');
   }, [play]);
 
+  // Undo last placed ship
+  const handleUndoShip = useCallback(() => {
+    if (playerShips.length === 0) return;
+    const lastShip = playerShips[playerShips.length - 1];
+    const newBoard = removeShipFromBoard(playerBoard, lastShip.id);
+    const newShips = playerShips.slice(0, -1);
+    setPlayerBoard(newBoard);
+    setPlayerShips(newShips);
+    setSelectedShipId(lastShip.id);
+    play('click');
+  }, [playerShips, playerBoard, play]);
+
   // Keyboard handling: R to rotate during placement, arrow keys + Enter during battle
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -793,6 +806,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
               onReady={handleReady}
               isReady={mp.isPlayerReady}
               mode="placement"
+              onUndoShip={handleUndoShip}
             />
           </div>
         ) : (
@@ -807,6 +821,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
                 ships={playerShips}
                 lastAttackResult={lastDefenseResult}
                 lastAttackPos={lastDefensePos}
+                hideEnemyShots={hideEnemyShots}
+                onToggleHideEnemyShots={() => setHideEnemyShots(h => !h)}
               />
               <ShipRoster
                 shipDefs={SHIPS}

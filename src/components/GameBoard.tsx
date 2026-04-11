@@ -4,6 +4,7 @@ import { canPlaceShip } from '../engine/board';
 import { Cell } from './Cell';
 import { ShipSVG } from './ShipSVG';
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface GameBoardProps {
   board: Board;
@@ -24,6 +25,8 @@ interface GameBoardProps {
   cursorRow?: number;
   cursorCol?: number;
   showCursor?: boolean;
+  hideEnemyShots?: boolean;
+  onToggleHideEnemyShots?: () => void;
 }
 
 export function GameBoard({
@@ -45,6 +48,8 @@ export function GameBoard({
   cursorRow,
   cursorCol,
   showCursor = false,
+  hideEnemyShots = false,
+  onToggleHideEnemyShots,
 }: GameBoardProps) {
   const [hoverPos, setHoverPos] = useState<{ row: number; col: number } | null>(null);
   const [shaking, setShaking] = useState(false);
@@ -127,9 +132,20 @@ export function GameBoard({
 
   return (
     <div className={`flex flex-col items-center ${highlight ? 'ring-2 ring-green-400/30 rounded-lg p-2' : 'p-2'}`}>
-      <h3 className="text-sm font-semibold uppercase tracking-widest mb-2 font-mono-crt text-glow-green">
-        {title}
-      </h3>
+      <div className="flex items-center justify-center gap-2 mb-2">
+        <h3 className="text-sm font-semibold uppercase tracking-widest font-mono-crt text-glow-green">
+          {title}
+        </h3>
+        {onToggleHideEnemyShots && (
+          <button
+            onClick={onToggleHideEnemyShots}
+            className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] metal-panel-light transition-all font-mono-crt text-slate-400 hover:text-green-400"
+            title={hideEnemyShots ? 'Show enemy shots' : 'Hide enemy shots'}
+          >
+            {hideEnemyShots ? <EyeOff size={12} /> : <Eye size={12} />}
+          </button>
+        )}
+      </div>
       <div
         ref={gridRef}
         className={`inline-flex flex-col relative ${shaking ? 'screen-shake' : ''}`}
@@ -170,7 +186,7 @@ export function GameBoard({
                   <Cell
                     row={rowIdx}
                     col={colIdx}
-                    state={cell.state}
+                    state={hideEnemyShots && isPlayerBoard && !isPlacing && cell.state === 'miss' ? 'empty' : cell.state}
                     isPlayerBoard={isPlayerBoard}
                     isPlacing={isPlacing}
                     isPreview={isPreview}
