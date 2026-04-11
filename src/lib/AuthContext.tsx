@@ -32,21 +32,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
+    // Listen for auth changes (set up first so we catch post-exchange events)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) fetchProfile(session.user.id);
       else setProfile(null);
     });
+
+    // Initialize session — handle PKCE code exchange if present
+    (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+
+      if (code) {
+        // Exchange the OAuth PKCE code for a session before reading it
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) console.error('OAuth code exchange failed:', error.message);
+        // Clean the code from the URL without reloading
+        const url = new URL(window.location.href);
+        url.searchParams.delete('code');
+        window.history.replaceState({}, '', url.pathname + url.search);
+      }
+
+      // Now read the session (will have the exchanged session if code was present)
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) console.error('Failed to get session:', error.message);
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) fetchProfile(session.user.id);
+      setLoading(false);
+    })();
 
     return () => subscription.unsubscribe();
   }, []);
@@ -62,11 +78,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signInWithGoogle() {
-    if (!supabase) return;
-    await supabase.auth.signInWithOAuth({
+    if (!supabase) {
+      console.warn('Cannot sign in — Supabase is not configured.');
+      return;
+    }
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin },
     });
+    if (error) console.error('Google sign-in failed:', error.message);
   }
 
   async function signOut() {
