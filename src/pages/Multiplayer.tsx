@@ -64,6 +64,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   const [cursorPos, setCursorPos] = useState({ row: 0, col: 0 });
   const [showCursor, setShowCursor] = useState(false);
   const handlePlayerAttackRef = useRef<(row: number, col: number) => void>(() => {});
+  const isProcessingRef = useRef(false);
   const [turnTimeLeft, setTurnTimeLeft] = useState(30);
   const turnTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [spectatorHostBoard, setSpectatorHostBoard] = useState<Board>(createEmptyBoard());
@@ -132,7 +133,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   }, [phase, isPlayerTurn]);
 
   const handleTurnTimeout = useCallback(() => {
-    if (phase !== 'battle' || !isPlayerTurn) return;
+    if (phase !== 'battle' || !isPlayerTurn || isProcessingRef.current) return;
+    isProcessingRef.current = true;
     const validCells: { row: number; col: number }[] = [];
     for (let r = 0; r < 10; r++) {
       for (let c = 0; c < 10; c++) {
@@ -326,6 +328,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
 
         case 'ATTACK_RESULT': {
           if (msg.row === undefined || msg.col === undefined || !msg.result) return;
+          isProcessingRef.current = false;
 
           setLastAttackPos({ row: msg.row!, col: msg.col! });
           setLastAttackResult(msg.result);
@@ -594,11 +597,12 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
 
   const handlePlayerAttack = useCallback(
     (row: number, col: number) => {
-      if (phase !== 'battle' || !isPlayerTurn) return;
+      if (phase !== 'battle' || !isPlayerTurn || isProcessingRef.current) return;
 
       const cell = opponentBoard[row][col];
       if (cell.state === 'hit' || cell.state === 'miss' || cell.state === 'sunk') return;
 
+      isProcessingRef.current = true;
       shotCountRef.current += 1;
       mp.sendAttack(row, col);
       setIsPlayerTurn(false);
@@ -642,6 +646,10 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     mp.sendRematch();
   }, [mp]);
 
+  const handleSpectatorGoHome = useCallback(() => {
+    onBack();
+  }, [onBack]);
+
   const handleGoHome = useCallback(() => {
     mp.sendLeave();
     onBack();
@@ -674,7 +682,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
           message={phase === 'gameover' ? `${winner === 'player' ? spectatorHostName : spectatorGuestName} wins!` : `${spectatorHostTurn ? spectatorHostName : spectatorGuestName}'s turn`}
           phase={phase}
           onToggleSound={toggle}
-          onBack={handleGoHome}
+          onBack={handleSpectatorGoHome}
           playerHits={0}
           opponentHits={0}
           totalShipCells={TOTAL_SHIP_CELLS}
@@ -734,8 +742,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
         {phase === 'gameover' && winner && (
           <GameOver
             winner={winner}
-            onPlayAgain={handleGoHome}
-            onGoHome={handleGoHome}
+            onPlayAgain={handleSpectatorGoHome}
+            onGoHome={handleSpectatorGoHome}
             opponentName={winner === 'player' ? spectatorGuestName : spectatorHostName}
           />
         )}
