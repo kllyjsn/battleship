@@ -9,6 +9,7 @@ interface MultiplayerLobbyProps {
   roomCode: string | null;
   isConnecting: boolean;
   error: string | null;
+  defaultName?: string;
 }
 
 export function MultiplayerLobby({
@@ -19,10 +20,11 @@ export function MultiplayerLobby({
   roomCode,
   isConnecting,
   error,
+  defaultName,
 }: MultiplayerLobbyProps) {
   const [mode, setMode] = useState<'select' | 'create' | 'join' | 'spectate'>('select');
   const [joinCode, setJoinCode] = useState('');
-  const [playerName, setPlayerName] = useState('');
+  const [playerName, setPlayerName] = useState(defaultName || '');
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {

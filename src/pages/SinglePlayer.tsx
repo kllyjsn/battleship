@@ -16,7 +16,8 @@ import { GameHUD } from '../components/GameHUD';
 import { GameOver } from '../components/GameOver';
 import { useSound } from '../hooks/useSound';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
-import { saveGame } from '../lib/stats';
+import { useAuth } from '../lib/AuthContext';
+import { saveGameResult } from '../lib/gameResults';
 import { BattleLog } from '../components/BattleLog';
 import { GameReplay } from '../components/GameReplay';
 import type { ReplayMove, ReplayData } from '../lib/replay';
@@ -46,8 +47,9 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const { play, toggle } = useSound();
   const music = useBackgroundMusic();
   const isProcessingRef = useRef(false);
-  const [shotCount, setShotCount] = useState(0);
-  const [hitCount, setHitCount] = useState(0);
+  const { user } = useAuth();
+  const shotCountRef = useRef(0);
+  const hitCountRef = useRef(0);
   const gameStartTimeRef = useRef<number>(0);
   const [battleLog, setBattleLog] = useState<BattleLogEntry[]>([]);
   const turnCountRef = useRef(0);
@@ -178,6 +180,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
       if (cell.state === 'hit' || cell.state === 'miss' || cell.state === 'sunk') return;
 
       isProcessingRef.current = true;
+      shotCountRef.current += 1;
 
       const { board, ships, result } = processAttack(opponentBoard, opponentShips, row, col);
       setOpponentBoard(board);
@@ -185,11 +188,6 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
       setLastAttack(result);
       setLastAttackPos({ row, col });
       setLastAttackResult(result.result);
-      setShotCount(prev => prev + 1);
-      if (result.result === 'hit' || result.result === 'sunk') {
-        setHitCount(prev => prev + 1);
-      }
-
       turnCountRef.current++;
       setBattleLog(prev => [...prev, {
         id: `p-${turnCountRef.current}`,
@@ -210,9 +208,11 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
       });
 
       if (result.result === 'hit') {
+        hitCountRef.current += 1;
         play('hit');
         setMessage('Direct hit!');
       } else if (result.result === 'sunk') {
+        hitCountRef.current += 1;
         play('sunk');
         setMessage(`You sank their ${result.shipName}!`);
       } else {
@@ -225,16 +225,17 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         setWinner('player');
         setMessage('You win!');
         play('win');
-        saveGame({
-          date: new Date().toISOString(),
-          mode: 'single',
-          difficulty,
-          result: 'win',
-          playerShots: shotCount + 1,
-          playerHits: hitCount + (result.result === 'hit' || result.result === 'sunk' ? 1 : 0),
-          opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
-          duration: Math.round((Date.now() - gameStartTimeRef.current) / 1000),
-        });
+        if (user) {
+          saveGameResult(user.id, {
+            mode: 'single',
+            difficulty,
+            result: 'win',
+            playerShots: shotCountRef.current,
+            playerHits: hitCountRef.current,
+            opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
+            durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+          });
+        }
         setReplayData({
           playerShipPlacements: playerShipsSnapshotRef.current,
           opponentShipPlacements: opponentShipsSnapshotRef.current,
@@ -311,16 +312,17 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
             setWinner('opponent');
             setMessage('You lose!');
             play('lose');
-            saveGame({
-              date: new Date().toISOString(),
-              mode: 'single',
-              difficulty,
-              result: 'loss',
-              playerShots: shotCount,
-              playerHits: hitCount,
-              opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
-              duration: Math.round((Date.now() - gameStartTimeRef.current) / 1000),
-            });
+            if (user) {
+              saveGameResult(user.id, {
+                mode: 'single',
+                difficulty,
+                result: 'loss',
+                playerShots: shotCountRef.current,
+                playerHits: hitCountRef.current,
+                opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
+                durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+              });
+            }
             setReplayData({
               playerShipPlacements: playerShipsSnapshotRef.current,
               opponentShipPlacements: opponentShipsSnapshotRef.current,
@@ -341,7 +343,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         }, 600);
       }, 500);
     },
-    [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play]
+    [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play, user]
   );
 
   // Keep ref in sync for keyboard handler
@@ -366,8 +368,6 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     setLastAttackResult(null);
     setLastDefensePos(null);
     setLastDefenseResult(null);
-    setShotCount(0);
-    setHitCount(0);
     setBattleLog([]);
     turnCountRef.current = 0;
     replayMovesRef.current = [];
@@ -377,6 +377,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     setShowCursor(false);
     aiStateRef.current = createAIState();
     isProcessingRef.current = false;
+    shotCountRef.current = 0;
+    hitCountRef.current = 0;
   }, []);
 
   const playerHitsOnOpponent = opponentShips.reduce((sum, s) => sum + s.hits, 0);

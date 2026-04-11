@@ -60,7 +60,7 @@ export function GameBoard({
       const timer = setTimeout(() => setShaking(false), 400);
       return () => clearTimeout(timer);
     }
-  }, [lastAttackResult]);
+  }, [lastAttackResult, lastAttackPos]);
 
   // Measure cell size and grid offset for ship overlays
   useEffect(() => {

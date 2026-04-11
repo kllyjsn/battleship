@@ -1,7 +1,10 @@
-import { Crosshair, Users, Anchor, Zap, Brain, Shield, Cpu, Target, BarChart3, Dice5, Swords, Gamepad2, Palette } from 'lucide-react';
+import { Crosshair, Users, Anchor, Zap, Brain, Shield, Cpu, Target, BarChart3, Dice5, Swords, Gamepad2, Palette, LogIn, LogOut, Trophy, Loader2 } from 'lucide-react';
 import type { Difficulty } from '../engine/types';
 import { useState } from 'react';
+import { useAuth } from '../lib/AuthContext';
+import { supabase } from '../lib/supabase';
 import { StatsPanel } from './StatsPanel';
+import { Leaderboard } from './Leaderboard';
 import { ThemeSelector } from './ThemeSelector';
 import { loadTheme } from '../lib/themes';
 
@@ -15,6 +18,8 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
   const [showStats, setShowStats] = useState(false);
   const [showThemes, setShowThemes] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(loadTheme());
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const { user, profile, loading, signInWithGoogle, signOut } = useAuth();
 
   const difficulties: { level: Difficulty; label: string; description: string; icon: React.ReactNode; color: string }[] = [
     { level: 'easy', label: 'Recruit', description: 'Random attacks, no strategy', icon: <Shield size={20} />, color: 'from-green-700 to-green-900' },
@@ -32,6 +37,35 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
       </div>
 
       <div className="relative z-10 text-center max-w-lg w-full">
+        {/* Auth bar */}
+        <div className="flex items-center justify-end mb-4 min-h-[40px]">
+          {loading ? (
+            <Loader2 size={18} className="text-green-500/50 animate-spin" />
+          ) : user ? (
+            <div className="flex items-center gap-3">
+              {profile?.avatar_url && (
+                <img src={profile.avatar_url} alt="" className="w-8 h-8 rounded-full border border-green-500/30" />
+              )}
+              <span className="text-sm text-green-300 font-mono-crt">{profile?.display_name || 'Player'}</span>
+              <button
+                onClick={signOut}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded metal-panel-light text-slate-500 hover:text-red-400 transition-colors text-xs font-mono-crt"
+              >
+                <LogOut size={14} />
+                SIGN OUT
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={signInWithGoogle}
+              className="flex items-center gap-2 px-4 py-2 rounded metal-panel-light text-green-300 hover:text-glow-green transition-colors text-sm font-mono-crt hover:ring-1 hover:ring-green-400/40"
+            >
+              <LogIn size={16} />
+              SIGN IN WITH GOOGLE
+            </button>
+          )}
+        </div>
+
         {/* Logo */}
         <div className="mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl metal-panel mb-4" style={{ boxShadow: '0 0 20px rgba(57, 255, 20, 0.1), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
@@ -104,25 +138,33 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
           </div>
         )}
 
-        <div className="mt-6 flex items-center justify-center gap-3">
+        {/* Stats, Themes & Leaderboard buttons */}
+        <div className="flex gap-3 mt-6 justify-center flex-wrap">
           <button
             onClick={() => setShowStats(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded metal-panel text-slate-500 hover:text-green-400 hover:border-green-500/30 transition-all font-mono-crt text-sm"
+            className="flex items-center gap-2 px-4 py-2.5 rounded metal-panel hover:border-green-500/40 transition-all text-sm font-mono-crt text-green-300"
           >
             <BarChart3 size={16} />
-            COMBAT LOG
+            STATS
+          </button>
+          <button
+            onClick={() => setShowLeaderboard(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded metal-panel hover:border-amber-500/40 transition-all text-sm font-mono-crt text-amber-300"
+          >
+            <Trophy size={16} />
+            LEADERBOARD
           </button>
           <button
             onClick={() => setShowThemes(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded metal-panel text-slate-500 hover:text-amber-400 hover:border-amber-500/30 transition-all font-mono-crt text-sm"
+            className="flex items-center gap-2 px-4 py-2.5 rounded metal-panel hover:border-cyan-500/40 transition-all text-sm font-mono-crt text-cyan-300"
           >
             <Palette size={16} />
             THEMES
           </button>
         </div>
 
-        <p className="mt-4 text-xs text-slate-700 font-mono-crt">
-          SYSTEM ONLINE // PUBNUB LINK ACTIVE
+        <p className="mt-8 text-xs text-slate-700 font-mono-crt">
+          SYSTEM ONLINE // PUBNUB LINK ACTIVE{supabase ? ' // SUPABASE LINK ACTIVE' : ''}
         </p>
       </div>
 
@@ -229,6 +271,7 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
       </div>
 
       {showStats && <StatsPanel onClose={() => setShowStats(false)} />}
+      {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
       {showThemes && (
         <ThemeSelector
           currentTheme={currentTheme}

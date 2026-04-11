@@ -19,7 +19,8 @@ import { Chat } from '../components/Chat';
 import { useMultiplayer } from '../multiplayer/useMultiplayer';
 import { useSound } from '../hooks/useSound';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
-import { saveGame } from '../lib/stats';
+import { useAuth } from '../lib/AuthContext';
+import { saveGameResult } from '../lib/gameResults';
 import { BattleLog } from '../components/BattleLog';
 import { TurnTimer } from '../components/TurnTimer';
 import { GameReplay } from '../components/GameReplay';
@@ -31,7 +32,8 @@ interface MultiplayerPageProps {
 }
 
 export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
-  const [playerName, setPlayerName] = useState('');
+  const { user, profile } = useAuth();
+  const [playerName, setPlayerName] = useState(profile?.display_name || '');
   const [phase, setPhase] = useState<GamePhase>('placement');
   const [playerBoard, setPlayerBoard] = useState<Board>(createEmptyBoard());
   const [opponentBoard, setOpponentBoard] = useState<Board>(createEmptyBoard());
@@ -50,8 +52,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   const [lastDefenseResult, setLastDefenseResult] = useState<'hit' | 'miss' | 'sunk' | null>(null);
   const { play, toggle } = useSound();
   const music = useBackgroundMusic();
-  const [shotCount, setShotCount] = useState(0);
-  const [hitCount, setHitCount] = useState(0);
+  const shotCountRef = useRef(0);
+  const hitCountRef = useRef(0);
   const gameStartTimeRef = useRef<number>(0);
   const [battleLog, setBattleLog] = useState<BattleLogEntry[]>([]);
   const turnCountRef = useRef(0);
@@ -127,7 +129,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     if (validCells.length > 0) {
       const target = validCells[Math.floor(Math.random() * validCells.length)];
       mp.sendAttack(target.row, target.col);
-      setShotCount(prev => prev + 1);
+      shotCountRef.current += 1;
       setIsPlayerTurn(false);
       setMessage('Time\'s up! Auto-fired...');
     }
@@ -277,15 +279,16 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
             setWinner('opponent');
             setMessage('You lose!');
             play('lose');
-            saveGame({
-              date: new Date().toISOString(),
-              mode: 'multiplayer',
-              result: 'loss',
-              playerShots: shotCount,
-              playerHits: hitCount,
-              opponentName: mp.opponentName || 'Opponent',
-              duration: Math.round((Date.now() - gameStartTimeRef.current) / 1000),
-            });
+            if (user) {
+              saveGameResult(user.id, {
+                mode: 'multiplayer',
+                result: 'loss',
+                playerShots: shotCountRef.current,
+                playerHits: hitCountRef.current,
+                opponentName: mp.opponentName || 'Opponent',
+                durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+              });
+            }
             mp.sendGameOver(mp.opponentName || 'Opponent');
             setReplayData({
               playerShipPlacements: playerShipsSnapshotRef.current,
@@ -356,8 +359,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
 
           // Track hits for progress bar
           if (msg.result === 'hit' || msg.result === 'sunk') {
+            hitCountRef.current += 1;
             setPlayerHitsOnOpponentCount(prev => prev + 1);
-            setHitCount(prev => prev + 1);
           }
 
           turnCountRef.current++;
@@ -404,15 +407,16 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
           setWinner('player');
           setMessage('You win!');
           play('win');
-          saveGame({
-            date: new Date().toISOString(),
-            mode: 'multiplayer',
-            result: 'win',
-            playerShots: shotCount,
-            playerHits: hitCount,
-            opponentName: mp.opponentName || 'Opponent',
-            duration: Math.round((Date.now() - gameStartTimeRef.current) / 1000),
-          });
+          if (user) {
+            saveGameResult(user.id, {
+              mode: 'multiplayer',
+              result: 'win',
+              playerShots: shotCountRef.current,
+              playerHits: hitCountRef.current,
+              opponentName: mp.opponentName || 'Opponent',
+              durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+            });
+          }
           setReplayData({
             playerShipPlacements: playerShipsSnapshotRef.current,
             opponentShipPlacements: [],
@@ -424,7 +428,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
         }
       }
     });
-  }, [mp, play, phase]);
+  }, [mp, play, phase, user]);
 
   // Both players ready -> start battle
   useEffect(() => {
@@ -575,8 +579,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
       const cell = opponentBoard[row][col];
       if (cell.state === 'hit' || cell.state === 'miss' || cell.state === 'sunk') return;
 
+      shotCountRef.current += 1;
       mp.sendAttack(row, col);
-      setShotCount(prev => prev + 1);
       setIsPlayerTurn(false);
       setMessage('Waiting for result...');
     },
@@ -600,8 +604,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     setWinner(null);
     setMessage('Place your ships on the board');
     setPlayerHitsOnOpponentCount(0);
-    setShotCount(0);
-    setHitCount(0);
+    shotCountRef.current = 0;
+    hitCountRef.current = 0;
     setBattleLog([]);
     turnCountRef.current = 0;
     replayMovesRef.current = [];
@@ -633,6 +637,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
         roomCode={mp.roomCode}
         isConnecting={mp.isConnecting}
         error={mp.error}
+        defaultName={profile?.display_name}
       />
     );
   }
