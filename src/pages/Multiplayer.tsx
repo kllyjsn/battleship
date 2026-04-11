@@ -21,6 +21,7 @@ import { useSound } from '../hooks/useSound';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 import { saveGame } from '../lib/stats';
 import { BattleLog } from '../components/BattleLog';
+import { TurnTimer } from '../components/TurnTimer';
 
 interface MultiplayerPageProps {
   onBack: () => void;
@@ -51,6 +52,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   const gameStartTimeRef = useRef<number>(0);
   const [battleLog, setBattleLog] = useState<BattleLogEntry[]>([]);
   const turnCountRef = useRef(0);
+  const [turnTimeLeft, setTurnTimeLeft] = useState(30);
+  const turnTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const playerBoardRef = useRef(playerBoard);
   const playerShipsRef = useRef(playerShips);
@@ -69,6 +72,51 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   }, [phase]);
 
   const mp = useMultiplayer(playerName);
+
+  // Turn timer logic
+  useEffect(() => {
+    if (phase === 'battle' && isPlayerTurn) {
+      setTurnTimeLeft(30);
+      if (turnTimerRef.current) clearInterval(turnTimerRef.current);
+      turnTimerRef.current = setInterval(() => {
+        setTurnTimeLeft(prev => {
+          if (prev <= 1) {
+            if (turnTimerRef.current) clearInterval(turnTimerRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (turnTimerRef.current) {
+        clearInterval(turnTimerRef.current);
+        turnTimerRef.current = null;
+      }
+    }
+    return () => {
+      if (turnTimerRef.current) clearInterval(turnTimerRef.current);
+    };
+  }, [phase, isPlayerTurn]);
+
+  const handleTurnTimeout = useCallback(() => {
+    if (phase !== 'battle' || !isPlayerTurn) return;
+    const validCells: { row: number; col: number }[] = [];
+    for (let r = 0; r < 10; r++) {
+      for (let c = 0; c < 10; c++) {
+        const cell = opponentBoard[r][c];
+        if (cell.state === 'empty' || cell.state === 'ship') {
+          validCells.push({ row: r, col: c });
+        }
+      }
+    }
+    if (validCells.length > 0) {
+      const target = validCells[Math.floor(Math.random() * validCells.length)];
+      mp.sendAttack(target.row, target.col);
+      setShotCount(prev => prev + 1);
+      setIsPlayerTurn(false);
+      setMessage('Time\'s up! Auto-fired...');
+    }
+  }, [phase, isPlayerTurn, opponentBoard, mp]);
 
   // Handle incoming multiplayer messages
   useEffect(() => {
@@ -485,17 +533,27 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
                 mode="battle"
               />
             </div>
-            <GameBoard
-              board={getVisibleBoard(opponentBoard, true)}
-              isPlayerBoard={false}
-              isPlacing={false}
-              onCellClick={handlePlayerAttack}
-              title="Enemy Waters"
-              disabled={!isPlayerTurn || phase === 'gameover'}
-              highlight={isPlayerTurn && phase === 'battle'}
-              lastAttackResult={lastAttackResult}
-              lastAttackPos={lastAttackPos}
-            />
+            <div className="flex flex-col items-center gap-2">
+              {phase === 'battle' && isPlayerTurn && (
+                <TurnTimer
+                  seconds={turnTimeLeft}
+                  maxSeconds={30}
+                  isActive={isPlayerTurn && phase === 'battle'}
+                  onTimeout={handleTurnTimeout}
+                />
+              )}
+              <GameBoard
+                board={getVisibleBoard(opponentBoard, true)}
+                isPlayerBoard={false}
+                isPlacing={false}
+                onCellClick={handlePlayerAttack}
+                title="Enemy Waters"
+                disabled={!isPlayerTurn || phase === 'gameover'}
+                highlight={isPlayerTurn && phase === 'battle'}
+                lastAttackResult={lastAttackResult}
+                lastAttackPos={lastAttackPos}
+              />
+            </div>
           </div>
         )}
       </div>
