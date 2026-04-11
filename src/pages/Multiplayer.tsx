@@ -19,6 +19,7 @@ import { Chat } from '../components/Chat';
 import { useMultiplayer } from '../multiplayer/useMultiplayer';
 import { useSound } from '../hooks/useSound';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
+import { saveGame } from '../lib/stats';
 
 interface MultiplayerPageProps {
   onBack: () => void;
@@ -44,6 +45,9 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   const [lastDefenseResult, setLastDefenseResult] = useState<'hit' | 'miss' | 'sunk' | null>(null);
   const { play, toggle } = useSound();
   const music = useBackgroundMusic();
+  const [shotCount, setShotCount] = useState(0);
+  const [hitCount, setHitCount] = useState(0);
+  const gameStartTimeRef = useRef<number>(0);
 
   const playerBoardRef = useRef(playerBoard);
   const playerShipsRef = useRef(playerShips);
@@ -108,6 +112,15 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
             setWinner('opponent');
             setMessage('You lose!');
             play('lose');
+            saveGame({
+              date: new Date().toISOString(),
+              mode: 'multiplayer',
+              result: 'loss',
+              playerShots: shotCount,
+              playerHits: hitCount,
+              opponentName: mp.opponentName || 'Opponent',
+              duration: Math.round((Date.now() - gameStartTimeRef.current) / 1000),
+            });
             mp.sendGameOver(mp.opponentName || 'Opponent');
           } else {
             setIsPlayerTurn(true);
@@ -172,6 +185,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
           // Track hits for progress bar
           if (msg.result === 'hit' || msg.result === 'sunk') {
             setPlayerHitsOnOpponentCount(prev => prev + 1);
+            setHitCount(prev => prev + 1);
           }
 
           if (msg.result === 'hit') {
@@ -199,6 +213,15 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
           setWinner('player');
           setMessage('You win!');
           play('win');
+          saveGame({
+            date: new Date().toISOString(),
+            mode: 'multiplayer',
+            result: 'win',
+            playerShots: shotCount,
+            playerHits: hitCount,
+            opponentName: mp.opponentName || 'Opponent',
+            duration: Math.round((Date.now() - gameStartTimeRef.current) / 1000),
+          });
           break;
         }
       }
@@ -209,6 +232,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   useEffect(() => {
     if (mp.isPlayerReady && mp.opponentReady && phase === 'placement') {
       setPhase('battle');
+      gameStartTimeRef.current = Date.now();
       const isTurn = mp.isHost;
       setIsPlayerTurn(isTurn);
       setMessage(isTurn ? 'Your turn — fire at the enemy grid!' : "Opponent's turn...");
@@ -313,6 +337,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
       if (cell.state === 'hit' || cell.state === 'miss' || cell.state === 'sunk') return;
 
       mp.sendAttack(row, col);
+      setShotCount(prev => prev + 1);
       setIsPlayerTurn(false);
       setMessage('Waiting for result...');
     },
@@ -331,6 +356,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     setWinner(null);
     setMessage('Place your ships on the board');
     setPlayerHitsOnOpponentCount(0);
+    setShotCount(0);
+    setHitCount(0);
     setLastAttackPos(null);
     setLastAttackResult(null);
     setLastDefensePos(null);

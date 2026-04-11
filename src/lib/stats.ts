@@ -1,0 +1,112 @@
+export interface GameRecord {
+  date: string;
+  mode: 'single' | 'multiplayer';
+  difficulty?: 'easy' | 'medium' | 'hard';
+  result: 'win' | 'loss';
+  playerShots: number;
+  playerHits: number;
+  opponentName?: string;
+  duration?: number;
+}
+
+export interface Stats {
+  games: GameRecord[];
+  currentWinStreak: number;
+  bestWinStreak: number;
+}
+
+const STORAGE_KEY = 'battleship-stats';
+
+function defaultStats(): Stats {
+  return { games: [], currentWinStreak: 0, bestWinStreak: 0 };
+}
+
+export function loadStats(): Stats {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultStats();
+    const parsed = JSON.parse(raw) as Stats;
+    return {
+      games: parsed.games ?? [],
+      currentWinStreak: parsed.currentWinStreak ?? 0,
+      bestWinStreak: parsed.bestWinStreak ?? 0,
+    };
+  } catch {
+    return defaultStats();
+  }
+}
+
+export function saveGame(record: GameRecord): Stats {
+  const stats = loadStats();
+  stats.games.push(record);
+
+  if (record.result === 'win') {
+    stats.currentWinStreak++;
+    if (stats.currentWinStreak > stats.bestWinStreak) {
+      stats.bestWinStreak = stats.currentWinStreak;
+    }
+  } else {
+    stats.currentWinStreak = 0;
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
+  return stats;
+}
+
+export interface StatsOverview {
+  totalGames: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  accuracy: number;
+  currentStreak: number;
+  bestStreak: number;
+  perDifficulty: Record<string, { wins: number; losses: number }>;
+  multiplayerWins: number;
+  multiplayerLosses: number;
+}
+
+export function getStatsOverview(stats: Stats): StatsOverview {
+  const totalGames = stats.games.length;
+  const wins = stats.games.filter((g) => g.result === 'win').length;
+  const losses = totalGames - wins;
+  const winRate = totalGames > 0 ? (wins / totalGames) * 100 : 0;
+
+  const totalShots = stats.games.reduce((s, g) => s + g.playerShots, 0);
+  const totalHits = stats.games.reduce((s, g) => s + g.playerHits, 0);
+  const accuracy = totalShots > 0 ? (totalHits / totalShots) * 100 : 0;
+
+  const perDifficulty: Record<string, { wins: number; losses: number }> = {
+    easy: { wins: 0, losses: 0 },
+    medium: { wins: 0, losses: 0 },
+    hard: { wins: 0, losses: 0 },
+  };
+
+  const mpGames = stats.games.filter((g) => g.mode === 'multiplayer');
+  const multiplayerWins = mpGames.filter((g) => g.result === 'win').length;
+  const multiplayerLosses = mpGames.length - multiplayerWins;
+
+  for (const g of stats.games) {
+    if (g.mode === 'single' && g.difficulty && perDifficulty[g.difficulty]) {
+      if (g.result === 'win') perDifficulty[g.difficulty].wins++;
+      else perDifficulty[g.difficulty].losses++;
+    }
+  }
+
+  return {
+    totalGames,
+    wins,
+    losses,
+    winRate,
+    accuracy,
+    currentStreak: stats.currentWinStreak,
+    bestStreak: stats.bestWinStreak,
+    perDifficulty,
+    multiplayerWins,
+    multiplayerLosses,
+  };
+}
+
+export function clearStats(): void {
+  localStorage.removeItem(STORAGE_KEY);
+}

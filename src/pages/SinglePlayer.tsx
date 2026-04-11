@@ -16,6 +16,7 @@ import { GameHUD } from '../components/GameHUD';
 import { GameOver } from '../components/GameOver';
 import { useSound } from '../hooks/useSound';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
+import { saveGame } from '../lib/stats';
 
 interface SinglePlayerProps {
   difficulty: Difficulty;
@@ -42,6 +43,9 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const { play, toggle } = useSound();
   const music = useBackgroundMusic();
   const isProcessingRef = useRef(false);
+  const [shotCount, setShotCount] = useState(0);
+  const [hitCount, setHitCount] = useState(0);
+  const gameStartTimeRef = useRef<number>(0);
 
   // Setup opponent board
   useEffect(() => {
@@ -115,6 +119,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     setPhase('battle');
     setMessage('Your turn — fire at the enemy grid!');
     setIsPlayerTurn(true);
+    gameStartTimeRef.current = Date.now();
     play('click');
   }, [playerShips, play]);
 
@@ -133,6 +138,10 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
       setLastAttack(result);
       setLastAttackPos({ row, col });
       setLastAttackResult(result.result);
+      setShotCount(prev => prev + 1);
+      if (result.result === 'hit' || result.result === 'sunk') {
+        setHitCount(prev => prev + 1);
+      }
 
       if (result.result === 'hit') {
         play('hit');
@@ -150,6 +159,16 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         setWinner('player');
         setMessage('You win!');
         play('win');
+        saveGame({
+          date: new Date().toISOString(),
+          mode: 'single',
+          difficulty,
+          result: 'win',
+          playerShots: shotCount + 1,
+          playerHits: hitCount + (result.result === 'hit' || result.result === 'sunk' ? 1 : 0),
+          opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
+          duration: Math.round((Date.now() - gameStartTimeRef.current) / 1000),
+        });
         isProcessingRef.current = false;
         return;
       }
@@ -199,6 +218,16 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
             setWinner('opponent');
             setMessage('You lose!');
             play('lose');
+            saveGame({
+              date: new Date().toISOString(),
+              mode: 'single',
+              difficulty,
+              result: 'loss',
+              playerShots: shotCount,
+              playerHits: hitCount,
+              opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
+              duration: Math.round((Date.now() - gameStartTimeRef.current) / 1000),
+            });
             isProcessingRef.current = false;
             return;
           }
@@ -231,6 +260,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     setLastAttackResult(null);
     setLastDefensePos(null);
     setLastDefenseResult(null);
+    setShotCount(0);
+    setHitCount(0);
     aiStateRef.current = createAIState();
     isProcessingRef.current = false;
   }, []);
