@@ -33,13 +33,13 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
           {isWin ? 'VICTORY' : 'DEFEATED'}
         </h2>
 
-        <p className="text-slate-400 mb-6 font-mono-crt text-sm">
+        <p className="text-slate-400 mb-8 font-mono-crt text-sm">
           {isWin
             ? `${playerName} sank all of ${opponentName}'s ships!`
             : `${opponentName} sank all of ${playerName.toLowerCase() === 'you' ? 'your' : playerName + "'s"} ships.`}
         </p>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-4">
           <button
             onClick={onPlayAgain}
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded metal-panel-light text-glow-green font-semibold hover:ring-1 hover:ring-green-400/40 transition-all font-mono-crt"

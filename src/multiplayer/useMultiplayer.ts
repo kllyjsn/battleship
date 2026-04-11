@@ -38,6 +38,7 @@ export function useMultiplayer(playerName: string) {
   const userIdRef = useRef<string>('');
   const playerNameRef = useRef<string>(playerName);
   const isHostRef = useRef<boolean>(false);
+  const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep playerNameRef in sync with the playerName prop
   useEffect(() => {
@@ -45,6 +46,10 @@ export function useMultiplayer(playerName: string) {
   }, [playerName]);
 
   const cleanup = useCallback(() => {
+    if (connectTimeoutRef.current) {
+      clearTimeout(connectTimeoutRef.current);
+      connectTimeoutRef.current = null;
+    }
     resetPubNub();
     pubnubRef.current = null;
     channelRef.current = '';
@@ -135,6 +140,10 @@ export function useMultiplayer(playerName: string) {
       },
       status: (event: { category: string }) => {
         if (event.category === 'PNConnectedCategory') {
+          if (connectTimeoutRef.current) {
+            clearTimeout(connectTimeoutRef.current);
+            connectTimeoutRef.current = null;
+          }
           setState(prev => ({ ...prev, isConnecting: false }));
         }
       },
@@ -175,6 +184,15 @@ export function useMultiplayer(playerName: string) {
     }));
 
     subscribe(channel);
+
+    connectTimeoutRef.current = setTimeout(() => {
+      setState(prev => {
+        if (prev.isConnecting) {
+          return { ...prev, isConnecting: false };
+        }
+        return prev;
+      });
+    }, 10000);
   }, [cleanup, subscribe]);
 
   const joinRoom = useCallback((roomCode: string, name: string) => {
@@ -198,6 +216,15 @@ export function useMultiplayer(playerName: string) {
     }));
 
     subscribe(channel);
+
+    connectTimeoutRef.current = setTimeout(() => {
+      setState(prev => {
+        if (prev.isConnecting) {
+          return { ...prev, isConnecting: false };
+        }
+        return prev;
+      });
+    }, 10000);
 
     // Send join message after subscribing, using the name parameter directly
     // to avoid stale closure over playerName state
