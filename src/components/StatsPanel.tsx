@@ -1,58 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { X } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { useAuth } from '../lib/AuthContext';
-import { getMyStats } from '../lib/gameResults';
+import { loadStats, getStatsOverview } from '../lib/stats';
 
 interface StatsPanelProps {
   onClose: () => void;
 }
 
-interface GameResult {
-  id: string;
-  mode: string;
-  difficulty: string | null;
-  result: string;
-  player_shots: number;
-  player_hits: number;
-  opponent_name: string | null;
-  duration_seconds: number | null;
-  created_at: string;
-}
-
 export function StatsPanel({ onClose }: StatsPanelProps) {
-  const { user } = useAuth();
-  const [stats, setStats] = useState<GameResult[] | null>(null);
-  const [loading, setLoading] = useState(true);
+  const overview = useMemo(() => getStatsOverview(loadStats()), []);
 
-  useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-    getMyStats(user.id).then((data) => {
-      setStats(data as GameResult[] | null);
-      setLoading(false);
-    });
-  }, [user]);
+  const totalGames = overview.totalGames;
+  const wins = overview.wins;
+  const losses = overview.losses;
+  const winRate = totalGames > 0 ? overview.winRate.toFixed(1) : '0.0';
+  const accuracy = totalGames > 0 ? overview.accuracy.toFixed(1) : '0.0';
 
-  const totalGames = stats?.length ?? 0;
-  const wins = stats?.filter((g) => g.result === 'win').length ?? 0;
-  const losses = stats?.filter((g) => g.result === 'loss').length ?? 0;
-  const winRate = totalGames > 0 ? ((wins / totalGames) * 100).toFixed(1) : '0.0';
-  const totalShots = stats?.reduce((sum, g) => sum + g.player_shots, 0) ?? 0;
-  const totalHits = stats?.reduce((sum, g) => sum + g.player_hits, 0) ?? 0;
-  const accuracy = totalShots > 0 ? ((totalHits / totalShots) * 100).toFixed(1) : '0.0';
-
-  const difficulties = ['easy', 'medium', 'hard'] as const;
-  const difficultyData = difficulties.map((d) => {
-    const games = stats?.filter((g) => g.difficulty === d) ?? [];
-    return {
-      name: d === 'easy' ? 'Recruit' : d === 'medium' ? 'Captain' : 'Admiral',
-      wins: games.filter((g) => g.result === 'win').length,
-      losses: games.filter((g) => g.result === 'loss').length,
-    };
-  });
+  const difficultyData = [
+    { name: 'Recruit', wins: overview.perDifficulty['easy']?.wins ?? 0, losses: overview.perDifficulty['easy']?.losses ?? 0 },
+    { name: 'Captain', wins: overview.perDifficulty['medium']?.wins ?? 0, losses: overview.perDifficulty['medium']?.losses ?? 0 },
+    { name: 'Admiral', wins: overview.perDifficulty['hard']?.wins ?? 0, losses: overview.perDifficulty['hard']?.losses ?? 0 },
+  ];
 
   const barColors = ['#39ff14', '#ffb000', '#ff3c3c'];
 
@@ -70,15 +38,7 @@ export function StatsPanel({ onClose }: StatsPanelProps) {
           COMBAT STATS
         </h2>
 
-        {!user ? (
-          <p className="text-center text-slate-500 font-mono-crt py-8">
-            Sign in to track your stats
-          </p>
-        ) : loading ? (
-          <p className="text-center text-slate-500 font-mono-crt py-8">
-            Loading stats...
-          </p>
-        ) : totalGames === 0 ? (
+        {totalGames === 0 ? (
           <p className="text-center text-slate-500 font-mono-crt py-8">
             No games played yet. Get out there, Commander!
           </p>

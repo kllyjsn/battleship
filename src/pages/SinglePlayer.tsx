@@ -16,7 +16,6 @@ import { GameHUD } from '../components/GameHUD';
 import { GameOver } from '../components/GameOver';
 import { useSound } from '../hooks/useSound';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
-import { useAuth } from '../lib/AuthContext';
 import { saveGameResult } from '../lib/gameResults';
 import { BattleLog } from '../components/BattleLog';
 import { GameReplay } from '../components/GameReplay';
@@ -48,7 +47,6 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const { play, toggle } = useSound();
   const music = useBackgroundMusic();
   const isProcessingRef = useRef(false);
-  const { user } = useAuth();
   const shotCountRef = useRef(0);
   const hitCountRef = useRef(0);
   const gameStartTimeRef = useRef<number>(0);
@@ -238,17 +236,15 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         setWinner('player');
         setMessage('You win!');
         play('win');
-        if (user) {
-          saveGameResult(user.id, {
-            mode: 'single',
-            difficulty,
-            result: 'win',
-            playerShots: shotCountRef.current,
-            playerHits: hitCountRef.current,
-            opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
-            durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
-          });
-        }
+        saveGameResult({
+          mode: 'single',
+          difficulty,
+          result: 'win',
+          playerShots: shotCountRef.current,
+          playerHits: hitCountRef.current,
+          opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
+          durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+        });
         setReplayData({
           playerShipPlacements: playerShipsSnapshotRef.current,
           opponentShipPlacements: opponentShipsSnapshotRef.current,
@@ -325,17 +321,15 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
             setWinner('opponent');
             setMessage('You lose!');
             play('lose');
-            if (user) {
-              saveGameResult(user.id, {
-                mode: 'single',
-                difficulty,
-                result: 'loss',
-                playerShots: shotCountRef.current,
-                playerHits: hitCountRef.current,
-                opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
-                durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
-              });
-            }
+            saveGameResult({
+              mode: 'single',
+              difficulty,
+              result: 'loss',
+              playerShots: shotCountRef.current,
+              playerHits: hitCountRef.current,
+              opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
+              durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+            });
             setReplayData({
               playerShipPlacements: playerShipsSnapshotRef.current,
               opponentShipPlacements: opponentShipsSnapshotRef.current,
@@ -356,7 +350,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         }, 600);
       }, 500);
     },
-    [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play, user]
+    [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play]
   );
 
   // Keep ref in sync for keyboard handler
@@ -499,6 +493,13 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
             difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI'
           }
           onWatchReplay={replayData ? () => setShowReplay(true) : undefined}
+          gameStats={{
+            mode: 'single',
+            difficulty,
+            shots: shotCountRef.current,
+            hits: hitCountRef.current,
+            durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+          }}
         />
       )}
 

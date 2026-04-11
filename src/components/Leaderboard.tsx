@@ -1,34 +1,36 @@
-import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
-import { useAuth } from '../lib/AuthContext';
-import { getLeaderboard } from '../lib/gameResults';
+import { useState, useMemo } from 'react';
+import { X, Trophy } from 'lucide-react';
+import { getLeaderboard } from '../lib/leaderboard';
+import type { LeaderboardEntry } from '../lib/leaderboard';
 
 interface LeaderboardProps {
   onClose: () => void;
 }
 
-interface LeaderboardEntry {
-  id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  total_games: number;
-  wins: number;
-  losses: number;
-  win_rate: number | null;
-  accuracy: number | null;
+type Period = 'day' | 'week' | 'month';
+
+const PERIOD_LABELS: { key: Period; label: string }[] = [
+  { key: 'day', label: 'TODAY' },
+  { key: 'week', label: 'THIS WEEK' },
+  { key: 'month', label: 'THIS MONTH' },
+];
+
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function getRankColor(index: number): string {
+  if (index === 0) return 'text-yellow-400';
+  if (index === 1) return 'text-slate-300';
+  if (index === 2) return 'text-amber-600';
+  return 'text-slate-500';
 }
 
 export function Leaderboard({ onClose }: LeaderboardProps) {
-  const { user } = useAuth();
-  const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    getLeaderboard().then((data) => {
-      setEntries(data as LeaderboardEntry[] | null);
-      setLoading(false);
-    });
-  }, []);
+  const [period, setPeriod] = useState<Period>('day');
+  const entries: LeaderboardEntry[] = useMemo(() => getLeaderboard(period), [period]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
@@ -40,17 +42,31 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
           <X size={20} />
         </button>
 
-        <h2 className="text-2xl font-bold text-center font-mono-crt text-glow-amber mb-6">
+        <h2 className="text-2xl font-bold text-center font-mono-crt text-glow-amber mb-4">
+          <Trophy size={22} className="inline-block mr-2 -mt-1" />
           LEADERBOARD
         </h2>
 
-        {loading ? (
+        {/* Period tabs */}
+        <div className="flex justify-center gap-2 mb-6">
+          {PERIOD_LABELS.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setPeriod(key)}
+              className={`px-4 py-1.5 rounded text-xs font-mono-crt transition-all ${
+                period === key
+                  ? 'metal-panel text-glow-amber border-amber-500/40'
+                  : 'metal-panel-light text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {entries.length === 0 ? (
           <p className="text-center text-slate-500 font-mono-crt py-8">
-            Loading leaderboard...
-          </p>
-        ) : !entries || entries.length === 0 ? (
-          <p className="text-center text-slate-500 font-mono-crt py-8">
-            No ranked players yet. Be the first!
+            No scores yet for this period. Be the first!
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -59,56 +75,42 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                 <tr className="text-green-500/60 border-b border-slate-700">
                   <th className="py-2 px-2 text-left">#</th>
                   <th className="py-2 px-2 text-left">Player</th>
-                  <th className="py-2 px-2 text-center">Games</th>
-                  <th className="py-2 px-2 text-center">Wins</th>
-                  <th className="py-2 px-2 text-center">Win%</th>
                   <th className="py-2 px-2 text-center">Acc%</th>
+                  <th className="py-2 px-2 text-center">Shots</th>
+                  <th className="py-2 px-2 text-center">Time</th>
+                  <th className="py-2 px-2 text-center">Mode</th>
                 </tr>
               </thead>
               <tbody>
-                {entries.map((entry, index) => {
-                  const isCurrentUser = user?.id === entry.id;
-                  return (
-                    <tr
-                      key={entry.id}
-                      className={`border-b border-slate-700/50 ${
-                        isCurrentUser ? 'bg-green-500/10' : ''
-                      }`}
-                    >
-                      <td className="py-2 px-2 text-slate-500">
-                        {index + 1}
-                      </td>
-                      <td className="py-2 px-2">
-                        <div className="flex items-center gap-2">
-                          {entry.avatar_url ? (
-                            <img
-                              src={entry.avatar_url}
-                              alt=""
-                              className="w-6 h-6 rounded-full"
-                            />
-                          ) : (
-                            <div className="w-6 h-6 rounded-full metal-panel-light" />
-                          )}
-                          <span className={isCurrentUser ? 'text-glow-green' : 'text-slate-300'}>
-                            {entry.display_name || 'Unknown'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-2 px-2 text-center text-slate-400">
-                        {entry.total_games}
-                      </td>
-                      <td className="py-2 px-2 text-center text-glow-green">
-                        {entry.wins}
-                      </td>
-                      <td className="py-2 px-2 text-center text-slate-300">
-                        {entry.win_rate != null ? `${entry.win_rate.toFixed(1)}%` : '—'}
-                      </td>
-                      <td className="py-2 px-2 text-center text-glow-amber">
-                        {entry.accuracy != null ? `${entry.accuracy.toFixed(1)}%` : '—'}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {entries.map((entry, index) => (
+                  <tr
+                    key={entry.id}
+                    className="border-b border-slate-700/50"
+                  >
+                    <td className={`py-2 px-2 font-bold ${getRankColor(index)}`}>
+                      {index + 1}
+                    </td>
+                    <td className="py-2 px-2 text-slate-300">
+                      {entry.playerName}
+                    </td>
+                    <td className="py-2 px-2 text-center text-glow-amber">
+                      {entry.score.toFixed(1)}%
+                    </td>
+                    <td className="py-2 px-2 text-center text-slate-400">
+                      {entry.shots}
+                    </td>
+                    <td className="py-2 px-2 text-center text-slate-400">
+                      {formatDuration(entry.durationSeconds)}
+                    </td>
+                    <td className="py-2 px-2 text-center">
+                      <span className={`text-xs ${entry.mode === 'single' ? 'text-green-400' : 'text-amber-400'}`}>
+                        {entry.mode === 'single'
+                          ? (entry.difficulty === 'easy' ? 'REC' : entry.difficulty === 'medium' ? 'CPT' : 'ADM')
+                          : 'PVP'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
