@@ -16,6 +16,8 @@ import { GameHUD } from '../components/GameHUD';
 import { GameOver } from '../components/GameOver';
 import { useSound } from '../hooks/useSound';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
+import { useAuth } from '../lib/AuthContext';
+import { saveGameResult } from '../lib/gameResults';
 
 interface SinglePlayerProps {
   difficulty: Difficulty;
@@ -38,6 +40,10 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const { play, toggle } = useSound();
   const music = useBackgroundMusic();
   const isProcessingRef = useRef(false);
+  const { user } = useAuth();
+  const shotCountRef = useRef(0);
+  const hitCountRef = useRef(0);
+  const gameStartTimeRef = useRef<number>(0);
 
   // Setup opponent board
   useEffect(() => {
@@ -111,6 +117,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     setPhase('battle');
     setMessage('Your turn — fire at the enemy grid!');
     setIsPlayerTurn(true);
+    gameStartTimeRef.current = Date.now();
     play('click');
   }, [playerShips, play]);
 
@@ -122,6 +129,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
       if (cell.state === 'hit' || cell.state === 'miss' || cell.state === 'sunk') return;
 
       isProcessingRef.current = true;
+      shotCountRef.current += 1;
 
       const { board, ships, result } = processAttack(opponentBoard, opponentShips, row, col);
       setOpponentBoard(board);
@@ -129,9 +137,11 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
       setLastAttack(result);
 
       if (result.result === 'hit') {
+        hitCountRef.current += 1;
         play('hit');
         setMessage('Direct hit!');
       } else if (result.result === 'sunk') {
+        hitCountRef.current += 1;
         play('sunk');
         setMessage(`You sank their ${result.shipName}!`);
       } else {
@@ -144,6 +154,17 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         setWinner('player');
         setMessage('You win!');
         play('win');
+        if (user) {
+          saveGameResult(user.id, {
+            mode: 'single',
+            difficulty,
+            result: 'win',
+            playerShots: shotCountRef.current,
+            playerHits: hitCountRef.current,
+            opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
+            durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+          });
+        }
         isProcessingRef.current = false;
         return;
       }
@@ -191,6 +212,17 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
             setWinner('opponent');
             setMessage('You lose!');
             play('lose');
+            if (user) {
+              saveGameResult(user.id, {
+                mode: 'single',
+                difficulty,
+                result: 'loss',
+                playerShots: shotCountRef.current,
+                playerHits: hitCountRef.current,
+                opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
+                durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+              });
+            }
             isProcessingRef.current = false;
             return;
           }
@@ -203,7 +235,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         }, 600);
       }, 500);
     },
-    [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play]
+    [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play, user]
   );
 
   const handlePlayAgain = useCallback(() => {
@@ -221,6 +253,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     setLastAttack(null);
     aiStateRef.current = createAIState();
     isProcessingRef.current = false;
+    shotCountRef.current = 0;
+    hitCountRef.current = 0;
   }, []);
 
   const playerHitsOnOpponent = opponentShips.reduce((sum, s) => sum + s.hits, 0);
