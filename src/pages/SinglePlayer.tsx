@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import type { Board, Ship, Difficulty, Orientation, GamePhase, AttackResult } from '../engine/types';
+import type { Board, Ship, Difficulty, Orientation, GamePhase, AttackResult, BattleLogEntry } from '../engine/types';
 import { SHIPS, TOTAL_SHIP_CELLS } from '../engine/constants';
 import {
   createEmptyBoard,
@@ -18,6 +18,9 @@ import { useSound } from '../hooks/useSound';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 import { useAuth } from '../lib/AuthContext';
 import { saveGameResult } from '../lib/gameResults';
+import { BattleLog } from '../components/BattleLog';
+import { GameReplay } from '../components/GameReplay';
+import type { ReplayMove, ReplayData } from '../lib/replay';
 
 interface SinglePlayerProps {
   difficulty: Difficulty;
@@ -37,6 +40,10 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const [message, setMessage] = useState('Place your ships on the board');
   const [hideEnemyShots, setHideEnemyShots] = useState(false);
   const [, setLastAttack] = useState<AttackResult | null>(null);
+  const [lastAttackPos, setLastAttackPos] = useState<{ row: number; col: number } | null>(null);
+  const [lastAttackResult, setLastAttackResult] = useState<'hit' | 'miss' | 'sunk' | null>(null);
+  const [lastDefensePos, setLastDefensePos] = useState<{ row: number; col: number } | null>(null);
+  const [lastDefenseResult, setLastDefenseResult] = useState<'hit' | 'miss' | 'sunk' | null>(null);
   const aiStateRef = useRef(createAIState());
   const { play, toggle } = useSound();
   const music = useBackgroundMusic();
@@ -45,6 +52,16 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const shotCountRef = useRef(0);
   const hitCountRef = useRef(0);
   const gameStartTimeRef = useRef<number>(0);
+  const [battleLog, setBattleLog] = useState<BattleLogEntry[]>([]);
+  const turnCountRef = useRef(0);
+  const replayMovesRef = useRef<ReplayMove[]>([]);
+  const [replayData, setReplayData] = useState<ReplayData | null>(null);
+  const [showReplay, setShowReplay] = useState(false);
+  const playerShipsSnapshotRef = useRef<Ship[]>([]);
+  const opponentShipsSnapshotRef = useRef<Ship[]>([]);
+  const [cursorPos, setCursorPos] = useState({ row: 0, col: 0 });
+  const [showCursor, setShowCursor] = useState(false);
+  const handlePlayerAttackRef = useRef<(row: number, col: number) => void>(() => {});
 
   // Setup opponent board
   useEffect(() => {
@@ -106,16 +123,47 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     play('click');
   }, [playerShips, playerBoard, play]);
 
-  // R key to rotate orientation during placement
+  // Keyboard handling: R to rotate during placement, arrow keys + Enter during battle
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (phase === 'placement' && (e.key === 'r' || e.key === 'R')) {
         setOrientation(o => o === 'horizontal' ? 'vertical' : 'horizontal');
       }
+      if (phase === 'battle' && isPlayerTurn) {
+        switch (e.key) {
+          case 'ArrowUp':
+            e.preventDefault();
+            setShowCursor(true);
+            setCursorPos(p => ({ ...p, row: Math.max(0, p.row - 1) }));
+            break;
+          case 'ArrowDown':
+            e.preventDefault();
+            setShowCursor(true);
+            setCursorPos(p => ({ ...p, row: Math.min(9, p.row + 1) }));
+            break;
+          case 'ArrowLeft':
+            e.preventDefault();
+            setShowCursor(true);
+            setCursorPos(p => ({ ...p, col: Math.max(0, p.col - 1) }));
+            break;
+          case 'ArrowRight':
+            e.preventDefault();
+            setShowCursor(true);
+            setCursorPos(p => ({ ...p, col: Math.min(9, p.col + 1) }));
+            break;
+          case 'Enter':
+          case ' ':
+            e.preventDefault();
+            if (showCursor) {
+              handlePlayerAttackRef.current(cursorPos.row, cursorPos.col);
+            }
+            break;
+        }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [phase]);
+  }, [phase, isPlayerTurn, showCursor, cursorPos]);
 
   // Handle drag-select from roster (sets selected ship so placement preview works)
   const handleDragSelectShip = useCallback((shipId: string) => {
@@ -131,8 +179,11 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     setMessage('Your turn — fire at the enemy grid!');
     setIsPlayerTurn(true);
     gameStartTimeRef.current = Date.now();
+    playerShipsSnapshotRef.current = playerShips.map(s => ({ ...s, positions: [...s.positions] }));
+    opponentShipsSnapshotRef.current = opponentShips.map(s => ({ ...s, positions: [...s.positions] }));
+    replayMovesRef.current = [];
     play('click');
-  }, [playerShips, play]);
+  }, [playerShips, opponentShips, play]);
 
   const handlePlayerAttack = useCallback(
     (row: number, col: number) => {
@@ -148,6 +199,26 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
       setOpponentBoard(board);
       setOpponentShips(ships);
       setLastAttack(result);
+      setLastAttackPos({ row, col });
+      setLastAttackResult(result.result);
+      turnCountRef.current++;
+      setBattleLog(prev => [...prev, {
+        id: `p-${turnCountRef.current}`,
+        turn: turnCountRef.current,
+        player: 'player',
+        position: { row, col },
+        result: result.result,
+        shipName: result.shipName,
+        timestamp: Date.now(),
+      }]);
+      replayMovesRef.current.push({
+        player: 'player',
+        row, col,
+        result: result.result,
+        shipName: result.shipName,
+        shipId: result.shipId,
+        shipPositions: result.shipPositions,
+      });
 
       if (result.result === 'hit') {
         hitCountRef.current += 1;
@@ -178,6 +249,14 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
             durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
           });
         }
+        setReplayData({
+          playerShipPlacements: playerShipsSnapshotRef.current,
+          opponentShipPlacements: opponentShipsSnapshotRef.current,
+          moves: [...replayMovesRef.current],
+          winner: 'player',
+          difficulty,
+          date: new Date().toISOString(),
+        });
         isProcessingRef.current = false;
         return;
       }
@@ -199,6 +278,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
           const aiResult = processAttack(playerBoard, playerShips, position.row, position.col);
           setPlayerBoard(aiResult.board);
           setPlayerShips(aiResult.ships);
+          setLastDefensePos({ row: position.row, col: position.col });
+          setLastDefenseResult(aiResult.result.result);
 
           const updatedAIState = updateAIAfterResult(
             newState,
@@ -208,6 +289,25 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
             aiResult.result.shipPositions
           );
           aiStateRef.current = updatedAIState;
+
+          turnCountRef.current++;
+          setBattleLog(prev => [...prev, {
+            id: `o-${turnCountRef.current}`,
+            turn: turnCountRef.current,
+            player: 'opponent',
+            position: { row: position.row, col: position.col },
+            result: aiResult.result.result,
+            shipName: aiResult.result.shipName,
+            timestamp: Date.now(),
+          }]);
+          replayMovesRef.current.push({
+            player: 'opponent',
+            row: position.row, col: position.col,
+            result: aiResult.result.result,
+            shipName: aiResult.result.shipName,
+            shipId: aiResult.result.shipId,
+            shipPositions: aiResult.result.shipPositions,
+          });
 
           if (aiResult.result.result === 'hit') {
             play('hit');
@@ -236,6 +336,14 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
                 durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
               });
             }
+            setReplayData({
+              playerShipPlacements: playerShipsSnapshotRef.current,
+              opponentShipPlacements: opponentShipsSnapshotRef.current,
+              moves: [...replayMovesRef.current],
+              winner: 'opponent',
+              difficulty,
+              date: new Date().toISOString(),
+            });
             isProcessingRef.current = false;
             return;
           }
@@ -251,6 +359,11 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play, user]
   );
 
+  // Keep ref in sync for keyboard handler
+  useEffect(() => {
+    handlePlayerAttackRef.current = handlePlayerAttack;
+  }, [handlePlayerAttack]);
+
   const handlePlayAgain = useCallback(() => {
     const { board: oppBoard, ships: oppShips } = randomPlacement(SHIPS);
     setOpponentBoard(oppBoard);
@@ -264,6 +377,17 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     setWinner(null);
     setMessage('Place your ships on the board');
     setLastAttack(null);
+    setLastAttackPos(null);
+    setLastAttackResult(null);
+    setLastDefensePos(null);
+    setLastDefenseResult(null);
+    setBattleLog([]);
+    turnCountRef.current = 0;
+    replayMovesRef.current = [];
+    setReplayData(null);
+    setShowReplay(false);
+    setCursorPos({ row: 0, col: 0 });
+    setShowCursor(false);
     aiStateRef.current = createAIState();
     isProcessingRef.current = false;
     shotCountRef.current = 0;
@@ -328,6 +452,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
                 title="Your Fleet"
                 disabled={true}
                 ships={playerShips}
+                lastAttackResult={lastDefenseResult}
+                lastAttackPos={lastDefensePos}
                 hideEnemyShots={hideEnemyShots}
                 onToggleHideEnemyShots={() => setHideEnemyShots(h => !h)}
               />
@@ -352,12 +478,19 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
               title="Enemy Waters"
               disabled={!isPlayerTurn || phase === 'gameover'}
               highlight={isPlayerTurn && phase === 'battle'}
+              lastAttackResult={lastAttackResult}
+              lastAttackPos={lastAttackPos}
+              cursorRow={cursorPos.row}
+              cursorCol={cursorPos.col}
+              showCursor={showCursor && isPlayerTurn && phase === 'battle'}
             />
           </div>
         )}
       </div>
 
-      {phase === 'gameover' && winner && (
+      {phase === 'battle' && <BattleLog entries={battleLog} />}
+
+      {phase === 'gameover' && winner && !showReplay && (
         <GameOver
           winner={winner}
           onPlayAgain={handlePlayAgain}
@@ -365,7 +498,12 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
           opponentName={
             difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI'
           }
+          onWatchReplay={replayData ? () => setShowReplay(true) : undefined}
         />
+      )}
+
+      {showReplay && replayData && (
+        <GameReplay replayData={replayData} onClose={() => setShowReplay(false)} />
       )}
     </div>
   );

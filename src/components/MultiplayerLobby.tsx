@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Copy, Check, ArrowLeft, Loader2 } from 'lucide-react';
+import { Copy, Check, ArrowLeft, Loader2, Eye } from 'lucide-react';
 
 interface MultiplayerLobbyProps {
   onCreateRoom: (playerName: string) => void;
   onJoinRoom: (roomCode: string, playerName: string) => void;
+  onSpectate?: (roomCode: string, playerName: string) => void;
   onBack: () => void;
   roomCode: string | null;
   isConnecting: boolean;
@@ -14,13 +15,14 @@ interface MultiplayerLobbyProps {
 export function MultiplayerLobby({
   onCreateRoom,
   onJoinRoom,
+  onSpectate,
   onBack,
   roomCode,
   isConnecting,
   error,
   defaultName,
 }: MultiplayerLobbyProps) {
-  const [mode, setMode] = useState<'select' | 'create' | 'join'>('select');
+  const [mode, setMode] = useState<'select' | 'create' | 'join' | 'spectate'>('select');
   const [joinCode, setJoinCode] = useState('');
   const [playerName, setPlayerName] = useState(defaultName || '');
   const [copied, setCopied] = useState(false);
@@ -92,6 +94,17 @@ export function MultiplayerLobby({
               >
                 JOIN CHANNEL
               </button>
+
+              {onSpectate && (
+                <button
+                  onClick={() => playerName.trim() && setMode('spectate')}
+                  disabled={!playerName.trim()}
+                  className="w-full py-3 rounded metal-panel-light text-slate-400 font-semibold hover:text-amber-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-mono-crt flex items-center justify-center gap-2"
+                >
+                  <Eye size={18} />
+                  SPECTATE
+                </button>
+              )}
             </div>
           )}
 
@@ -163,6 +176,53 @@ export function MultiplayerLobby({
               <button
                 onClick={() => setMode('select')}
                 className="w-full py-2 text-sm text-slate-600 hover:text-green-400 transition-colors font-mono-crt"
+              >
+                ← BACK
+              </button>
+            </div>
+          )}
+
+          {mode === 'spectate' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-amber-500/60 mb-1.5 font-mono-crt">FREQUENCY CODE</label>
+                <input
+                  type="text"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                  placeholder="ENTER CODE"
+                  maxLength={6}
+                  className="w-full px-4 py-3 rounded text-center text-2xl tracking-[0.3em] placeholder-slate-600 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all uppercase font-mono-crt text-amber-300"
+                  style={{ background: 'var(--hull-dark)', border: '1px solid var(--steel-border)' }}
+                />
+              </div>
+
+              <button
+                onClick={() => {
+                  if (joinCode.length >= 4 && onSpectate) {
+                    onSpectate(joinCode, playerName.trim());
+                  }
+                }}
+                disabled={joinCode.length < 4 || isConnecting}
+                className="w-full py-3 rounded metal-panel-light text-glow-amber font-semibold hover:ring-1 hover:ring-amber-400/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-mono-crt"
+                style={{ borderColor: 'rgba(255, 176, 0, 0.2)' }}
+              >
+                {isConnecting ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    CONNECTING...
+                  </>
+                ) : (
+                  <>
+                    <Eye size={18} />
+                    SPECTATE MATCH
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => setMode('select')}
+                className="w-full py-2 text-sm text-slate-600 hover:text-amber-400 transition-colors font-mono-crt"
               >
                 ← BACK
               </button>

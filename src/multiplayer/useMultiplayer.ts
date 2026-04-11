@@ -15,6 +15,7 @@ interface MultiplayerState {
   chatMessages: ChatMessage[];
   error: string | null;
   gameStarted: boolean;
+  isSpectator: boolean;
 }
 
 export function useMultiplayer(playerName: string) {
@@ -30,6 +31,7 @@ export function useMultiplayer(playerName: string) {
     chatMessages: [],
     error: null,
     gameStarted: false,
+    isSpectator: false,
   });
 
   const pubnubRef = useRef<PubNub | null>(null);
@@ -122,6 +124,11 @@ export function useMultiplayer(playerName: string) {
           }));
         }
 
+        if (msg.type === 'SPECTATE' && msg.playerName) {
+          // A spectator joined — send them a sync of current state
+          // The game page handles sending SPECTATOR_SYNC via onMessage
+        }
+
         if (msg.type === 'LEAVE') {
           setState(prev => ({
             ...prev,
@@ -193,6 +200,53 @@ export function useMultiplayer(playerName: string) {
         return prev;
       });
     }, 10000);
+  }, [cleanup, subscribe]);
+
+  const joinAsSpectator = useCallback((roomCode: string, name: string) => {
+    cleanup();
+    const userId = `spectator-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    userIdRef.current = userId;
+    isHostRef.current = false;
+    const pn = getPubNub(userId);
+    pubnubRef.current = pn;
+
+    const channel = getChannelName(roomCode);
+    channelRef.current = channel;
+
+    setState(prev => ({
+      ...prev,
+      roomCode,
+      isHost: false,
+      isConnecting: true,
+      isConnected: true,
+      isSpectator: true,
+      error: null,
+    }));
+
+    subscribe(channel);
+
+    connectTimeoutRef.current = setTimeout(() => {
+      setState(prev => {
+        if (prev.isConnecting) {
+          return { ...prev, isConnecting: false };
+        }
+        return prev;
+      });
+    }, 10000);
+
+    // Send spectate message after subscribing
+    setTimeout(() => {
+      pn.publish({
+        channel,
+        message: {
+          type: 'SPECTATE',
+          playerName: name,
+          playerId: userId,
+          isSpectator: true,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any,
+      });
+    }, 1000);
   }, [cleanup, subscribe]);
 
   const joinRoom = useCallback((roomCode: string, name: string) => {
@@ -288,6 +342,7 @@ export function useMultiplayer(playerName: string) {
       chatMessages: [],
       error: null,
       gameStarted: false,
+      isSpectator: false,
     });
   }, [publish, cleanup]);
 
@@ -344,5 +399,6 @@ export function useMultiplayer(playerName: string) {
     setTurn,
     resetReady,
     sendRematch,
+    joinAsSpectator,
   };
 }

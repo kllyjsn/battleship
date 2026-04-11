@@ -20,6 +20,11 @@ interface GameBoardProps {
   ships?: Ship[];
   onDropShip?: (row: number, col: number) => void;
   onDragSelectShip?: (shipId: string) => void;
+  lastAttackResult?: 'hit' | 'miss' | 'sunk' | null;
+  lastAttackPos?: { row: number; col: number } | null;
+  cursorRow?: number;
+  cursorCol?: number;
+  showCursor?: boolean;
   hideEnemyShots?: boolean;
   onToggleHideEnemyShots?: () => void;
 }
@@ -38,14 +43,29 @@ export function GameBoard({
   ships = [],
   onDropShip,
   onDragSelectShip,
+  lastAttackResult = null,
+  lastAttackPos = null,
+  cursorRow,
+  cursorCol,
+  showCursor = false,
   hideEnemyShots = false,
   onToggleHideEnemyShots,
 }: GameBoardProps) {
   const [hoverPos, setHoverPos] = useState<{ row: number; col: number } | null>(null);
+  const [shaking, setShaking] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
   const cellRef = useRef<HTMLDivElement>(null);
   const [cellSize, setCellSize] = useState({ w: 40, h: 40 });
   const [gridOffset, setGridOffset] = useState({ x: 0, y: 0 });
+
+  // Screen shake on sunk
+  useEffect(() => {
+    if (lastAttackResult === 'sunk') {
+      setShaking(true);
+      const timer = setTimeout(() => setShaking(false), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [lastAttackResult, lastAttackPos]);
 
   // Measure cell size and grid offset for ship overlays
   useEffect(() => {
@@ -128,7 +148,7 @@ export function GameBoard({
       </div>
       <div
         ref={gridRef}
-        className="inline-flex flex-col relative"
+        className={`inline-flex flex-col relative ${shaking ? 'screen-shake' : ''}`}
         onMouseLeave={() => setHoverPos(null)}
         onDragLeave={(e) => {
           if (!gridRef.current?.contains(e.relatedTarget as Node)) {
@@ -142,7 +162,8 @@ export function GameBoard({
           {COL_LABELS.map((label) => (
             <div
               key={label}
-              className="w-8 h-6 sm:w-9 sm:h-7 md:w-10 md:h-8 flex items-center justify-center text-xs text-green-500/50 font-mono-crt"
+              className="w-8 h-6 sm:w-9 sm:h-7 md:w-10 md:h-8 flex items-center justify-center text-xs font-mono-crt"
+              style={{ color: 'var(--text-secondary)' }}
             >
               {label}
             </div>
@@ -152,7 +173,7 @@ export function GameBoard({
         {/* Rows */}
         {board.map((row, rowIdx) => (
           <div key={rowIdx} className="flex">
-            <div className="w-6 h-8 sm:w-7 sm:h-9 md:w-8 md:h-10 flex items-center justify-center text-xs text-green-500/50 font-mono-crt">
+            <div className="w-6 h-8 sm:w-7 sm:h-9 md:w-8 md:h-10 flex items-center justify-center text-xs font-mono-crt" style={{ color: 'var(--text-secondary)' }}>
               {ROW_LABELS[rowIdx]}
             </div>
             {row.map((cell, colIdx) => {
@@ -180,6 +201,12 @@ export function GameBoard({
                     onDrop={isPlacing ? (e) => handleDrop(e, rowIdx, colIdx) : undefined}
                     disabled={disabled}
                     hideShipFill={hasShipImages}
+                    animating={
+                      lastAttackPos && lastAttackPos.row === rowIdx && lastAttackPos.col === colIdx
+                        ? lastAttackResult
+                        : null
+                    }
+                    isCursor={showCursor && cursorRow === rowIdx && cursorCol === colIdx}
                   />
                 </div>
               );
