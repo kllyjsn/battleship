@@ -7,9 +7,16 @@ import { loadTheme, applyTheme } from './lib/themes';
 
 type Screen = 'menu' | 'single' | 'multiplayer';
 
+function getRoomCodeFromURL(): string | null {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('room');
+}
+
 function App() {
-  const [screen, setScreen] = useState<Screen>('menu');
+  const initialRoom = getRoomCodeFromURL();
+  const [screen, setScreen] = useState<Screen>(initialRoom ? 'multiplayer' : 'menu');
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
+  const [joinRoomCode, setJoinRoomCode] = useState<string | null>(initialRoom);
 
   // Load and apply saved theme on mount
   useEffect(() => {
@@ -27,6 +34,11 @@ function App() {
   };
 
   const handleBack = () => {
+    setJoinRoomCode(null);
+    // Clear URL params when going back
+    if (window.location.search) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
     setScreen('menu');
   };
 
@@ -36,7 +48,7 @@ function App() {
       content = <SinglePlayer difficulty={difficulty} onBack={handleBack} />;
       break;
     case 'multiplayer':
-      content = <MultiplayerPage onBack={handleBack} />;
+      content = <MultiplayerPage onBack={handleBack} initialRoomCode={joinRoomCode} />;
       break;
     default:
       content = (

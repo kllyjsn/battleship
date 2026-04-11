@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Copy, Check, ArrowLeft, Loader2, Eye } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Copy, Check, ArrowLeft, Loader2, Eye, Link } from 'lucide-react';
 
 interface MultiplayerLobbyProps {
   onCreateRoom: (playerName: string) => void;
@@ -10,6 +10,14 @@ interface MultiplayerLobbyProps {
   isConnecting: boolean;
   error: string | null;
   defaultName?: string;
+  initialRoomCode?: string;
+}
+
+function buildRoomURL(code: string): string {
+  const url = new URL(window.location.href);
+  url.search = '';
+  url.searchParams.set('room', code);
+  return url.toString();
 }
 
 export function MultiplayerLobby({
@@ -21,15 +29,18 @@ export function MultiplayerLobby({
   isConnecting,
   error,
   defaultName,
+  initialRoomCode,
 }: MultiplayerLobbyProps) {
-  const [mode, setMode] = useState<'select' | 'create' | 'join' | 'spectate'>('select');
-  const [joinCode, setJoinCode] = useState('');
+  const [mode, setMode] = useState<'select' | 'create' | 'join' | 'spectate'>(initialRoomCode ? 'join' : 'select');
+  const [joinCode, setJoinCode] = useState(initialRoomCode || '');
   const [playerName, setPlayerName] = useState(defaultName || '');
   const [copied, setCopied] = useState(false);
 
+  const shareableLink = useMemo(() => roomCode ? buildRoomURL(roomCode) : null, [roomCode]);
+
   const handleCopy = () => {
-    if (roomCode) {
-      navigator.clipboard.writeText(roomCode);
+    if (shareableLink) {
+      navigator.clipboard.writeText(shareableLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -115,16 +126,20 @@ export function MultiplayerLobby({
                   <Loader2 size={32} className="text-green-400 animate-spin" />
                   <p className="text-slate-500 font-mono-crt">ESTABLISHING CHANNEL...</p>
                 </div>
-              ) : roomCode ? (
+              ) : shareableLink ? (
                 <>
-                  <p className="text-slate-500 text-sm font-mono-crt">TRANSMIT THIS FREQUENCY CODE:</p>
-                  <div className="flex items-center justify-center gap-3">
-                    <span className="text-4xl font-bold tracking-[0.3em] px-6 py-3 rounded metal-panel-light font-mono-crt text-glow-green">
-                      {roomCode}
-                    </span>
+                  <p className="text-slate-500 text-sm font-mono-crt">SEND THIS LINK TO YOUR OPPONENT:</p>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="flex-1 px-3 py-2.5 rounded text-sm font-mono-crt text-green-300 truncate text-left"
+                      style={{ background: 'var(--hull-dark)', border: '1px solid var(--steel-border)' }}
+                    >
+                      {shareableLink}
+                    </div>
                     <button
                       onClick={handleCopy}
-                      className="p-2 rounded metal-panel-light text-slate-500 hover:text-green-400 transition-colors"
+                      className="p-2.5 rounded metal-panel-light text-slate-500 hover:text-green-400 transition-colors shrink-0"
+                      title="Copy link"
                     >
                       {copied ? <Check size={18} className="text-green-400" /> : <Copy size={18} />}
                     </button>
@@ -140,26 +155,49 @@ export function MultiplayerLobby({
 
           {mode === 'join' && (
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-green-500/60 mb-1.5 font-mono-crt">FREQUENCY CODE</label>
-                <input
-                  type="text"
-                  value={joinCode}
-                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                  placeholder="ENTER CODE"
-                  maxLength={6}
-                  className="w-full px-4 py-3 rounded text-center text-2xl tracking-[0.3em] placeholder-slate-600 focus:ring-1 focus:ring-green-500/30 focus:outline-none transition-all uppercase font-mono-crt text-green-300"
-                  style={{ background: 'var(--hull-dark)', border: '1px solid var(--steel-border)' }}
-                />
-              </div>
+              {initialRoomCode ? (
+                <div className="flex items-center gap-2 px-3 py-2 rounded metal-panel-light font-mono-crt text-sm">
+                  <Link size={14} className="text-green-500/60 shrink-0" />
+                  <span className="text-green-500/60">ROOM:</span>
+                  <span className="text-glow-green tracking-wider">{joinCode}</span>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm text-green-500/60 mb-1.5 font-mono-crt">FREQUENCY CODE</label>
+                  <input
+                    type="text"
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                    placeholder="ENTER CODE"
+                    maxLength={6}
+                    className="w-full px-4 py-3 rounded text-center text-2xl tracking-[0.3em] placeholder-slate-600 focus:ring-1 focus:ring-green-500/30 focus:outline-none transition-all uppercase font-mono-crt text-green-300"
+                    style={{ background: 'var(--hull-dark)', border: '1px solid var(--steel-border)' }}
+                  />
+                </div>
+              )}
+
+              {!playerName.trim() && (
+                <div>
+                  <label className="block text-sm text-green-500/60 mb-1.5 font-mono-crt">CALLSIGN</label>
+                  <input
+                    type="text"
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    placeholder="Enter callsign"
+                    maxLength={20}
+                    className="w-full px-4 py-2.5 rounded font-mono-crt text-green-300 placeholder-slate-600 focus:ring-1 focus:ring-green-500/30 focus:outline-none transition-all"
+                    style={{ background: 'var(--hull-dark)', border: '1px solid var(--steel-border)' }}
+                  />
+                </div>
+              )}
 
               <button
                 onClick={() => {
-                  if (joinCode.length >= 4) {
+                  if (joinCode.length >= 4 && playerName.trim()) {
                     onJoinRoom(joinCode, playerName.trim());
                   }
                 }}
-                disabled={joinCode.length < 4 || isConnecting}
+                disabled={joinCode.length < 4 || !playerName.trim() || isConnecting}
                 className="w-full py-3 rounded metal-panel-light text-glow-green font-semibold hover:ring-1 hover:ring-green-400/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-mono-crt"
                 style={{ borderColor: 'rgba(57, 255, 20, 0.2)' }}
               >
@@ -174,7 +212,12 @@ export function MultiplayerLobby({
               </button>
 
               <button
-                onClick={() => setMode('select')}
+                onClick={() => {
+                  setMode('select');
+                  if (initialRoomCode) {
+                    setJoinCode('');
+                  }
+                }}
                 className="w-full py-2 text-sm text-slate-600 hover:text-green-400 transition-colors font-mono-crt"
               >
                 ← BACK
@@ -185,14 +228,27 @@ export function MultiplayerLobby({
           {mode === 'spectate' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-amber-500/60 mb-1.5 font-mono-crt">FREQUENCY CODE</label>
+                <label className="block text-sm text-amber-500/60 mb-1.5 font-mono-crt">ROOM LINK OR CODE</label>
                 <input
                   type="text"
                   value={joinCode}
-                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                  placeholder="ENTER CODE"
-                  maxLength={6}
-                  className="w-full px-4 py-3 rounded text-center text-2xl tracking-[0.3em] placeholder-slate-600 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all uppercase font-mono-crt text-amber-300"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    // Extract room code from pasted link
+                    try {
+                      const url = new URL(val);
+                      const room = url.searchParams.get('room');
+                      if (room) {
+                        setJoinCode(room.toUpperCase());
+                        return;
+                      }
+                    } catch {
+                      // Not a URL, treat as code
+                    }
+                    setJoinCode(val.toUpperCase());
+                  }}
+                  placeholder="PASTE LINK OR ENTER CODE"
+                  className="w-full px-4 py-3 rounded text-center text-lg tracking-wider placeholder-slate-600 focus:ring-1 focus:ring-amber-500/30 focus:outline-none transition-all uppercase font-mono-crt text-amber-300"
                   style={{ background: 'var(--hull-dark)', border: '1px solid var(--steel-border)' }}
                 />
               </div>
