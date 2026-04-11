@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import type { Board, Ship, Orientation, GamePhase, MultiplayerMessage } from '../engine/types';
+import type { Board, Ship, Orientation, GamePhase, MultiplayerMessage, BattleLogEntry } from '../engine/types';
 import { SHIPS, TOTAL_SHIP_CELLS } from '../engine/constants';
 import {
   createEmptyBoard,
@@ -20,6 +20,7 @@ import { useMultiplayer } from '../multiplayer/useMultiplayer';
 import { useSound } from '../hooks/useSound';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 import { saveGame } from '../lib/stats';
+import { BattleLog } from '../components/BattleLog';
 
 interface MultiplayerPageProps {
   onBack: () => void;
@@ -48,6 +49,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   const [shotCount, setShotCount] = useState(0);
   const [hitCount, setHitCount] = useState(0);
   const gameStartTimeRef = useRef<number>(0);
+  const [battleLog, setBattleLog] = useState<BattleLogEntry[]>([]);
+  const turnCountRef = useRef(0);
 
   const playerBoardRef = useRef(playerBoard);
   const playerShipsRef = useRef(playerShips);
@@ -95,6 +98,17 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
             result.shipId,
             result.shipPositions
           );
+
+          turnCountRef.current++;
+          setBattleLog(prev => [...prev, {
+            id: `o-${turnCountRef.current}`,
+            turn: turnCountRef.current,
+            player: 'opponent',
+            position: { row: msg.row!, col: msg.col! },
+            result: result.result,
+            shipName: result.shipName,
+            timestamp: Date.now(),
+          }]);
 
           if (result.result === 'hit') {
             play('hit');
@@ -187,6 +201,17 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
             setPlayerHitsOnOpponentCount(prev => prev + 1);
             setHitCount(prev => prev + 1);
           }
+
+          turnCountRef.current++;
+          setBattleLog(prev => [...prev, {
+            id: `p-${turnCountRef.current}`,
+            turn: turnCountRef.current,
+            player: 'player',
+            position: { row: msg.row!, col: msg.col! },
+            result: msg.result!,
+            shipName: msg.shipName,
+            timestamp: Date.now(),
+          }]);
 
           if (msg.result === 'hit') {
             play('hit');
@@ -358,6 +383,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     setPlayerHitsOnOpponentCount(0);
     setShotCount(0);
     setHitCount(0);
+    setBattleLog([]);
+    turnCountRef.current = 0;
     setLastAttackPos(null);
     setLastAttackResult(null);
     setLastDefensePos(null);
@@ -472,6 +499,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
           </div>
         )}
       </div>
+
+      {phase === 'battle' && <BattleLog entries={battleLog} />}
 
       {phase !== 'placement' && (
         <Chat

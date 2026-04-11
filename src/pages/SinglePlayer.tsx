@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import type { Board, Ship, Difficulty, Orientation, GamePhase, AttackResult } from '../engine/types';
+import type { Board, Ship, Difficulty, Orientation, GamePhase, AttackResult, BattleLogEntry } from '../engine/types';
 import { SHIPS, TOTAL_SHIP_CELLS } from '../engine/constants';
 import {
   createEmptyBoard,
@@ -17,6 +17,7 @@ import { GameOver } from '../components/GameOver';
 import { useSound } from '../hooks/useSound';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 import { saveGame } from '../lib/stats';
+import { BattleLog } from '../components/BattleLog';
 
 interface SinglePlayerProps {
   difficulty: Difficulty;
@@ -46,6 +47,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const [shotCount, setShotCount] = useState(0);
   const [hitCount, setHitCount] = useState(0);
   const gameStartTimeRef = useRef<number>(0);
+  const [battleLog, setBattleLog] = useState<BattleLogEntry[]>([]);
+  const turnCountRef = useRef(0);
 
   // Setup opponent board
   useEffect(() => {
@@ -143,6 +146,17 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         setHitCount(prev => prev + 1);
       }
 
+      turnCountRef.current++;
+      setBattleLog(prev => [...prev, {
+        id: `p-${turnCountRef.current}`,
+        turn: turnCountRef.current,
+        player: 'player',
+        position: { row, col },
+        result: result.result,
+        shipName: result.shipName,
+        timestamp: Date.now(),
+      }]);
+
       if (result.result === 'hit') {
         play('hit');
         setMessage('Direct hit!');
@@ -201,6 +215,17 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
             aiResult.result.shipPositions
           );
           aiStateRef.current = updatedAIState;
+
+          turnCountRef.current++;
+          setBattleLog(prev => [...prev, {
+            id: `o-${turnCountRef.current}`,
+            turn: turnCountRef.current,
+            player: 'opponent',
+            position: { row: position.row, col: position.col },
+            result: aiResult.result.result,
+            shipName: aiResult.result.shipName,
+            timestamp: Date.now(),
+          }]);
 
           if (aiResult.result.result === 'hit') {
             play('hit');
@@ -262,6 +287,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     setLastDefenseResult(null);
     setShotCount(0);
     setHitCount(0);
+    setBattleLog([]);
+    turnCountRef.current = 0;
     aiStateRef.current = createAIState();
     isProcessingRef.current = false;
   }, []);
@@ -353,6 +380,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
           </div>
         )}
       </div>
+
+      {phase === 'battle' && <BattleLog entries={battleLog} />}
 
       {phase === 'gameover' && winner && (
         <GameOver

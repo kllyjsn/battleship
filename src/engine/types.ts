@@ -83,3 +83,13 @@ export interface ChatMessage {
   message: string;
   timestamp: number;
 }
+
+export interface BattleLogEntry {
+  id: string;
+  turn: number;
+  player: 'player' | 'opponent';
+  position: Position;
+  result: 'hit' | 'miss' | 'sunk';
+  shipName?: string;
+  timestamp: number;
+}
