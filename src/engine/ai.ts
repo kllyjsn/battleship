@@ -124,8 +124,8 @@ function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Po
     }
   }
 
-  let best: Position | null = null;
   let bestScore = -1;
+  const topCandidates: Position[] = [];
 
   for (let r = 0; r < BOARD_SIZE; r++) {
     for (let c = 0; c < BOARD_SIZE; c++) {
@@ -134,12 +134,16 @@ function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Po
       if (state === 'miss' || state === 'sunk' || state === 'hit') continue;
       if (density[r][c] > bestScore) {
         bestScore = density[r][c];
-        best = { row: r, col: c };
+        topCandidates.length = 0;
+        topCandidates.push({ row: r, col: c });
+      } else if (density[r][c] === bestScore && bestScore > 0) {
+        topCandidates.push({ row: r, col: c });
       }
     }
   }
 
-  return best;
+  if (topCandidates.length === 0) return null;
+  return topCandidates[Math.floor(Math.random() * topCandidates.length)];
 }
 
 export function getAIMove(

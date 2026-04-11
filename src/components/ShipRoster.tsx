@@ -1,5 +1,5 @@
 import type { ShipDefinition, Ship, Orientation } from '../engine/types';
-import { RotateCw } from 'lucide-react';
+import { RotateCw, Undo2 } from 'lucide-react';
 import { ShipSVG } from './ShipSVG';
 import React, { useCallback } from 'react';
 
@@ -14,6 +14,7 @@ interface ShipRosterProps {
   onReady: () => void;
   isReady: boolean;
   mode: 'placement' | 'battle';
+  onUndoShip?: () => void;
 }
 
 export function ShipRoster({
@@ -27,8 +28,10 @@ export function ShipRoster({
   onReady,
   isReady,
   mode,
+  onUndoShip,
 }: ShipRosterProps) {
   const allPlaced = placedShips.length === shipDefs.length;
+  const hasPlacedShips = placedShips.length > 0;
 
   const handleDragStart = useCallback((e: React.DragEvent, shipId: string) => {
     e.dataTransfer.setData('text/plain', shipId);
@@ -155,6 +158,7 @@ export function ShipRoster({
         <button
           onClick={onRotate}
           className="flex-1 flex items-center justify-center gap-2 px-3 py-2 metal-panel-light rounded text-sm text-green-300/70 hover:text-green-300 transition-all font-mono-crt"
+          title="Rotate ship orientation (R)"
         >
           <RotateCw size={14} />
           {orientation === 'horizontal' ? 'Horizontal' : 'Vertical'}
@@ -166,6 +170,21 @@ export function ShipRoster({
           Randomize
         </button>
       </div>
+
+      {onUndoShip && (
+        <button
+          onClick={onUndoShip}
+          disabled={!hasPlacedShips}
+          className={`w-full flex items-center justify-center gap-2 px-3 py-2 mb-3 metal-panel-light rounded text-sm transition-all font-mono-crt ${
+            hasPlacedShips
+              ? 'text-amber-400/80 hover:text-amber-300 hover:ring-1 hover:ring-amber-400/30'
+              : 'text-slate-600 cursor-not-allowed'
+          }`}
+        >
+          <Undo2 size={14} />
+          Undo Last Ship
+        </button>
+      )}
 
       <button
         onClick={onReady}
