@@ -1,4 +1,4 @@
-import { Crosshair, Users, Anchor, Zap, Brain, Shield, Cpu, Target, BarChart3, Dice5, Swords, Gamepad2, Palette, LogIn, LogOut, Trophy, Loader2 } from 'lucide-react';
+import { Crosshair, Users, Anchor, Zap, Brain, Shield, Cpu, Target, BarChart3, Dice5, Swords, Gamepad2, Palette, LogIn, LogOut, Trophy, Loader2, Mail } from 'lucide-react';
 import type { Difficulty } from '../engine/types';
 import { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
@@ -19,7 +19,14 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
   const [showThemes, setShowThemes] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(loadTheme());
   const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const { user, profile, loading, signInWithGoogle, signOut } = useAuth();
+  const [showAuthForm, setShowAuthForm] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authDisplayName, setAuthDisplayName] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
+  const { user, profile, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut } = useAuth();
 
   const difficulties: { level: Difficulty; label: string; description: string; icon: React.ReactNode; color: string }[] = [
     { level: 'easy', label: 'Recruit', description: 'Random attacks, no strategy', icon: <Shield size={20} />, color: 'from-green-700 to-green-900' },
@@ -57,11 +64,11 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
             </div>
           ) : (
             <button
-              onClick={signInWithGoogle}
+              onClick={() => { setShowAuthForm(true); setAuthError(null); }}
               className="flex items-center gap-2 px-4 py-2 rounded metal-panel-light text-green-300 hover:text-glow-green transition-colors text-sm font-mono-crt hover:ring-1 hover:ring-green-400/40"
             >
               <LogIn size={16} />
-              SIGN IN WITH GOOGLE
+              SIGN IN
             </button>
           )}
         </div>
@@ -278,6 +285,142 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
           onSelectTheme={setCurrentTheme}
           onClose={() => setShowThemes(false)}
         />
+      )}
+
+      {/* Auth Modal */}
+      {showAuthForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
+          <div className="metal-panel rounded-xl p-6 max-w-sm w-full animate-fadeIn relative">
+            <button
+              onClick={() => { setShowAuthForm(false); setAuthError(null); }}
+              className="absolute top-4 right-4 text-slate-500 hover:text-green-400 transition-colors text-xs font-mono-crt"
+            >
+              ✕
+            </button>
+
+            <h2 className="text-xl font-bold text-center font-mono-crt text-glow-green mb-6">
+              {authMode === 'signin' ? 'SIGN IN' : 'CREATE ACCOUNT'}
+            </h2>
+
+            {/* Email / Password form */}
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setAuthError(null);
+                setAuthLoading(true);
+                if (authMode === 'signup') {
+                  const { error } = await signUpWithEmail(authEmail, authPassword, authDisplayName || authEmail.split('@')[0]);
+                  if (error) setAuthError(error);
+                  else {
+                    setAuthError(null);
+                    setShowAuthForm(false);
+                  }
+                } else {
+                  const { error } = await signInWithEmail(authEmail, authPassword);
+                  if (error) setAuthError(error);
+                  else {
+                    setAuthError(null);
+                    setShowAuthForm(false);
+                  }
+                }
+                setAuthLoading(false);
+              }}
+              className="space-y-3"
+            >
+              {authMode === 'signup' && (
+                <div>
+                  <label className="block text-xs text-slate-500 font-mono-crt mb-1">CALLSIGN</label>
+                  <input
+                    type="text"
+                    value={authDisplayName}
+                    onChange={(e) => setAuthDisplayName(e.target.value)}
+                    placeholder="Your display name"
+                    className="w-full px-3 py-2 rounded metal-panel-light text-green-300 font-mono-crt text-sm bg-transparent border border-slate-700 focus:border-green-500/50 focus:outline-none placeholder-slate-600"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs text-slate-500 font-mono-crt mb-1">EMAIL</label>
+                <input
+                  type="email"
+                  required
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  placeholder="operator@navy.mil"
+                  className="w-full px-3 py-2 rounded metal-panel-light text-green-300 font-mono-crt text-sm bg-transparent border border-slate-700 focus:border-green-500/50 focus:outline-none placeholder-slate-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-500 font-mono-crt mb-1">PASSWORD</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3 py-2 rounded metal-panel-light text-green-300 font-mono-crt text-sm bg-transparent border border-slate-700 focus:border-green-500/50 focus:outline-none placeholder-slate-600"
+                />
+              </div>
+
+              {authError && (
+                <p className="text-xs text-red-400 font-mono-crt">{authError}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={authLoading}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded metal-panel text-green-300 hover:text-glow-green hover:border-green-500/40 transition-all text-sm font-mono-crt disabled:opacity-50"
+              >
+                {authLoading ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
+                {authMode === 'signin' ? 'SIGN IN WITH EMAIL' : 'CREATE ACCOUNT'}
+              </button>
+            </form>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 my-4">
+              <div className="flex-1 h-px bg-slate-700" />
+              <span className="text-xs text-slate-600 font-mono-crt">OR</span>
+              <div className="flex-1 h-px bg-slate-700" />
+            </div>
+
+            {/* Google sign-in */}
+            <button
+              onClick={() => { signInWithGoogle(); setShowAuthForm(false); }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded metal-panel text-slate-300 hover:text-glow-amber hover:border-amber-500/40 transition-all text-sm font-mono-crt"
+            >
+              <LogIn size={16} />
+              SIGN IN WITH GOOGLE
+            </button>
+
+            {/* Toggle mode */}
+            <p className="text-center mt-4 text-xs text-slate-500 font-mono-crt">
+              {authMode === 'signin' ? (
+                <>
+                  No account?{' '}
+                  <button
+                    onClick={() => { setAuthMode('signup'); setAuthError(null); }}
+                    className="text-green-400 hover:text-glow-green transition-colors underline"
+                  >
+                    Create one
+                  </button>
+                </>
+              ) : (
+                <>
+                  Already have an account?{' '}
+                  <button
+                    onClick={() => { setAuthMode('signin'); setAuthError(null); }}
+                    className="text-green-400 hover:text-glow-green transition-colors underline"
+                  >
+                    Sign in
+                  </button>
+                </>
+              )}
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );
