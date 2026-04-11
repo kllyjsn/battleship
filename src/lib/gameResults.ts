@@ -15,12 +15,12 @@ export async function saveGameResult(userId: string, input: GameResultInput) {
   const { data, error } = await supabase.from('game_results').insert({
     user_id: userId,
     mode: input.mode,
-    difficulty: input.difficulty || null,
+    difficulty: input.difficulty ?? null,
     result: input.result,
     player_shots: input.playerShots,
     player_hits: input.playerHits,
-    opponent_name: input.opponentName || null,
-    duration_seconds: input.durationSeconds || null,
+    opponent_name: input.opponentName ?? null,
+    duration_seconds: input.durationSeconds ?? null,
   }).select().single();
   if (error) console.error('Failed to save game result:', error);
   return data;
