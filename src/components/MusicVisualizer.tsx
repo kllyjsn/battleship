@@ -1,4 +1,4 @@
-import { Music, MusicIcon } from 'lucide-react';
+import { Music, Music2 } from 'lucide-react';
 
 interface MusicVisualizerProps {
   isPlaying: boolean;
@@ -22,7 +22,7 @@ export function MusicVisualizer({ isPlaying, freqData, onToggle }: MusicVisualiz
       {isPlaying ? (
         <Music size={14} className="flex-shrink-0" />
       ) : (
-        <MusicIcon size={14} className="flex-shrink-0" />
+        <Music2 size={14} className="flex-shrink-0" />
       )}
 
       {/* Compact bar visualizer */}
