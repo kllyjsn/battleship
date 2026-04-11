@@ -175,6 +175,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
         if (!spectatorSyncedRef.current) return;
         if (msg.type === 'ATTACK_RESULT') {
           if (msg.row === undefined || msg.col === undefined || !msg.result) return;
+          // Transition to battle phase if still in placement
+          setPhase(prev => prev === 'placement' ? 'battle' : prev);
           // Update the board that was attacked
           // We update both boards to show revealed cells
           const updateBoard = (prev: Board) => {
