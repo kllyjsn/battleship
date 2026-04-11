@@ -34,6 +34,10 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const [winner, setWinner] = useState<'player' | 'opponent' | null>(null);
   const [message, setMessage] = useState('Place your ships on the board');
   const [, setLastAttack] = useState<AttackResult | null>(null);
+  const [lastAttackPos, setLastAttackPos] = useState<{ row: number; col: number } | null>(null);
+  const [lastAttackResult, setLastAttackResult] = useState<'hit' | 'miss' | 'sunk' | null>(null);
+  const [lastDefensePos, setLastDefensePos] = useState<{ row: number; col: number } | null>(null);
+  const [lastDefenseResult, setLastDefenseResult] = useState<'hit' | 'miss' | 'sunk' | null>(null);
   const aiStateRef = useRef(createAIState());
   const { play, toggle } = useSound();
   const music = useBackgroundMusic();
@@ -127,6 +131,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
       setOpponentBoard(board);
       setOpponentShips(ships);
       setLastAttack(result);
+      setLastAttackPos({ row, col });
+      setLastAttackResult(result.result);
 
       if (result.result === 'hit') {
         play('hit');
@@ -165,6 +171,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
           const aiResult = processAttack(playerBoard, playerShips, position.row, position.col);
           setPlayerBoard(aiResult.board);
           setPlayerShips(aiResult.ships);
+          setLastDefensePos({ row: position.row, col: position.col });
+          setLastDefenseResult(aiResult.result.result);
 
           const updatedAIState = updateAIAfterResult(
             newState,
@@ -219,6 +227,10 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     setWinner(null);
     setMessage('Place your ships on the board');
     setLastAttack(null);
+    setLastAttackPos(null);
+    setLastAttackResult(null);
+    setLastDefensePos(null);
+    setLastDefenseResult(null);
     aiStateRef.current = createAIState();
     isProcessingRef.current = false;
   }, []);
@@ -280,6 +292,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
                 title="Your Fleet"
                 disabled={true}
                 ships={playerShips}
+                lastAttackResult={lastDefenseResult}
+                lastAttackPos={lastDefensePos}
               />
               <ShipRoster
                 shipDefs={SHIPS}
@@ -302,6 +316,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
               title="Enemy Waters"
               disabled={!isPlayerTurn || phase === 'gameover'}
               highlight={isPlayerTurn && phase === 'battle'}
+              lastAttackResult={lastAttackResult}
+              lastAttackPos={lastAttackPos}
             />
           </div>
         )}

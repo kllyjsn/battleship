@@ -38,6 +38,10 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   const [message, setMessage] = useState('Place your ships on the board');
   const [inLobby, setInLobby] = useState(true);
   const [playerHitsOnOpponentCount, setPlayerHitsOnOpponentCount] = useState(0);
+  const [lastAttackPos, setLastAttackPos] = useState<{ row: number; col: number } | null>(null);
+  const [lastAttackResult, setLastAttackResult] = useState<'hit' | 'miss' | 'sunk' | null>(null);
+  const [lastDefensePos, setLastDefensePos] = useState<{ row: number; col: number } | null>(null);
+  const [lastDefenseResult, setLastDefenseResult] = useState<'hit' | 'miss' | 'sunk' | null>(null);
   const { play, toggle } = useSound();
   const music = useBackgroundMusic();
 
@@ -73,6 +77,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
           );
           setPlayerBoard(board);
           setPlayerShips(ships);
+          setLastDefensePos({ row: msg.row, col: msg.col });
+          setLastDefenseResult(result.result);
 
           playerBoardRef.current = board;
           playerShipsRef.current = ships;
@@ -112,6 +118,9 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
 
         case 'ATTACK_RESULT': {
           if (msg.row === undefined || msg.col === undefined || !msg.result) return;
+
+          setLastAttackPos({ row: msg.row!, col: msg.col! });
+          setLastAttackResult(msg.result);
 
           setOpponentBoard(prev => {
             const newBoard = prev.map(r => r.map(c => ({ ...c })));
@@ -322,6 +331,10 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     setWinner(null);
     setMessage('Place your ships on the board');
     setPlayerHitsOnOpponentCount(0);
+    setLastAttackPos(null);
+    setLastAttackResult(null);
+    setLastDefensePos(null);
+    setLastDefenseResult(null);
     // BUG-0005 fix: Use REMATCH handshake instead of resetReady() to avoid
     // race condition where opponent's early READY gets wiped.
     mp.sendRematch();
@@ -402,6 +415,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
                 title="Your Fleet"
                 disabled={true}
                 ships={playerShips}
+                lastAttackResult={lastDefenseResult}
+                lastAttackPos={lastDefensePos}
               />
               <ShipRoster
                 shipDefs={SHIPS}
@@ -424,6 +439,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
               title="Enemy Waters"
               disabled={!isPlayerTurn || phase === 'gameover'}
               highlight={isPlayerTurn && phase === 'battle'}
+              lastAttackResult={lastAttackResult}
+              lastAttackPos={lastAttackPos}
             />
           </div>
         )}

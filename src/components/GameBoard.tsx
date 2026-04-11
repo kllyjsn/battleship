@@ -19,6 +19,8 @@ interface GameBoardProps {
   ships?: Ship[];
   onDropShip?: (row: number, col: number) => void;
   onDragSelectShip?: (shipId: string) => void;
+  lastAttackResult?: 'hit' | 'miss' | 'sunk' | null;
+  lastAttackPos?: { row: number; col: number } | null;
 }
 
 export function GameBoard({
@@ -35,12 +37,24 @@ export function GameBoard({
   ships = [],
   onDropShip,
   onDragSelectShip,
+  lastAttackResult = null,
+  lastAttackPos = null,
 }: GameBoardProps) {
   const [hoverPos, setHoverPos] = useState<{ row: number; col: number } | null>(null);
+  const [shaking, setShaking] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
   const cellRef = useRef<HTMLDivElement>(null);
   const [cellSize, setCellSize] = useState({ w: 40, h: 40 });
   const [gridOffset, setGridOffset] = useState({ x: 0, y: 0 });
+
+  // Screen shake on sunk
+  useEffect(() => {
+    if (lastAttackResult === 'sunk') {
+      setShaking(true);
+      const timer = setTimeout(() => setShaking(false), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [lastAttackResult]);
 
   // Measure cell size and grid offset for ship overlays
   useEffect(() => {
@@ -112,7 +126,7 @@ export function GameBoard({
       </h3>
       <div
         ref={gridRef}
-        className="inline-flex flex-col relative"
+        className={`inline-flex flex-col relative ${shaking ? 'screen-shake' : ''}`}
         onMouseLeave={() => setHoverPos(null)}
         onDragLeave={(e) => {
           if (!gridRef.current?.contains(e.relatedTarget as Node)) {
@@ -164,6 +178,11 @@ export function GameBoard({
                     onDrop={isPlacing ? (e) => handleDrop(e, rowIdx, colIdx) : undefined}
                     disabled={disabled}
                     hideShipFill={hasShipImages}
+                    animating={
+                      lastAttackPos && lastAttackPos.row === rowIdx && lastAttackPos.col === colIdx
+                        ? lastAttackResult
+                        : null
+                    }
                   />
                 </div>
               );
