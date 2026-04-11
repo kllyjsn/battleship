@@ -24,6 +24,7 @@ import { BattleLog } from '../components/BattleLog';
 import { TurnTimer } from '../components/TurnTimer';
 import { GameReplay } from '../components/GameReplay';
 import type { ReplayMove, ReplayData } from '../lib/replay';
+import { Eye } from 'lucide-react';
 
 interface MultiplayerPageProps {
   onBack: () => void;
@@ -63,6 +64,11 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   const handlePlayerAttackRef = useRef<(row: number, col: number) => void>(() => {});
   const [turnTimeLeft, setTurnTimeLeft] = useState(30);
   const turnTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [spectatorHostBoard, setSpectatorHostBoard] = useState<Board>(createEmptyBoard());
+  const [spectatorGuestBoard, setSpectatorGuestBoard] = useState<Board>(createEmptyBoard());
+  const [spectatorHostName, setSpectatorHostName] = useState('Player 1');
+  const [spectatorGuestName, setSpectatorGuestName] = useState('Player 2');
+  const [spectatorHostTurn, setSpectatorHostTurn] = useState(true);
 
   const playerBoardRef = useRef(playerBoard);
   const playerShipsRef = useRef(playerShips);
@@ -130,7 +136,87 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   // Handle incoming multiplayer messages
   useEffect(() => {
     mp.setMessageHandler((msg: MultiplayerMessage) => {
+      // Spectator sync handling
+      if (mp.isSpectator && msg.type === 'SPECTATOR_SYNC') {
+        if (msg.phase === 'battle' || msg.phase === 'gameover') {
+          setPhase(msg.phase);
+          setInLobby(false);
+        }
+        if (msg.hostName) setSpectatorHostName(msg.hostName);
+        if (msg.guestName) setSpectatorGuestName(msg.guestName);
+        if (msg.isHostTurn !== undefined) setSpectatorHostTurn(msg.isHostTurn);
+        return;
+      }
+
+      // Spectator: observe attacks live
+      if (mp.isSpectator) {
+        if (msg.type === 'ATTACK_RESULT') {
+          if (msg.row === undefined || msg.col === undefined || !msg.result) return;
+          // Update the board that was attacked
+          // We update both boards to show revealed cells
+          const updateBoard = (prev: Board) => {
+            const newBoard = prev.map(r => r.map(c => ({ ...c })));
+            if (msg.result === 'sunk' && msg.shipPositions) {
+              for (const pos of msg.shipPositions) {
+                newBoard[pos.row][pos.col] = {
+                  ...newBoard[pos.row][pos.col],
+                  state: 'sunk',
+                  shipId: msg.shipId || null,
+                };
+              }
+            } else {
+              newBoard[msg.row!][msg.col!] = {
+                ...newBoard[msg.row!][msg.col!],
+                state: msg.result === 'hit' ? 'hit' : 'miss',
+              };
+            }
+            return newBoard;
+          };
+
+          // The attack result is for the board of whoever was attacked
+          // If it's host's turn, host attacked guest's board
+          if (spectatorHostTurn) {
+            setSpectatorGuestBoard(updateBoard);
+          } else {
+            setSpectatorHostBoard(updateBoard);
+          }
+          setSpectatorHostTurn(prev => !prev);
+
+          turnCountRef.current++;
+          setBattleLog(prev => [...prev, {
+            id: `s-${turnCountRef.current}`,
+            turn: turnCountRef.current,
+            player: spectatorHostTurn ? 'player' : 'opponent',
+            position: { row: msg.row!, col: msg.col! },
+            result: msg.result!,
+            shipName: msg.shipName,
+            timestamp: Date.now(),
+          }]);
+          return;
+        }
+        if (msg.type === 'GAME_OVER') {
+          setPhase('gameover');
+          setWinner(msg.winner === spectatorHostName ? 'player' : 'opponent');
+          return;
+        }
+        return;
+      }
+
       switch (msg.type) {
+        case 'SPECTATE': {
+          // A spectator joined — send them sync info
+          if (msg.isSpectator) {
+            mp.publish({
+              type: 'SPECTATOR_SYNC',
+              phase: phaseRef.current,
+              hostName: mp.isHost ? playerName : mp.opponentName || 'Player 2',
+              guestName: mp.isHost ? mp.opponentName || 'Player 2' : playerName,
+              isHostTurn: mp.isHost ? isPlayerTurn : !isPlayerTurn,
+            });
+          }
+          break;
+        }
+
         case 'ATTACK': {
           if (msg.row === undefined || msg.col === undefined) return;
           const { board, ships, result } = processAttack(
@@ -376,6 +462,14 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     [mp]
   );
 
+  const handleSpectate = useCallback(
+    (code: string, name: string) => {
+      setPlayerName(name);
+      mp.joinAsSpectator(code, name);
+    },
+    [mp]
+  );
+
   const handlePlaceShip = useCallback(
     (row: number, col: number) => {
       if (phase !== 'placement' || !selectedShipId) return;
@@ -534,6 +628,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
       <MultiplayerLobby
         onCreateRoom={handleCreateRoom}
         onJoinRoom={handleJoinRoom}
+        onSpectate={handleSpectate}
         onBack={onBack}
         roomCode={mp.roomCode}
         isConnecting={mp.isConnecting}
@@ -544,6 +639,84 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
 
   const playerHitsOnOpponent = playerHitsOnOpponentCount;
   const opponentHitsOnPlayer = playerShips.reduce((sum, s) => sum + s.hits, 0);
+
+  // Spectator view
+  if (mp.isSpectator) {
+    return (
+      <div className="min-h-screen flex flex-col" style={{ background: 'radial-gradient(ellipse at center, #141c2b 0%, #0a0e1a 70%)' }}>
+        <GameHUD
+          isPlayerTurn={spectatorHostTurn}
+          message={phase === 'gameover' ? `${winner === 'player' ? spectatorHostName : spectatorGuestName} wins!` : `${spectatorHostTurn ? spectatorHostName : spectatorGuestName}'s turn`}
+          phase={phase}
+          onToggleSound={toggle}
+          onBack={handleGoHome}
+          playerHits={0}
+          opponentHits={0}
+          totalShipCells={TOTAL_SHIP_CELLS}
+          isMusicPlaying={music.isPlaying}
+          musicFreqData={music.freqData}
+          onToggleMusic={music.toggle}
+        />
+
+        <div className="flex justify-center py-2">
+          <div className="flex items-center gap-2 px-4 py-1.5 rounded metal-panel-light font-mono-crt text-glow-amber text-sm">
+            <Eye size={16} />
+            SPECTATING
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-8 p-4">
+          {phase === 'placement' ? (
+            <div className="text-center font-mono-crt text-slate-500">
+              <Eye size={32} className="mx-auto mb-4 text-amber-400/50" />
+              <p className="text-lg text-glow-amber">WAITING FOR MATCH TO BEGIN</p>
+              <p className="text-sm mt-2">Players are placing their ships...</p>
+            </div>
+          ) : (
+            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-4 lg:gap-8">
+              <div className="flex flex-col items-center gap-2">
+                <div className={`text-sm font-mono-crt mb-1 ${spectatorHostTurn && phase === 'battle' ? 'text-glow-green' : 'text-slate-500'}`}>
+                  {spectatorHostName}{spectatorHostTurn && phase === 'battle' ? ' ◄' : ''}
+                </div>
+                <GameBoard
+                  board={spectatorHostBoard}
+                  isPlayerBoard={true}
+                  isPlacing={false}
+                  title={`${spectatorHostName}'s Fleet`}
+                  disabled={true}
+                  ships={[]}
+                />
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <div className={`text-sm font-mono-crt mb-1 ${!spectatorHostTurn && phase === 'battle' ? 'text-glow-green' : 'text-slate-500'}`}>
+                  {spectatorGuestName}{!spectatorHostTurn && phase === 'battle' ? ' ◄' : ''}
+                </div>
+                <GameBoard
+                  board={spectatorGuestBoard}
+                  isPlayerBoard={false}
+                  isPlacing={false}
+                  title={`${spectatorGuestName}'s Fleet`}
+                  disabled={true}
+                  ships={[]}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {phase === 'battle' && <BattleLog entries={battleLog} />}
+
+        {phase === 'gameover' && winner && (
+          <GameOver
+            winner={winner}
+            onPlayAgain={handleGoHome}
+            onGoHome={handleGoHome}
+            opponentName={winner === 'player' ? spectatorGuestName : spectatorHostName}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'radial-gradient(ellipse at center, #141c2b 0%, #0a0e1a 70%)' }}>

@@ -61,7 +61,7 @@ export interface GameState {
 }
 
 export interface MultiplayerMessage {
-  type: 'JOIN' | 'READY' | 'ATTACK' | 'ATTACK_RESULT' | 'GAME_OVER' | 'CHAT' | 'REMATCH' | 'LEAVE';
+  type: 'JOIN' | 'READY' | 'ATTACK' | 'ATTACK_RESULT' | 'GAME_OVER' | 'CHAT' | 'REMATCH' | 'LEAVE' | 'SPECTATE' | 'SPECTATOR_SYNC';
   playerName?: string;
   playerId?: string;
   ships?: Ship[];
@@ -75,6 +75,12 @@ export interface MultiplayerMessage {
   message?: string;
   sender?: string;
   accepted?: boolean;
+  isSpectator?: boolean;
+  boardState?: Board;
+  phase?: GamePhase;
+  hostName?: string;
+  guestName?: string;
+  isHostTurn?: boolean;
 }
 
 export interface ChatMessage {
