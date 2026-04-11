@@ -75,6 +75,9 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   const playerBoardRef = useRef(playerBoard);
   const playerShipsRef = useRef(playerShips);
   const phaseRef = useRef(phase);
+  const isPlayerTurnRef = useRef(isPlayerTurn);
+  const spectatorHostTurnRef = useRef(spectatorHostTurn);
+  const spectatorHostNameRef = useRef(spectatorHostName);
 
   useEffect(() => {
     playerBoardRef.current = playerBoard;
@@ -87,6 +90,18 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   useEffect(() => {
     phaseRef.current = phase;
   }, [phase]);
+
+  useEffect(() => {
+    isPlayerTurnRef.current = isPlayerTurn;
+  }, [isPlayerTurn]);
+
+  useEffect(() => {
+    spectatorHostTurnRef.current = spectatorHostTurn;
+  }, [spectatorHostTurn]);
+
+  useEffect(() => {
+    spectatorHostNameRef.current = spectatorHostName;
+  }, [spectatorHostName]);
 
   const mp = useMultiplayer(playerName);
 
@@ -177,18 +192,20 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
 
           // The attack result is for the board of whoever was attacked
           // If it's host's turn, host attacked guest's board
-          if (spectatorHostTurn) {
+          const hostTurn = spectatorHostTurnRef.current;
+          if (hostTurn) {
             setSpectatorGuestBoard(updateBoard);
           } else {
             setSpectatorHostBoard(updateBoard);
           }
           setSpectatorHostTurn(prev => !prev);
+          spectatorHostTurnRef.current = !hostTurn;
 
           turnCountRef.current++;
           setBattleLog(prev => [...prev, {
             id: `s-${turnCountRef.current}`,
             turn: turnCountRef.current,
-            player: spectatorHostTurn ? 'player' : 'opponent',
+            player: hostTurn ? 'player' : 'opponent',
             position: { row: msg.row!, col: msg.col! },
             result: msg.result!,
             shipName: msg.shipName,
@@ -198,7 +215,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
         }
         if (msg.type === 'GAME_OVER') {
           setPhase('gameover');
-          setWinner(msg.winner === spectatorHostName ? 'player' : 'opponent');
+          setWinner(msg.winner === spectatorHostNameRef.current ? 'player' : 'opponent');
           return;
         }
         return;
@@ -213,7 +230,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
               phase: phaseRef.current,
               hostName: mp.isHost ? playerName : mp.opponentName || 'Player 2',
               guestName: mp.isHost ? mp.opponentName || 'Player 2' : playerName,
-              isHostTurn: mp.isHost ? isPlayerTurn : !isPlayerTurn,
+              isHostTurn: mp.isHost ? isPlayerTurnRef.current : !isPlayerTurnRef.current,
             });
           }
           break;
