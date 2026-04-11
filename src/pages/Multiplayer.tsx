@@ -60,6 +60,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   const [replayData, setReplayData] = useState<ReplayData | null>(null);
   const [showReplay, setShowReplay] = useState(false);
   const playerShipsSnapshotRef = useRef<Ship[]>([]);
+  const gameDurationRef = useRef(0);
   const [cursorPos, setCursorPos] = useState({ row: 0, col: 0 });
   const [showCursor, setShowCursor] = useState(false);
   const handlePlayerAttackRef = useRef<(row: number, col: number) => void>(() => {});
@@ -302,13 +303,14 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
             setWinner('opponent');
             setMessage('You lose!');
             play('lose');
+            gameDurationRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
             saveGameResult({
               mode: 'multiplayer',
               result: 'loss',
               playerShots: shotCountRef.current,
               playerHits: hitCountRef.current,
               opponentName: mp.opponentName || 'Opponent',
-              durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+              durationSeconds: gameDurationRef.current,
             });
             mp.sendGameOver(mp.opponentName || 'Opponent');
             setReplayData({
@@ -429,13 +431,14 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
           setWinner('player');
           setMessage('You win!');
           play('win');
+          gameDurationRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
           saveGameResult({
             mode: 'multiplayer',
             result: 'win',
             playerShots: shotCountRef.current,
             playerHits: hitCountRef.current,
             opponentName: mp.opponentName || 'Opponent',
-            durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+            durationSeconds: gameDurationRef.current,
           });
           setReplayData({
             playerShipPlacements: playerShipsSnapshotRef.current,
@@ -882,7 +885,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
             mode: 'multiplayer',
             shots: shotCountRef.current,
             hits: hitCountRef.current,
-            durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+            durationSeconds: gameDurationRef.current,
           }}
         />
       )}
