@@ -176,7 +176,7 @@ export function MultiplayerLobby({
                 </div>
               )}
 
-              {!playerName.trim() && (
+              {!defaultName && (
                 <div>
                   <label className="block text-sm text-green-500/60 mb-1.5 font-mono-crt">CALLSIGN</label>
                   <input
