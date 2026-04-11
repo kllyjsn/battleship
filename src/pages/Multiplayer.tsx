@@ -19,13 +19,16 @@ import { Chat } from '../components/Chat';
 import { useMultiplayer } from '../multiplayer/useMultiplayer';
 import { useSound } from '../hooks/useSound';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
+import { useAuth } from '../lib/AuthContext';
+import { saveGameResult } from '../lib/gameResults';
 
 interface MultiplayerPageProps {
   onBack: () => void;
 }
 
 export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
-  const [playerName, setPlayerName] = useState('');
+  const { user, profile } = useAuth();
+  const [playerName, setPlayerName] = useState(profile?.display_name || '');
   const [phase, setPhase] = useState<GamePhase>('placement');
   const [playerBoard, setPlayerBoard] = useState<Board>(createEmptyBoard());
   const [opponentBoard, setOpponentBoard] = useState<Board>(createEmptyBoard());
@@ -40,6 +43,9 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   const [playerHitsOnOpponentCount, setPlayerHitsOnOpponentCount] = useState(0);
   const { play, toggle } = useSound();
   const music = useBackgroundMusic();
+  const shotCountRef = useRef(0);
+  const hitCountRef = useRef(0);
+  const gameStartTimeRef = useRef<number>(0);
 
   const playerBoardRef = useRef(playerBoard);
   const playerShipsRef = useRef(playerShips);
@@ -102,6 +108,16 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
             setWinner('opponent');
             setMessage('You lose!');
             play('lose');
+            if (user) {
+              saveGameResult(user.id, {
+                mode: 'multiplayer',
+                result: 'loss',
+                playerShots: shotCountRef.current,
+                playerHits: hitCountRef.current,
+                opponentName: mp.opponentName || 'Opponent',
+                durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+              });
+            }
             mp.sendGameOver(mp.opponentName || 'Opponent');
           } else {
             setIsPlayerTurn(true);
@@ -162,6 +178,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
 
           // Track hits for progress bar
           if (msg.result === 'hit' || msg.result === 'sunk') {
+            hitCountRef.current += 1;
             setPlayerHitsOnOpponentCount(prev => prev + 1);
           }
 
@@ -190,16 +207,27 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
           setWinner('player');
           setMessage('You win!');
           play('win');
+          if (user) {
+            saveGameResult(user.id, {
+              mode: 'multiplayer',
+              result: 'win',
+              playerShots: shotCountRef.current,
+              playerHits: hitCountRef.current,
+              opponentName: mp.opponentName || 'Opponent',
+              durationSeconds: Math.floor((Date.now() - gameStartTimeRef.current) / 1000),
+            });
+          }
           break;
         }
       }
     });
-  }, [mp, play, phase]);
+  }, [mp, play, phase, user]);
 
   // Both players ready -> start battle
   useEffect(() => {
     if (mp.isPlayerReady && mp.opponentReady && phase === 'placement') {
       setPhase('battle');
+      gameStartTimeRef.current = Date.now();
       const isTurn = mp.isHost;
       setIsPlayerTurn(isTurn);
       setMessage(isTurn ? 'Your turn — fire at the enemy grid!' : "Opponent's turn...");
@@ -303,6 +331,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
       const cell = opponentBoard[row][col];
       if (cell.state === 'hit' || cell.state === 'miss' || cell.state === 'sunk') return;
 
+      shotCountRef.current += 1;
       mp.sendAttack(row, col);
       setIsPlayerTurn(false);
       setMessage('Waiting for result...');
@@ -322,6 +351,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     setWinner(null);
     setMessage('Place your ships on the board');
     setPlayerHitsOnOpponentCount(0);
+    shotCountRef.current = 0;
+    hitCountRef.current = 0;
     // BUG-0005 fix: Use REMATCH handshake instead of resetReady() to avoid
     // race condition where opponent's early READY gets wiped.
     mp.sendRematch();
@@ -341,6 +372,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
         roomCode={mp.roomCode}
         isConnecting={mp.isConnecting}
         error={mp.error}
+        defaultName={profile?.display_name}
       />
     );
   }
