@@ -14,10 +14,7 @@ interface MultiplayerLobbyProps {
 }
 
 function buildRoomURL(code: string): string {
-  const url = new URL(window.location.href);
-  url.search = '';
-  url.searchParams.set('room', code);
-  return url.toString();
+  return `${window.location.origin}/join/${code}`;
 }
 
 export function MultiplayerLobby({
@@ -237,6 +234,13 @@ export function MultiplayerLobby({
                     // Extract room code from pasted link
                     try {
                       const url = new URL(val);
+                      // Support /join/CODE path format
+                      const pathMatch = url.pathname.match(/^\/join\/([A-Za-z0-9]+)$/);
+                      if (pathMatch) {
+                        setJoinCode(pathMatch[1].toUpperCase());
+                        return;
+                      }
+                      // Fallback: support ?room=CODE query param
                       const room = url.searchParams.get('room');
                       if (room) {
                         setJoinCode(room.toUpperCase());

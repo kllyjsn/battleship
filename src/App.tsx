@@ -8,8 +8,12 @@ import { loadTheme, applyTheme } from './lib/themes';
 type Screen = 'menu' | 'single' | 'multiplayer';
 
 function getRoomCodeFromURL(): string | null {
+  // Support /join/CODE path format
+  const match = window.location.pathname.match(/^\/join\/([A-Za-z0-9]+)$/);
+  if (match) return match[1].toUpperCase();
+  // Fallback: support ?room=CODE query param
   const params = new URLSearchParams(window.location.search);
-  return params.get('room');
+  return params.get('room')?.toUpperCase() || null;
 }
 
 function App() {
@@ -35,9 +39,9 @@ function App() {
 
   const handleBack = () => {
     setJoinRoomCode(null);
-    // Clear URL params when going back
-    if (window.location.search) {
-      window.history.replaceState({}, '', window.location.pathname);
+    // Clear join path or query params when going back
+    if (window.location.pathname !== '/' || window.location.search) {
+      window.history.replaceState({}, '', '/');
     }
     setScreen('menu');
   };
