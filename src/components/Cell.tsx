@@ -51,7 +51,7 @@ export function Cell({
       case 'hit':
         return `${base} bg-red-900/60 border-red-700/50 cell-hit`;
       case 'miss':
-        return `${base} bg-[#111a28] border-[#1a2535] cell-miss`;
+        return `${base} bg-[#0f1825] border-[#1e3045] cell-miss`;
       case 'sunk':
         return `${base} bg-red-900/70 border-red-700/50 cell-sunk`;
       default:
@@ -79,7 +79,7 @@ export function Cell({
       )}
       {state === 'miss' && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-3 h-3 rounded-full bg-green-500/20 ring-1 ring-green-500/20" />
+          <div className="w-2 h-2 rounded-full bg-slate-400/40 ring-1 ring-slate-400/25" />
         </div>
       )}
       {state === 'sunk' && (
