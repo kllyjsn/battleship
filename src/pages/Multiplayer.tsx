@@ -16,7 +16,6 @@ import { GameHUD } from '../components/GameHUD';
 import { GameOver } from '../components/GameOver';
 import { MultiplayerLobby } from '../components/MultiplayerLobby';
 import { Chat } from '../components/Chat';
-import { MusicVisualizer } from '../components/MusicVisualizer';
 import { useMultiplayer } from '../multiplayer/useMultiplayer';
 import { useSound } from '../hooks/useSound';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
@@ -360,6 +359,9 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
         playerHits={opponentHitsOnPlayer}
         opponentHits={playerHitsOnOpponent}
         totalShipCells={TOTAL_SHIP_CELLS}
+        isMusicPlaying={music.isPlaying}
+        musicFreqData={music.freqData}
+        onToggleMusic={music.toggle}
       />
 
       <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-8 p-4">
@@ -426,12 +428,6 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
           </div>
         )}
       </div>
-
-      <MusicVisualizer
-        isPlaying={music.isPlaying}
-        freqData={music.freqData}
-        onToggle={music.toggle}
-      />
 
       {phase !== 'placement' && (
         <Chat

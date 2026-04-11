@@ -1,5 +1,6 @@
 import { Volume2, VolumeX, ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
+import { MusicVisualizer } from './MusicVisualizer';
 
 interface GameHUDProps {
   isPlayerTurn: boolean;
@@ -10,6 +11,9 @@ interface GameHUDProps {
   playerHits: number;
   opponentHits: number;
   totalShipCells: number;
+  isMusicPlaying: boolean;
+  musicFreqData: number[];
+  onToggleMusic: () => void;
 }
 
 export function GameHUD({
@@ -21,6 +25,9 @@ export function GameHUD({
   playerHits,
   opponentHits,
   totalShipCells,
+  isMusicPlaying,
+  musicFreqData,
+  onToggleMusic,
 }: GameHUDProps) {
   const [soundOn, setSoundOn] = useState(true);
 
@@ -54,13 +61,22 @@ export function GameHUD({
           {message}
         </div>
 
-        <button
-          onClick={handleToggle}
-          className="flex-shrink-0 text-slate-500 hover:text-green-400 transition-colors p-1"
-          title={soundOn ? 'Mute Sonar' : 'Enable Sonar'}
-        >
-          {soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
-        </button>
+        {/* Audio controls */}
+        <div className="flex-shrink-0 flex items-center gap-0.5">
+          <MusicVisualizer
+            isPlaying={isMusicPlaying}
+            freqData={musicFreqData}
+            onToggle={onToggleMusic}
+          />
+          <div className="w-px h-4 bg-slate-700/50" />
+          <button
+            onClick={handleToggle}
+            className="text-slate-500 hover:text-green-400 transition-colors p-1"
+            title={soundOn ? 'Mute Sonar' : 'Enable Sonar'}
+          >
+            {soundOn ? <Volume2 size={15} /> : <VolumeX size={15} />}
+          </button>
+        </div>
       </div>
 
       {/* Progress bars row - separate line to avoid overlap */}

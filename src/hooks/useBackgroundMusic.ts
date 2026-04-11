@@ -7,23 +7,37 @@ let sharedContext: AudioContext | null = null;
 let sharedAnalyser: AnalyserNode | null = null;
 let sharedSource: MediaElementAudioSourceNode | null = null;
 let refCount = 0;
+let sourceConnected = false;
 
 function getOrCreateAudio() {
   if (!sharedAudio) {
     sharedAudio = new Audio(MUSIC_URL);
     sharedAudio.loop = true;
-    sharedAudio.volume = 0.35;
+    sharedAudio.volume = 0.5;
     sharedAudio.preload = 'auto';
+    sourceConnected = false;
   }
+
   if (!sharedContext) {
     sharedContext = new AudioContext();
     sharedAnalyser = sharedContext.createAnalyser();
     sharedAnalyser.fftSize = 64;
     sharedAnalyser.smoothingTimeConstant = 0.8;
-    sharedSource = sharedContext.createMediaElementSource(sharedAudio);
-    sharedSource.connect(sharedAnalyser);
-    sharedAnalyser.connect(sharedContext.destination);
   }
+
+  // Connect source → analyser → destination only once per audio element
+  if (!sourceConnected && sharedContext && sharedAnalyser) {
+    try {
+      sharedSource = sharedContext.createMediaElementSource(sharedAudio);
+      sharedSource.connect(sharedAnalyser);
+      sharedAnalyser.connect(sharedContext.destination);
+      sourceConnected = true;
+    } catch {
+      // Already connected (e.g., HMR re-run) — mark so we don't retry
+      sourceConnected = true;
+    }
+  }
+
   return { audio: sharedAudio, analyser: sharedAnalyser! };
 }
 
@@ -39,6 +53,7 @@ export function useBackgroundMusic() {
       if (refCount <= 0) {
         sharedAudio?.pause();
         sharedAudio = null;
+        sourceConnected = false;
         if (sharedContext) {
           sharedContext.close().catch(() => {});
           sharedContext = null;
@@ -81,14 +96,21 @@ export function useBackgroundMusic() {
 
   const play = useCallback(() => {
     const { audio } = getOrCreateAudio();
-    if (sharedContext?.state === 'suspended') {
-      sharedContext.resume();
-    }
-    audio.play().then(() => {
-      setIsPlaying(true);
-    }).catch(() => {
-      // Autoplay blocked — will retry on next user interaction
-    });
+
+    const resumeAndPlay = async () => {
+      try {
+        // Resume AudioContext first — required on mobile browsers
+        if (sharedContext && sharedContext.state === 'suspended') {
+          await sharedContext.resume();
+        }
+        await audio.play();
+        setIsPlaying(true);
+      } catch (err) {
+        console.warn('[Music] Playback failed:', err);
+      }
+    };
+
+    resumeAndPlay();
   }, []);
 
   const pause = useCallback(() => {
