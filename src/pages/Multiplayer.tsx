@@ -71,6 +71,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   const [spectatorHostName, setSpectatorHostName] = useState('Player 1');
   const [spectatorGuestName, setSpectatorGuestName] = useState('Player 2');
   const [spectatorHostTurn, setSpectatorHostTurn] = useState(true);
+  const spectatorSyncedRef = useRef(false);
 
   const playerBoardRef = useRef(playerBoard);
   const playerShipsRef = useRef(playerShips);
@@ -155,7 +156,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     mp.setMessageHandler((msg: MultiplayerMessage) => {
       // Spectator sync handling
       if (mp.isSpectator && msg.type === 'SPECTATOR_SYNC') {
-        if (msg.phase === 'battle' || msg.phase === 'gameover') {
+        spectatorSyncedRef.current = true;
+        if (msg.phase) {
           setPhase(msg.phase);
           setInLobby(false);
         }
@@ -165,8 +167,9 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
         return;
       }
 
-      // Spectator: observe attacks live
+      // Spectator: observe attacks live (only after initial sync)
       if (mp.isSpectator) {
+        if (!spectatorSyncedRef.current) return;
         if (msg.type === 'ATTACK_RESULT') {
           if (msg.row === undefined || msg.col === undefined || !msg.result) return;
           // Update the board that was attacked
