@@ -22,6 +22,8 @@ import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 import { saveGame } from '../lib/stats';
 import { BattleLog } from '../components/BattleLog';
 import { TurnTimer } from '../components/TurnTimer';
+import { GameReplay } from '../components/GameReplay';
+import type { ReplayMove, ReplayData } from '../lib/replay';
 
 interface MultiplayerPageProps {
   onBack: () => void;
@@ -52,6 +54,10 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
   const gameStartTimeRef = useRef<number>(0);
   const [battleLog, setBattleLog] = useState<BattleLogEntry[]>([]);
   const turnCountRef = useRef(0);
+  const replayMovesRef = useRef<ReplayMove[]>([]);
+  const [replayData, setReplayData] = useState<ReplayData | null>(null);
+  const [showReplay, setShowReplay] = useState(false);
+  const playerShipsSnapshotRef = useRef<Ship[]>([]);
   const [turnTimeLeft, setTurnTimeLeft] = useState(30);
   const turnTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -157,6 +163,14 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
             shipName: result.shipName,
             timestamp: Date.now(),
           }]);
+          replayMovesRef.current.push({
+            player: 'opponent',
+            row: msg.row!, col: msg.col!,
+            result: result.result,
+            shipName: result.shipName,
+            shipId: result.shipId,
+            shipPositions: result.shipPositions,
+          });
 
           if (result.result === 'hit') {
             play('hit');
@@ -184,6 +198,13 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
               duration: Math.round((Date.now() - gameStartTimeRef.current) / 1000),
             });
             mp.sendGameOver(mp.opponentName || 'Opponent');
+            setReplayData({
+              playerShipPlacements: playerShipsSnapshotRef.current,
+              opponentShipPlacements: [],
+              moves: [...replayMovesRef.current],
+              winner: 'opponent',
+              date: new Date().toISOString(),
+            });
           } else {
             setIsPlayerTurn(true);
             setTimeout(() => setMessage('Your turn — fire at the enemy grid!'), 1000);
@@ -260,6 +281,14 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
             shipName: msg.shipName,
             timestamp: Date.now(),
           }]);
+          replayMovesRef.current.push({
+            player: 'player',
+            row: msg.row!, col: msg.col!,
+            result: msg.result!,
+            shipName: msg.shipName,
+            shipId: msg.shipId,
+            shipPositions: msg.shipPositions,
+          });
 
           if (msg.result === 'hit') {
             play('hit');
@@ -294,6 +323,13 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
             playerHits: hitCount,
             opponentName: mp.opponentName || 'Opponent',
             duration: Math.round((Date.now() - gameStartTimeRef.current) / 1000),
+          });
+          setReplayData({
+            playerShipPlacements: playerShipsSnapshotRef.current,
+            opponentShipPlacements: [],
+            moves: [...replayMovesRef.current],
+            winner: 'player',
+            date: new Date().toISOString(),
           });
           break;
         }
@@ -399,6 +435,8 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     if (playerShips.length !== SHIPS.length) return;
     mp.sendReady();
     setMessage('Waiting for opponent to place ships...');
+    playerShipsSnapshotRef.current = playerShips.map(s => ({ ...s, positions: [...s.positions] }));
+    replayMovesRef.current = [];
     play('click');
   }, [playerShips, mp, play]);
 
@@ -433,6 +471,9 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
     setHitCount(0);
     setBattleLog([]);
     turnCountRef.current = 0;
+    replayMovesRef.current = [];
+    setReplayData(null);
+    setShowReplay(false);
     setLastAttackPos(null);
     setLastAttackResult(null);
     setLastDefensePos(null);
@@ -568,13 +609,18 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
         />
       )}
 
-      {phase === 'gameover' && winner && (
+      {phase === 'gameover' && winner && !showReplay && (
         <GameOver
           winner={winner}
           onPlayAgain={handlePlayAgain}
           onGoHome={handleGoHome}
           opponentName={mp.opponentName || 'Opponent'}
+          onWatchReplay={replayData ? () => setShowReplay(true) : undefined}
         />
+      )}
+
+      {showReplay && replayData && (
+        <GameReplay replayData={replayData} onClose={() => setShowReplay(false)} />
       )}
     </div>
   );

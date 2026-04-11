@@ -1,4 +1,4 @@
-import { Trophy, Skull, RotateCw, Home } from 'lucide-react';
+import { Trophy, Skull, RotateCw, Home, Play } from 'lucide-react';
 
 interface GameOverProps {
   winner: 'player' | 'opponent';
@@ -6,9 +6,10 @@ interface GameOverProps {
   onGoHome: () => void;
   playerName?: string;
   opponentName?: string;
+  onWatchReplay?: () => void;
 }
 
-export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', opponentName = 'Opponent' }: GameOverProps) {
+export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', opponentName = 'Opponent', onWatchReplay }: GameOverProps) {
   const isWin = winner === 'player';
 
   return (
@@ -48,6 +49,16 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
             <RotateCw size={18} />
             DEPLOY AGAIN
           </button>
+          {onWatchReplay && (
+            <button
+              onClick={onWatchReplay}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded metal-panel-light text-amber-400 font-semibold hover:ring-1 hover:ring-amber-400/40 transition-all font-mono-crt"
+              style={{ borderColor: 'rgba(255, 176, 0, 0.3)' }}
+            >
+              <Play size={18} />
+              WATCH REPLAY
+            </button>
+          )}
           <button
             onClick={onGoHome}
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded metal-panel-light text-slate-400 font-semibold hover:text-green-300 transition-all font-mono-crt"

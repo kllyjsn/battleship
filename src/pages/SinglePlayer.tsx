@@ -18,6 +18,8 @@ import { useSound } from '../hooks/useSound';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 import { saveGame } from '../lib/stats';
 import { BattleLog } from '../components/BattleLog';
+import { GameReplay } from '../components/GameReplay';
+import type { ReplayMove, ReplayData } from '../lib/replay';
 
 interface SinglePlayerProps {
   difficulty: Difficulty;
@@ -49,6 +51,11 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const gameStartTimeRef = useRef<number>(0);
   const [battleLog, setBattleLog] = useState<BattleLogEntry[]>([]);
   const turnCountRef = useRef(0);
+  const replayMovesRef = useRef<ReplayMove[]>([]);
+  const [replayData, setReplayData] = useState<ReplayData | null>(null);
+  const [showReplay, setShowReplay] = useState(false);
+  const playerShipsSnapshotRef = useRef<Ship[]>([]);
+  const opponentShipsSnapshotRef = useRef<Ship[]>([]);
 
   // Setup opponent board
   useEffect(() => {
@@ -123,8 +130,11 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     setMessage('Your turn — fire at the enemy grid!');
     setIsPlayerTurn(true);
     gameStartTimeRef.current = Date.now();
+    playerShipsSnapshotRef.current = playerShips.map(s => ({ ...s, positions: [...s.positions] }));
+    opponentShipsSnapshotRef.current = opponentShips.map(s => ({ ...s, positions: [...s.positions] }));
+    replayMovesRef.current = [];
     play('click');
-  }, [playerShips, play]);
+  }, [playerShips, opponentShips, play]);
 
   const handlePlayerAttack = useCallback(
     (row: number, col: number) => {
@@ -156,6 +166,14 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         shipName: result.shipName,
         timestamp: Date.now(),
       }]);
+      replayMovesRef.current.push({
+        player: 'player',
+        row, col,
+        result: result.result,
+        shipName: result.shipName,
+        shipId: result.shipId,
+        shipPositions: result.shipPositions,
+      });
 
       if (result.result === 'hit') {
         play('hit');
@@ -182,6 +200,14 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
           playerHits: hitCount + (result.result === 'hit' || result.result === 'sunk' ? 1 : 0),
           opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
           duration: Math.round((Date.now() - gameStartTimeRef.current) / 1000),
+        });
+        setReplayData({
+          playerShipPlacements: playerShipsSnapshotRef.current,
+          opponentShipPlacements: opponentShipsSnapshotRef.current,
+          moves: [...replayMovesRef.current],
+          winner: 'player',
+          difficulty,
+          date: new Date().toISOString(),
         });
         isProcessingRef.current = false;
         return;
@@ -226,6 +252,14 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
             shipName: aiResult.result.shipName,
             timestamp: Date.now(),
           }]);
+          replayMovesRef.current.push({
+            player: 'opponent',
+            row: position.row, col: position.col,
+            result: aiResult.result.result,
+            shipName: aiResult.result.shipName,
+            shipId: aiResult.result.shipId,
+            shipPositions: aiResult.result.shipPositions,
+          });
 
           if (aiResult.result.result === 'hit') {
             play('hit');
@@ -252,6 +286,14 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
               playerHits: hitCount,
               opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
               duration: Math.round((Date.now() - gameStartTimeRef.current) / 1000),
+            });
+            setReplayData({
+              playerShipPlacements: playerShipsSnapshotRef.current,
+              opponentShipPlacements: opponentShipsSnapshotRef.current,
+              moves: [...replayMovesRef.current],
+              winner: 'opponent',
+              difficulty,
+              date: new Date().toISOString(),
             });
             isProcessingRef.current = false;
             return;
@@ -289,6 +331,9 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     setHitCount(0);
     setBattleLog([]);
     turnCountRef.current = 0;
+    replayMovesRef.current = [];
+    setReplayData(null);
+    setShowReplay(false);
     aiStateRef.current = createAIState();
     isProcessingRef.current = false;
   }, []);
@@ -383,7 +428,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
 
       {phase === 'battle' && <BattleLog entries={battleLog} />}
 
-      {phase === 'gameover' && winner && (
+      {phase === 'gameover' && winner && !showReplay && (
         <GameOver
           winner={winner}
           onPlayAgain={handlePlayAgain}
@@ -391,7 +436,12 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
           opponentName={
             difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI'
           }
+          onWatchReplay={replayData ? () => setShowReplay(true) : undefined}
         />
+      )}
+
+      {showReplay && replayData && (
+        <GameReplay replayData={replayData} onClose={() => setShowReplay(false)} />
       )}
     </div>
   );
