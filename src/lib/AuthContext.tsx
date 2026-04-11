@@ -32,35 +32,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Handle OAuth PKCE code exchange if redirected back with ?code=
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-        if (error) console.error('OAuth code exchange failed:', error.message);
-        // Clean the code from the URL without reloading
-        const url = new URL(window.location.href);
-        url.searchParams.delete('code');
-        window.history.replaceState({}, '', url.pathname + url.search);
-      });
-    }
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) console.error('Failed to get session:', error.message);
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
+    // Listen for auth changes (set up first so we catch post-exchange events)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) fetchProfile(session.user.id);
       else setProfile(null);
     });
+
+    // Initialize session — handle PKCE code exchange if present
+    (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+
+      if (code) {
+        // Exchange the OAuth PKCE code for a session before reading it
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) console.error('OAuth code exchange failed:', error.message);
+        // Clean the code from the URL without reloading
+        const url = new URL(window.location.href);
+        url.searchParams.delete('code');
+        window.history.replaceState({}, '', url.pathname + url.search);
+      }
+
+      // Now read the session (will have the exchanged session if code was present)
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) console.error('Failed to get session:', error.message);
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) fetchProfile(session.user.id);
+      setLoading(false);
+    })();
 
     return () => subscription.unsubscribe();
   }, []);
