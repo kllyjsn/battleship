@@ -6,6 +6,8 @@ import { Leaderboard } from './Leaderboard';
 import { ThemeSelector } from './ThemeSelector';
 import { AchievementsPanel } from './AchievementsPanel';
 import { loadTheme } from '../lib/themes';
+import { getPlayerRank } from '../lib/ranks';
+import { RankBadge } from './RankBadge';
 
 interface MainMenuProps {
   onStartSinglePlayer: (difficulty: Difficulty) => void;
@@ -48,6 +50,9 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
             <div className="w-8 h-px bg-green-500/30" />
             <p className="text-green-500/50 text-xs tracking-[0.3em] uppercase font-mono-crt">Naval Command Center</p>
             <div className="w-8 h-px bg-green-500/30" />
+          </div>
+          <div className="flex items-center justify-center mt-3">
+            <RankBadge rank={getPlayerRank().rank} size="md" showTitle />
           </div>
         </div>
 

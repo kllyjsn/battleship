@@ -19,6 +19,7 @@ import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 import { useHaptics } from '../hooks/useHaptics';
 import { saveGameResult } from '../lib/gameResults';
 import { checkAchievements } from '../lib/achievements';
+import { loadStats } from '../lib/stats';
 import { AchievementToast } from '../components/AchievementToast';
 import { BattleLog } from '../components/BattleLog';
 import { BoardToggle } from '../components/BoardToggle';
@@ -74,6 +75,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const handlePlayerAttackRef = useRef<(row: number, col: number) => void>(() => {});
   const [scorePopup, setScorePopup] = useState({ points: 0, label: '', trigger: 0 });
   const [showConfirmLeave, setShowConfirmLeave] = useState(false);
+  const previousWinsRef = useRef(loadStats().games.filter(g => g.result === 'win').length);
 
   // Setup opponent board
   useEffect(() => {
@@ -443,6 +445,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     isProcessingRef.current = false;
     shotCountRef.current = 0;
     hitCountRef.current = 0;
+    previousWinsRef.current = loadStats().games.filter(g => g.result === 'win').length;
   }, []);
 
   const playerHitsOnOpponent = opponentShips.reduce((sum, s) => sum + s.hits, 0);
@@ -464,6 +467,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         onToggleMusic={music.toggle}
         score={playerScore}
         showStreak={true}
+        playerShipsRemaining={playerShips.filter(s => !s.sunk).length}
+        opponentShipsRemaining={opponentShips.filter(s => !s.sunk).length}
       />
 
       <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-8 p-4">
@@ -570,6 +575,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
           onScoreSubmitted={() => setScoreSubmitted(true)}
           shipsLost={playerShips.filter(s => s.sunk).length}
           totalShips={SHIPS.length}
+          opponentBoard={opponentBoard}
+          previousWins={previousWinsRef.current}
         />
       )}
 

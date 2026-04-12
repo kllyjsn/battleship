@@ -1,7 +1,11 @@
 import { useState } from 'react';
-import { Trophy, Skull, RotateCw, Home, Play, Crosshair, Clock, Target, Ship } from 'lucide-react';
+import { Trophy, Skull, RotateCw, Home, Play, Crosshair, Clock, Target, Ship, Map, ChevronUp } from 'lucide-react';
 import { addLeaderboardEntry } from '../lib/leaderboard';
 import { loadStats } from '../lib/stats';
+import { getPlayerRank, getRankForWins } from '../lib/ranks';
+import { RankBadge } from './RankBadge';
+import { AttackHeatmap } from './AttackHeatmap';
+import type { Board } from '../engine/types';
 
 interface GameOverProps {
   winner: 'player' | 'opponent';
@@ -22,6 +26,8 @@ interface GameOverProps {
   onScoreSubmitted?: () => void;
   shipsLost?: number;
   totalShips?: number;
+  opponentBoard?: Board;
+  previousWins?: number;
 }
 
 const SESSION_NAME_KEY = 'battleship-session-name';
@@ -42,11 +48,17 @@ function saveSessionName(name: string): void {
   }
 }
 
-export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', opponentName = 'Opponent', onWatchReplay, gameStats, alreadySubmitted = false, onScoreSubmitted, shipsLost = 0, totalShips = 5 }: GameOverProps) {
+export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', opponentName = 'Opponent', onWatchReplay, gameStats, alreadySubmitted = false, onScoreSubmitted, shipsLost = 0, totalShips = 5, opponentBoard, previousWins }: GameOverProps) {
   const isWin = winner === 'player';
   const [showNamePrompt, setShowNamePrompt] = useState(!!gameStats && !alreadySubmitted);
   const [sessionName, setSessionName] = useState(loadSessionName());
   const [saved, setSaved] = useState(alreadySubmitted);
+  const [showHeatmap, setShowHeatmap] = useState(false);
+
+  // Rank-up detection
+  const { rank: currentRank } = getPlayerRank();
+  const prevRank = previousWins !== undefined ? getRankForWins(previousWins) : null;
+  const didRankUp = isWin && prevRank !== null && prevRank.id !== currentRank.id;
 
   const handleSaveScore = () => {
     const name = sessionName.trim() || 'Anonymous';
@@ -143,6 +155,25 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
           </div>
         )}
 
+        {/* Rank-up celebration */}
+        {didRankUp && (
+          <div className="mb-4 px-3 py-3 rounded metal-panel-light rank-up-shine rank-up-glow">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <ChevronUp size={14} className="text-amber-400" />
+              <span className="text-xs font-mono-crt text-amber-400 tracking-widest">RANK UP</span>
+              <ChevronUp size={14} className="text-amber-400" />
+            </div>
+            <RankBadge rank={currentRank} size="lg" />
+          </div>
+        )}
+
+        {/* Current rank (if no rank-up) */}
+        {!didRankUp && (
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <RankBadge rank={currentRank} size="md" />
+          </div>
+        )}
+
         {/* Win streak display */}
         {(() => {
           const stats = loadStats();
@@ -217,6 +248,21 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
             BASE
           </button>
         </div>
+
+        {/* Tactical map button */}
+        {opponentBoard && (
+          <button
+            onClick={() => setShowHeatmap(true)}
+            className="w-full mt-3 flex items-center justify-center gap-2 py-2.5 rounded metal-panel-light text-cyan-400 font-semibold hover:ring-1 hover:ring-cyan-400/40 transition-all font-mono-crt text-sm"
+          >
+            <Map size={16} />
+            TACTICAL MAP
+          </button>
+        )}
+
+        {showHeatmap && opponentBoard && (
+          <AttackHeatmap board={opponentBoard} onClose={() => setShowHeatmap(false)} />
+        )}
       </div>
     </div>
   );
