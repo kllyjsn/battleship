@@ -197,7 +197,7 @@ export function MultiplayerLobby({
                     onJoinRoom(joinCode, playerName.trim());
                   }
                 }}
-                disabled={joinCode.length < 4 || !playerName.trim() || isConnecting || isWaitingForOpponent}
+                disabled={joinCode.length < 4 || !playerName.trim() || isConnecting}
                 className="w-full py-3 rounded metal-panel-light text-glow-green font-semibold hover:ring-1 hover:ring-green-400/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-mono-crt"
                 style={{ borderColor: 'rgba(57, 255, 20, 0.2)' }}
               >
