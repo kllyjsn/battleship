@@ -16,6 +16,8 @@ interface GameOverProps {
     hits: number;
     durationSeconds: number;
   };
+  alreadySubmitted?: boolean;
+  onScoreSubmitted?: () => void;
 }
 
 const SESSION_NAME_KEY = 'battleship-session-name';
@@ -36,11 +38,11 @@ function saveSessionName(name: string): void {
   }
 }
 
-export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', opponentName = 'Opponent', onWatchReplay, gameStats }: GameOverProps) {
+export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', opponentName = 'Opponent', onWatchReplay, gameStats, alreadySubmitted = false, onScoreSubmitted }: GameOverProps) {
   const isWin = winner === 'player';
-  const [showNamePrompt, setShowNamePrompt] = useState(isWin && !!gameStats);
+  const [showNamePrompt, setShowNamePrompt] = useState(isWin && !!gameStats && !alreadySubmitted);
   const [sessionName, setSessionName] = useState(loadSessionName());
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState(alreadySubmitted);
 
   const handleSaveScore = () => {
     const name = sessionName.trim() || 'Anonymous';
@@ -56,6 +58,7 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
     }
     setSaved(true);
     setShowNamePrompt(false);
+    onScoreSubmitted?.();
   };
 
   const handleSkip = () => {
