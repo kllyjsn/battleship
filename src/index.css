@@ -260,6 +260,33 @@ body {
   z-index: 20;
 }
 
+/* ── Visible focus indicator for keyboard navigation (WCAG 2.4.7) ── */
+[role="button"]:focus-visible {
+  outline: 2px solid var(--crt-green);
+  outline-offset: -2px;
+  box-shadow: 0 0 0 3px rgba(57, 255, 20, 0.35);
+  z-index: 25;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--crt-green);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(57, 255, 20, 0.2);
+}
+
+/* ── Screen-reader only utility ── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 /* ── Floating score popup ── */
 @keyframes scoreFloat {
   0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }

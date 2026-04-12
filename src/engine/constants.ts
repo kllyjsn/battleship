@@ -1,6 +1,9 @@
-import type { ShipDefinition } from './types';
+import type { ShipDefinition, Difficulty } from './types';
 
 export const BOARD_SIZE = 10;
+
+/** Maximum valid board index (BOARD_SIZE - 1). */
+export const BOARD_MAX_INDEX = BOARD_SIZE - 1;
 
 export const SHIPS: ShipDefinition[] = [
   { id: 'carrier', name: 'Carrier', size: 5 },
@@ -29,3 +32,24 @@ export function scoreForResult(result: 'hit' | 'miss' | 'sunk'): number {
     case 'miss': return SCORE_MISS;
   }
 }
+
+// ── AI difficulty display names ──
+const AI_NAMES: Record<Difficulty, string> = {
+  easy: 'Recruit AI',
+  medium: 'Captain AI',
+  hard: 'Admiral AI',
+};
+
+/** Human-readable name for each AI difficulty level. */
+export function getAIName(difficulty: Difficulty): string {
+  return AI_NAMES[difficulty];
+}
+
+// ── Turn timing delays (ms) ──
+
+/** Delay before showing "Opponent's turn" message. */
+export const DELAY_BEFORE_AI_LABEL_MS = 500;
+/** Delay before the AI actually fires. */
+export const DELAY_BEFORE_AI_SHOT_MS = 600;
+/** Delay after AI shot before player regains control. */
+export const DELAY_AFTER_AI_SHOT_MS = 800;

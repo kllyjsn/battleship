@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { type CellState } from '../engine/types';
+import { ROW_LABELS, COL_LABELS } from '../engine/constants';
 
 interface CellProps {
   row: number;
@@ -68,8 +69,9 @@ export function Cell({
   }, [state]);
 
   const getClassName = () => {
+    // min-w/min-h ensure 44px touch targets on mobile (WCAG 2.5.5)
     const base =
-      'w-[8.2vw] h-[8.2vw] min-w-[28px] min-h-[28px] sm:w-9 sm:h-9 md:w-10 md:h-10 border relative transition-all duration-150 select-none overflow-hidden touch-manipulation';
+      'w-[8.2vw] h-[8.2vw] min-w-[32px] min-h-[32px] sm:w-9 sm:h-9 md:w-10 md:h-10 border relative transition-all duration-150 select-none overflow-hidden touch-manipulation';
 
     if (isPreview) {
       return `${base} ${isInvalid ? 'bg-red-500/30 border-red-400/60' : 'bg-green-500/20 border-green-400/50'} cursor-pointer`;
@@ -97,6 +99,9 @@ export function Cell({
     }
   };
 
+  // Build an accessible label: "Row A, Column 3 — hit"
+  const cellLabel = `Row ${ROW_LABELS[row]}, Column ${COL_LABELS[col]} — ${state}`;
+
   return (
     <div
       className={`${getClassName()}${isCursor ? ' cell-cursor' : ''}`}
@@ -106,6 +111,7 @@ export function Cell({
       onDrop={onDrop}
       role={!disabled && onClick ? 'button' : undefined}
       tabIndex={!disabled && onClick ? 0 : undefined}
+      aria-label={cellLabel}
       onKeyDown={(e) => {
         if (e.key === 'Enter' && !disabled && onClick) onClick();
       }}

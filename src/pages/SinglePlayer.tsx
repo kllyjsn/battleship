@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { Board, Ship, Difficulty, Orientation, GamePhase, AttackResult, BattleLogEntry } from '../engine/types';
-import { SHIPS, TOTAL_SHIP_CELLS, scoreForResult } from '../engine/constants';
+import { SHIPS, TOTAL_SHIP_CELLS, BOARD_MAX_INDEX, scoreForResult, getAIName, DELAY_BEFORE_AI_LABEL_MS, DELAY_BEFORE_AI_SHOT_MS, DELAY_AFTER_AI_SHOT_MS } from '../engine/constants';
 import {
   createEmptyBoard,
   placeShip,
@@ -28,45 +28,60 @@ import { ScorePopup } from '../components/ScorePopup';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ShipNotification } from '../components/ShipNotification';
 import type { ReplayMove, ReplayData } from '../lib/replay';
+import { saveGameState, clearSavedGame } from '../lib/gamePersistence';
+import type { SavedGameState } from '../lib/gamePersistence';
 
 interface SinglePlayerProps {
   difficulty: Difficulty;
   onBack: () => void;
+  /** Pre-loaded saved game state for resuming. */
+  resumeState?: SavedGameState | null;
 }
 
-export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
-  const [phase, setPhase] = useState<GamePhase>('placement');
-  const [playerBoard, setPlayerBoard] = useState<Board>(createEmptyBoard());
-  const [opponentBoard, setOpponentBoard] = useState<Board>(createEmptyBoard());
-  const [playerShips, setPlayerShips] = useState<Ship[]>([]);
-  const [opponentShips, setOpponentShips] = useState<Ship[]>([]);
-  const [selectedShipId, setSelectedShipId] = useState<string | null>(SHIPS[0].id);
+export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerProps) {
+  // ── Initialise from saved state if resuming, otherwise fresh defaults ──
+  const [phase, setPhase] = useState<GamePhase>(resumeState ? resumeState.phase : 'placement');
+  const [playerBoard, setPlayerBoard] = useState<Board>(resumeState ? resumeState.playerBoard : createEmptyBoard());
+  const [opponentBoard, setOpponentBoard] = useState<Board>(resumeState ? resumeState.opponentBoard : createEmptyBoard());
+  const [playerShips, setPlayerShips] = useState<Ship[]>(resumeState ? resumeState.playerShips : []);
+  const [opponentShips, setOpponentShips] = useState<Ship[]>(resumeState ? resumeState.opponentShips : []);
+  const [selectedShipId, setSelectedShipId] = useState<string | null>(resumeState ? null : SHIPS[0].id);
   const [orientation, setOrientation] = useState<Orientation>('horizontal');
-  const [isPlayerTurn, setIsPlayerTurn] = useState(true);
+  const [isPlayerTurn, setIsPlayerTurn] = useState(resumeState ? resumeState.isPlayerTurn : true);
   const [winner, setWinner] = useState<'player' | 'opponent' | null>(null);
-  const [message, setMessage] = useState('Place your ships on the board');
+  const [message, setMessage] = useState(resumeState ? 'Game resumed — your turn!' : 'Place your ships on the board');
   const [hideEnemyShots, setHideEnemyShots] = useState(false);
   const [, setLastAttack] = useState<AttackResult | null>(null);
   const [lastAttackPos, setLastAttackPos] = useState<{ row: number; col: number } | null>(null);
   const [lastAttackResult, setLastAttackResult] = useState<'hit' | 'miss' | 'sunk' | null>(null);
   const [lastDefensePos, setLastDefensePos] = useState<{ row: number; col: number } | null>(null);
   const [lastDefenseResult, setLastDefenseResult] = useState<'hit' | 'miss' | 'sunk' | null>(null);
-  const aiStateRef = useRef(createAIState());
+  const aiStateRef = useRef(resumeState
+    ? {
+        mode: resumeState.aiState.mode,
+        hitStack: resumeState.aiState.hitStack,
+        triedPositions: new Set(resumeState.aiState.triedPositions),
+        lastHit: resumeState.aiState.lastHit,
+        firstHit: resumeState.aiState.firstHit,
+        orientation: resumeState.aiState.orientation,
+      }
+    : createAIState()
+  );
   const { play, toggle } = useSound();
   const music = useBackgroundMusic();
   const haptics = useHaptics();
   const isProcessingRef = useRef(false);
-  const shotCountRef = useRef(0);
-  const hitCountRef = useRef(0);
-  const gameStartTimeRef = useRef<number>(0);
-  const [battleLog, setBattleLog] = useState<BattleLogEntry[]>([]);
-  const turnCountRef = useRef(0);
+  const shotCountRef = useRef(resumeState ? resumeState.shotCount : 0);
+  const hitCountRef = useRef(resumeState ? resumeState.hitCount : 0);
+  const gameStartTimeRef = useRef<number>(resumeState ? Date.now() : 0);
+  const [battleLog, setBattleLog] = useState<BattleLogEntry[]>(resumeState ? resumeState.battleLog : []);
+  const turnCountRef = useRef(resumeState ? resumeState.turnCount : 0);
   const replayMovesRef = useRef<ReplayMove[]>([]);
   const [replayData, setReplayData] = useState<ReplayData | null>(null);
   const [showReplay, setShowReplay] = useState(false);
   const [scoreSubmitted, setScoreSubmitted] = useState(false);
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
-  const [playerScore, setPlayerScore] = useState(0);
+  const [playerScore, setPlayerScore] = useState(resumeState ? resumeState.playerScore : 0);
   const playerShipsSnapshotRef = useRef<Ship[]>([]);
   const opponentShipsSnapshotRef = useRef<Ship[]>([]);
   const gameDurationRef = useRef(0);
@@ -79,11 +94,15 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const [shipNotif, setShipNotif] = useState({ type: 'hit' as 'hit' | 'sunk', shipName: '', actor: 'player' as 'player' | 'opponent', trigger: 0 });
   const previousWinsRef = useRef(loadStats().games.filter(g => g.result === 'win').length);
 
-  // Setup opponent board
+  const aiName = getAIName(difficulty);
+
+  // Setup opponent board (skip if resuming a saved game)
   useEffect(() => {
+    if (resumeState) return;
     const { board, ships } = randomPlacement(SHIPS);
     setOpponentBoard(board);
     setOpponentShips(ships);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handlePlaceShip = useCallback(
@@ -161,7 +180,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
           case 'ArrowDown':
             e.preventDefault();
             setShowCursor(true);
-            setCursorPos(p => ({ ...p, row: Math.min(9, p.row + 1) }));
+            setCursorPos(p => ({ ...p, row: Math.min(BOARD_MAX_INDEX, p.row + 1) }));
             break;
           case 'ArrowLeft':
             e.preventDefault();
@@ -171,7 +190,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
           case 'ArrowRight':
             e.preventDefault();
             setShowCursor(true);
-            setCursorPos(p => ({ ...p, col: Math.min(9, p.col + 1) }));
+            setCursorPos(p => ({ ...p, col: Math.min(BOARD_MAX_INDEX, p.col + 1) }));
             break;
           case 'Enter':
           case ' ':
@@ -277,9 +296,10 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
           result: 'win',
           playerShots: shotCountRef.current,
           playerHits: hitCountRef.current,
-          opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
+          opponentName: aiName,
           durationSeconds: gameDurationRef.current,
         });
+        clearSavedGame();
         const playerShipsLost = playerShips.filter(s => s.sunk).length;
         const unlocked = checkAchievements({
           result: 'win',
@@ -306,7 +326,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
 
       setIsPlayerTurn(false);
 
-      // AI turn after delay
+      // AI turn after delay — constants from engine/constants.ts
       setTimeout(() => {
         setMessage("Opponent's turn...");
 
@@ -378,9 +398,10 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
               result: 'loss',
               playerShots: shotCountRef.current,
               playerHits: hitCountRef.current,
-              opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
-              durationSeconds: gameDurationRef.current,
-            });
+                opponentName: aiName,
+                durationSeconds: gameDurationRef.current,
+              });
+              clearSavedGame();
             checkAchievements({
               result: 'loss',
               mode: 'single',
@@ -407,17 +428,47 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
           setTimeout(() => {
             setMessage('Your turn — fire at the enemy grid!');
             isProcessingRef.current = false;
-          }, 800);
-        }, 600);
-      }, 500);
+          }, DELAY_AFTER_AI_SHOT_MS);
+        }, DELAY_BEFORE_AI_SHOT_MS);
+      }, DELAY_BEFORE_AI_LABEL_MS);
     },
-    [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play, haptics]
+    [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play, haptics, aiName]
   );
 
   // Keep ref in sync for keyboard handler
   useEffect(() => {
     handlePlayerAttackRef.current = handlePlayerAttack;
   }, [handlePlayerAttack]);
+
+  // ── Persist game state to localStorage after each state change during battle ──
+  useEffect(() => {
+    if (phase !== 'battle' || winner) return;
+    const ai = aiStateRef.current;
+    saveGameState({
+      version: 1,
+      timestamp: Date.now(),
+      difficulty,
+      phase,
+      playerBoard,
+      opponentBoard,
+      playerShips,
+      opponentShips,
+      isPlayerTurn,
+      playerScore,
+      shotCount: shotCountRef.current,
+      hitCount: hitCountRef.current,
+      turnCount: turnCountRef.current,
+      battleLog,
+      aiState: {
+        mode: ai.mode,
+        hitStack: ai.hitStack,
+        triedPositions: Array.from(ai.triedPositions),
+        lastHit: ai.lastHit,
+        firstHit: ai.firstHit,
+        orientation: ai.orientation,
+      },
+    });
+  }, [phase, winner, playerBoard, opponentBoard, playerShips, opponentShips, isPlayerTurn, playerScore, battleLog, difficulty]);
 
   const handlePlayAgain = useCallback(() => {
     const { board: oppBoard, ships: oppShips } = randomPlacement(SHIPS);
@@ -447,6 +498,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     setCursorPos({ row: 0, col: 0 });
     setShowCursor(false);
     setMobileBoard('opponent');
+    clearSavedGame();
     aiStateRef.current = createAIState();
     isProcessingRef.current = false;
     shotCountRef.current = 0;
@@ -459,6 +511,11 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'radial-gradient(ellipse at center, #141c2b 0%, #0a0e1a 70%)' }}>
+      {/* Screen-reader live region for game status announcements */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {message}
+      </div>
+
       <GameHUD
         isPlayerTurn={isPlayerTurn}
         message={message}
@@ -565,9 +622,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
           winner={winner}
           onPlayAgain={handlePlayAgain}
           onGoHome={onBack}
-          opponentName={
-            difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI'
-          }
+          opponentName={aiName}
           onWatchReplay={replayData ? () => setShowReplay(true) : undefined}
           gameStats={{
             mode: 'single',
