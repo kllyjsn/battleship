@@ -32,6 +32,8 @@ const PARTICLE_DIRECTIONS = [
 ];
 
 export function Cell({
+  row,
+  col,
   state,
   isPlayerBoard,
   isPlacing,
