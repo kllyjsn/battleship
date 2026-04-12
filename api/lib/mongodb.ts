@@ -16,23 +16,22 @@ export async function getDb(): Promise<Db> {
   }
 
   cachedPromise = (async () => {
-    try {
-      const client = new MongoClient(MONGODB_URI, {
-        maxPoolSize: 10,
-        minPoolSize: 0,
-        maxIdleTimeMS: 10_000,
-        serverSelectionTimeoutMS: 5_000,
-      });
+    const client = new MongoClient(MONGODB_URI, {
+      maxPoolSize: 10,
+      minPoolSize: 0,
+      maxIdleTimeMS: 10_000,
+      serverSelectionTimeoutMS: 5_000,
+    });
 
-      await client.connect();
-      const db = client.db(DB_NAME);
-      return { client, db };
-    } catch (err) {
-      cachedPromise = null;
-      throw err;
-    }
+    await client.connect();
+    return { client, db: client.db(DB_NAME) };
   })();
 
-  const { db } = await cachedPromise;
-  return db;
+  try {
+    const { db } = await cachedPromise;
+    return db;
+  } catch (err) {
+    cachedPromise = null;
+    throw err;
+  }
 }
