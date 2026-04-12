@@ -51,10 +51,14 @@ export function addLeaderboardEntry(
   const entries = loadEntries();
   entries.push(entry);
   saveEntries(entries);
+
+  // Fire-and-forget: also submit to online API
+  submitOnlineEntry(entry).catch(() => {});
+
   return entry;
 }
 
-type Period = 'day' | 'week' | 'month';
+export type Period = 'day' | 'week' | 'month';
 
 function getStartOfPeriod(period: Period): Date {
   const now = new Date();
@@ -92,4 +96,43 @@ export function getLeaderboard(period: Period): LeaderboardEntry[] {
       return a.shots - b.shots;
     })
     .slice(0, 50);
+}
+
+// --- Online leaderboard API ---
+
+function getApiBase(): string {
+  // In production (Vercel), API is at same origin under /api
+  // In dev, we fall back to the Vite proxy or same origin
+  return '/api';
+}
+
+async function submitOnlineEntry(entry: LeaderboardEntry): Promise<void> {
+  try {
+    await fetch(`${getApiBase()}/leaderboard`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        playerName: entry.playerName,
+        score: entry.score,
+        shots: entry.shots,
+        hits: entry.hits,
+        mode: entry.mode,
+        difficulty: entry.difficulty,
+        durationSeconds: entry.durationSeconds,
+      }),
+    });
+  } catch {
+    // Silently fail — local entry is already saved
+  }
+}
+
+export async function getOnlineLeaderboard(period?: Period): Promise<LeaderboardEntry[]> {
+  try {
+    const params = period ? `?period=${period}` : '';
+    const resp = await fetch(`${getApiBase()}/leaderboard${params}`);
+    if (!resp.ok) return [];
+    return (await resp.json()) as LeaderboardEntry[];
+  } catch {
+    return [];
+  }
 }

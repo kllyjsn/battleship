@@ -16,8 +16,12 @@ import { GameHUD } from '../components/GameHUD';
 import { GameOver } from '../components/GameOver';
 import { useSound } from '../hooks/useSound';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
+import { useHaptics } from '../hooks/useHaptics';
 import { saveGameResult } from '../lib/gameResults';
+import { checkAchievements } from '../lib/achievements';
+import { AchievementToast } from '../components/AchievementToast';
 import { BattleLog } from '../components/BattleLog';
+import { BoardToggle } from '../components/BoardToggle';
 import { GameReplay } from '../components/GameReplay';
 import type { ReplayMove, ReplayData } from '../lib/replay';
 
@@ -46,6 +50,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const aiStateRef = useRef(createAIState());
   const { play, toggle } = useSound();
   const music = useBackgroundMusic();
+  const haptics = useHaptics();
   const isProcessingRef = useRef(false);
   const shotCountRef = useRef(0);
   const hitCountRef = useRef(0);
@@ -56,11 +61,13 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const [replayData, setReplayData] = useState<ReplayData | null>(null);
   const [showReplay, setShowReplay] = useState(false);
   const [scoreSubmitted, setScoreSubmitted] = useState(false);
+  const [newAchievements, setNewAchievements] = useState<string[]>([]);
   const playerShipsSnapshotRef = useRef<Ship[]>([]);
   const opponentShipsSnapshotRef = useRef<Ship[]>([]);
   const gameDurationRef = useRef(0);
   const [cursorPos, setCursorPos] = useState({ row: 0, col: 0 });
   const [showCursor, setShowCursor] = useState(false);
+  const [mobileBoard, setMobileBoard] = useState<'player' | 'opponent'>('opponent');
   const handlePlayerAttackRef = useRef<(row: number, col: number) => void>(() => {});
 
   // Setup opponent board
@@ -229,13 +236,16 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
       if (result.result === 'hit') {
         hitCountRef.current += 1;
         play('hit');
+        haptics.hit();
         setMessage('Direct hit!');
       } else if (result.result === 'sunk') {
         hitCountRef.current += 1;
         play('sunk');
+        haptics.sunk();
         setMessage(`You sank their ${result.shipName}!`);
       } else {
         play('miss');
+        haptics.tap();
         setMessage('Miss!');
       }
 
@@ -244,6 +254,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         setWinner('player');
         setMessage('You win!');
         play('win');
+        haptics.win();
         gameDurationRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
         saveGameResult({
           mode: 'single',
@@ -254,6 +265,18 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
           opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
           durationSeconds: gameDurationRef.current,
         });
+        const playerShipsLost = playerShips.filter(s => s.sunk).length;
+        const unlocked = checkAchievements({
+          result: 'win',
+          mode: 'single',
+          difficulty,
+          playerShots: shotCountRef.current,
+          playerHits: hitCountRef.current,
+          durationSeconds: gameDurationRef.current,
+          playerShipsLost,
+          totalPlayerShips: SHIPS.length,
+        });
+        if (unlocked.length > 0) setNewAchievements(unlocked);
         setReplayData({
           playerShipPlacements: playerShipsSnapshotRef.current,
           opponentShipPlacements: opponentShipsSnapshotRef.current,
@@ -330,6 +353,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
             setWinner('opponent');
             setMessage('You lose!');
             play('lose');
+            haptics.lose();
             gameDurationRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
             saveGameResult({
               mode: 'single',
@@ -339,6 +363,16 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
               playerHits: hitCountRef.current,
               opponentName: difficulty === 'easy' ? 'Recruit AI' : difficulty === 'medium' ? 'Captain AI' : 'Admiral AI',
               durationSeconds: gameDurationRef.current,
+            });
+            checkAchievements({
+              result: 'loss',
+              mode: 'single',
+              difficulty,
+              playerShots: shotCountRef.current,
+              playerHits: hitCountRef.current,
+              durationSeconds: gameDurationRef.current,
+              playerShipsLost: SHIPS.length,
+              totalPlayerShips: SHIPS.length,
             });
             setReplayData({
               playerShipPlacements: playerShipsSnapshotRef.current,
@@ -360,7 +394,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         }, 600);
       }, 500);
     },
-    [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play]
+    [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play, haptics]
   );
 
   // Keep ref in sync for keyboard handler
@@ -391,8 +425,10 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     setReplayData(null);
     setShowReplay(false);
     setScoreSubmitted(false);
+    setNewAchievements([]);
     setCursorPos({ row: 0, col: 0 });
     setShowCursor(false);
+    setMobileBoard('opponent');
     aiStateRef.current = createAIState();
     isProcessingRef.current = false;
     shotCountRef.current = 0;
@@ -432,6 +468,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
               ships={playerShips}
               onDragSelectShip={handleDragSelectShip}
               title="Your Fleet"
+              onSwipeRotate={() => setOrientation(o => o === 'horizontal' ? 'vertical' : 'horizontal')}
             />
             <ShipRoster
               shipDefs={SHIPS}
@@ -448,48 +485,53 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
             />
           </div>
         ) : (
-          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-4 lg:gap-8">
-            <div className="flex flex-col items-center gap-4">
-              <GameBoard
-                board={playerBoard}
-                isPlayerBoard={true}
-                isPlacing={false}
-                title="Your Fleet"
-                disabled={true}
-                ships={playerShips}
-                lastAttackResult={lastDefenseResult}
-                lastAttackPos={lastDefensePos}
-                hideEnemyShots={hideEnemyShots}
-                onToggleHideEnemyShots={() => setHideEnemyShots(h => !h)}
-              />
-              <ShipRoster
-                shipDefs={SHIPS}
-                placedShips={playerShips}
-                selectedShipId={null}
-                orientation="horizontal"
-                onSelectShip={() => {}}
-                onRotate={() => {}}
-                onRandomize={() => {}}
-                onReady={() => {}}
-                isReady={false}
-                mode="battle"
-              />
+          <>
+            <BoardToggle activeBoard={mobileBoard} onToggle={setMobileBoard} />
+            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-4 lg:gap-8">
+              <div className={`flex flex-col items-center gap-4 ${mobileBoard === 'opponent' ? 'hidden lg:flex' : 'flex'}`}>
+                <GameBoard
+                  board={playerBoard}
+                  isPlayerBoard={true}
+                  isPlacing={false}
+                  title="Your Fleet"
+                  disabled={true}
+                  ships={playerShips}
+                  lastAttackResult={lastDefenseResult}
+                  lastAttackPos={lastDefensePos}
+                  hideEnemyShots={hideEnemyShots}
+                  onToggleHideEnemyShots={() => setHideEnemyShots(h => !h)}
+                />
+                <ShipRoster
+                  shipDefs={SHIPS}
+                  placedShips={playerShips}
+                  selectedShipId={null}
+                  orientation="horizontal"
+                  onSelectShip={() => {}}
+                  onRotate={() => {}}
+                  onRandomize={() => {}}
+                  onReady={() => {}}
+                  isReady={false}
+                  mode="battle"
+                />
+              </div>
+              <div className={`${mobileBoard === 'player' ? 'hidden lg:block' : 'block'}`}>
+                <GameBoard
+                  board={opponentBoard}
+                  isPlayerBoard={false}
+                  isPlacing={false}
+                  onCellClick={handlePlayerAttack}
+                  title="Enemy Waters"
+                  disabled={!isPlayerTurn || phase === 'gameover'}
+                  highlight={isPlayerTurn && phase === 'battle'}
+                  lastAttackResult={lastAttackResult}
+                  lastAttackPos={lastAttackPos}
+                  cursorRow={cursorPos.row}
+                  cursorCol={cursorPos.col}
+                  showCursor={showCursor && isPlayerTurn && phase === 'battle'}
+                />
+              </div>
             </div>
-            <GameBoard
-              board={opponentBoard}
-              isPlayerBoard={false}
-              isPlacing={false}
-              onCellClick={handlePlayerAttack}
-              title="Enemy Waters"
-              disabled={!isPlayerTurn || phase === 'gameover'}
-              highlight={isPlayerTurn && phase === 'battle'}
-              lastAttackResult={lastAttackResult}
-              lastAttackPos={lastAttackPos}
-              cursorRow={cursorPos.row}
-              cursorCol={cursorPos.col}
-              showCursor={showCursor && isPlayerTurn && phase === 'battle'}
-            />
-          </div>
+          </>
         )}
       </div>
 
@@ -518,6 +560,10 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
 
       {showReplay && replayData && (
         <GameReplay replayData={replayData} onClose={() => setShowReplay(false)} />
+      )}
+
+      {newAchievements.length > 0 && (
+        <AchievementToast achievementIds={newAchievements} onDone={() => setNewAchievements([])} />
       )}
     </div>
   );

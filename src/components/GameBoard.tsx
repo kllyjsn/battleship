@@ -5,6 +5,7 @@ import { Cell } from './Cell';
 import { ShipSVG } from './ShipSVG';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { useSwipe } from '../hooks/useSwipe';
 
 interface GameBoardProps {
   board: Board;
@@ -27,6 +28,7 @@ interface GameBoardProps {
   showCursor?: boolean;
   hideEnemyShots?: boolean;
   onToggleHideEnemyShots?: () => void;
+  onSwipeRotate?: () => void;
 }
 
 export function GameBoard({
@@ -50,6 +52,7 @@ export function GameBoard({
   showCursor = false,
   hideEnemyShots = false,
   onToggleHideEnemyShots,
+  onSwipeRotate,
 }: GameBoardProps) {
   const [hoverPos, setHoverPos] = useState<{ row: number; col: number } | null>(null);
   const [shaking, setShaking] = useState(false);
@@ -66,6 +69,11 @@ export function GameBoard({
       return () => clearTimeout(timer);
     }
   }, [lastAttackResult, lastAttackPos]);
+
+  // Swipe to rotate ship during placement
+  const swipeHandlers = useSwipe(() => {
+    if (isPlacing && onSwipeRotate) onSwipeRotate();
+  }, 40);
 
   // Measure cell size and grid offset for ship overlays
   useEffect(() => {
@@ -150,6 +158,8 @@ export function GameBoard({
         ref={gridRef}
         className={`inline-flex flex-col relative ${shaking ? 'screen-shake' : ''}`}
         onMouseLeave={() => setHoverPos(null)}
+        onTouchStart={isPlacing ? swipeHandlers.onTouchStart : undefined}
+        onTouchEnd={isPlacing ? swipeHandlers.onTouchEnd : undefined}
         onDragLeave={(e) => {
           if (!gridRef.current?.contains(e.relatedTarget as Node)) {
             setHoverPos(null);
@@ -162,7 +172,7 @@ export function GameBoard({
           {COL_LABELS.map((label) => (
             <div
               key={label}
-              className="w-8 h-6 sm:w-9 sm:h-7 md:w-10 md:h-8 flex items-center justify-center text-xs font-mono-crt"
+              className="w-[11vw] min-w-[32px] h-6 sm:w-9 sm:h-7 md:w-10 md:h-8 flex items-center justify-center text-xs font-mono-crt"
               style={{ color: 'var(--text-secondary)' }}
             >
               {label}
@@ -173,7 +183,7 @@ export function GameBoard({
         {/* Rows */}
         {board.map((row, rowIdx) => (
           <div key={rowIdx} className="flex">
-            <div className="w-6 h-8 sm:w-7 sm:h-9 md:w-8 md:h-10 flex items-center justify-center text-xs font-mono-crt" style={{ color: 'var(--text-secondary)' }}>
+            <div className="w-6 h-[11vw] min-h-[32px] sm:w-7 sm:h-9 md:w-8 md:h-10 flex items-center justify-center text-xs font-mono-crt" style={{ color: 'var(--text-secondary)' }}>
               {ROW_LABELS[rowIdx]}
             </div>
             {row.map((cell, colIdx) => {

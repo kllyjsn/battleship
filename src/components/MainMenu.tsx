@@ -1,9 +1,10 @@
-import { Crosshair, Users, Anchor, Zap, Brain, Shield, Cpu, Target, BarChart3, Dice5, Swords, Gamepad2, Palette, Trophy } from 'lucide-react';
+import { Crosshair, Users, Anchor, Zap, Brain, Shield, Cpu, Target, BarChart3, Dice5, Swords, Gamepad2, Palette, Trophy, Award } from 'lucide-react';
 import type { Difficulty } from '../engine/types';
 import { useState } from 'react';
 import { StatsPanel } from './StatsPanel';
 import { Leaderboard } from './Leaderboard';
 import { ThemeSelector } from './ThemeSelector';
+import { AchievementsPanel } from './AchievementsPanel';
 import { loadTheme } from '../lib/themes';
 
 interface MainMenuProps {
@@ -17,6 +18,7 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
   const [showThemes, setShowThemes] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(loadTheme());
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
 
   const difficulties: { level: Difficulty; label: string; description: string; icon: React.ReactNode; color: string }[] = [
     { level: 'easy', label: 'Recruit', description: 'Random attacks, no strategy', icon: <Shield size={20} />, color: 'from-green-700 to-green-900' },
@@ -121,6 +123,13 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
           >
             <Trophy size={16} />
             LEADERBOARD
+          </button>
+          <button
+            onClick={() => setShowAchievements(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded metal-panel hover:border-purple-500/40 transition-all text-sm font-mono-crt text-purple-300"
+          >
+            <Award size={16} />
+            MEDALS
           </button>
           <button
             onClick={() => setShowThemes(true)}
@@ -240,6 +249,7 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
 
       {showStats && <StatsPanel onClose={() => setShowStats(false)} />}
       {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
+      {showAchievements && <AchievementsPanel onClose={() => setShowAchievements(false)} />}
       {showThemes && (
         <ThemeSelector
           currentTheme={currentTheme}
