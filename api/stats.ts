@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getDb } from './lib/mongodb';
+import { getDb, MongoConfigError } from './lib/mongodb';
 
 interface GameRecord {
   date: string;
@@ -98,7 +98,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
-    console.error('Stats API error:', err);
+    console.error('[Stats] API error:', err);
+    if (err instanceof MongoConfigError) {
+      return res.status(503).json({ error: 'Database not configured' });
+    }
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
