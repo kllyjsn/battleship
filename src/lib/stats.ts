@@ -1,3 +1,5 @@
+import { STORAGE_KEYS, getSessionName, getApiBase } from './storageKeys';
+
 export interface GameRecord {
   date: string;
   mode: 'single' | 'multiplayer';
@@ -13,21 +15,6 @@ export interface Stats {
   games: GameRecord[];
   currentWinStreak: number;
   bestWinStreak: number;
-}
-
-const STORAGE_KEY = 'battleship-stats';
-const SESSION_NAME_KEY = 'battleship-session-name';
-
-function getSessionName(): string {
-  try {
-    return localStorage.getItem(SESSION_NAME_KEY) || '';
-  } catch {
-    return '';
-  }
-}
-
-function getApiBase(): string {
-  return '/api';
 }
 
 async function syncStatsOnline(stats: Stats): Promise<void> {
@@ -55,7 +42,7 @@ function defaultStats(): Stats {
 
 export function loadStats(): Stats {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEYS.STATS);
     if (!raw) return defaultStats();
     const parsed = JSON.parse(raw) as Stats;
     return {
@@ -81,7 +68,7 @@ export function saveGame(record: GameRecord): Stats {
     stats.currentWinStreak = 0;
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
+  localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(stats));
 
   // Fire-and-forget: sync to online API
   syncStatsOnline(stats).catch(() => {});
@@ -156,5 +143,5 @@ export async function getOnlineStats(playerName: string): Promise<Stats | null> 
 }
 
 export function clearStats(): void {
-  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEYS.STATS);
 }

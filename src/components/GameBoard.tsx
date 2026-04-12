@@ -161,6 +161,8 @@ export function GameBoard({
       <div
         ref={gridRef}
         className={`inline-flex flex-col relative ${shaking ? 'screen-shake' : ''}`}
+        role="grid"
+        aria-label={`${title} grid`}
         onMouseLeave={() => setHoverPos(null)}
         onTouchStart={isPlacing ? swipeHandlers.onTouchStart : undefined}
         onTouchEnd={isPlacing ? swipeHandlers.onTouchEnd : undefined}
@@ -171,12 +173,13 @@ export function GameBoard({
         }}
       >
         {/* Column headers */}
-        <div className="flex">
+        <div className="flex" role="row" aria-hidden="true">
           <div className="w-5 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
           {COL_LABELS.map((label) => (
             <div
               key={label}
-              className="w-[8.2vw] min-w-[32px] h-6 sm:w-9 sm:h-7 md:w-10 md:h-8 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt"
+              className="w-[8.2vw] min-w-[34px] h-6 sm:w-9 sm:h-7 md:w-10 md:h-8 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt"
+              role="columnheader"
               style={{ color: 'var(--text-secondary)' }}
             >
               {label}
@@ -186,8 +189,8 @@ export function GameBoard({
 
         {/* Rows */}
         {board.map((row, rowIdx) => (
-          <div key={rowIdx} className="flex">
-            <div className="w-5 h-[8.2vw] min-h-[32px] sm:w-7 sm:h-9 md:w-8 md:h-10 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt" style={{ color: 'var(--text-secondary)' }}>
+          <div key={rowIdx} className="flex" role="row">
+            <div className="w-5 h-[8.2vw] min-h-[34px] sm:w-7 sm:h-9 md:w-8 md:h-10 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt" role="rowheader" style={{ color: 'var(--text-secondary)' }}>
               {ROW_LABELS[rowIdx]}
             </div>
             {row.map((cell, colIdx) => {
@@ -196,7 +199,7 @@ export function GameBoard({
               const isValid = previewCells.get(key) ?? true;
 
               return (
-                <div key={key} ref={rowIdx === 0 && colIdx === 0 ? cellRef : undefined}>
+                <div key={key} ref={rowIdx === 0 && colIdx === 0 ? cellRef : undefined} role="gridcell">
                   <Cell
                     row={rowIdx}
                     col={colIdx}

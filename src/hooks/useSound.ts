@@ -1,4 +1,5 @@
 import { useCallback, useRef, useEffect } from 'react';
+import { STORAGE_KEYS } from '../lib/storageKeys';
 
 type SoundType = 'hit' | 'miss' | 'sunk' | 'place' | 'click' | 'win' | 'lose' | 'splash' | 'sonarPing';
 
@@ -344,9 +345,26 @@ function stopAmbient() {
   }
 }
 
+/** Read persisted mute preference (default: enabled / not muted). */
+function loadSoundEnabled(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEYS.SOUND_MUTED) !== 'true';
+  } catch {
+    return true;
+  }
+}
+
+function saveSoundEnabled(on: boolean): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.SOUND_MUTED, on ? 'false' : 'true');
+  } catch {
+    // Storage unavailable — ignore
+  }
+}
+
 /* ═══ Hook ═══ */
 export function useSound() {
-  const enabled = useRef(true);
+  const enabled = useRef(loadSoundEnabled());
 
   useEffect(() => {
     const startOnInteract = () => {
@@ -375,6 +393,7 @@ export function useSound() {
 
   const toggle = useCallback(() => {
     enabled.current = !enabled.current;
+    saveSoundEnabled(enabled.current);
     if (enabled.current) {
       startAmbient();
     } else {

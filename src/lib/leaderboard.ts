@@ -1,3 +1,5 @@
+import { STORAGE_KEYS, getApiBase } from './storageKeys';
+
 export interface LeaderboardEntry {
   id: string;
   playerName: string;
@@ -12,11 +14,9 @@ export interface LeaderboardEntry {
   date: string; // ISO string
 }
 
-const STORAGE_KEY = 'battleship-leaderboard';
-
 function loadEntries(): LeaderboardEntry[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEYS.LEADERBOARD);
     if (!raw) return [];
     return JSON.parse(raw) as LeaderboardEntry[];
   } catch {
@@ -25,7 +25,7 @@ function loadEntries(): LeaderboardEntry[] {
 }
 
 function saveEntries(entries: LeaderboardEntry[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  localStorage.setItem(STORAGE_KEYS.LEADERBOARD, JSON.stringify(entries));
 }
 
 export function addLeaderboardEntry(
@@ -108,12 +108,6 @@ export function getLeaderboard(period: Period): LeaderboardEntry[] {
 }
 
 // --- Online leaderboard API ---
-
-function getApiBase(): string {
-  // In production (Vercel), API is at same origin under /api
-  // In dev, we fall back to the Vite proxy or same origin
-  return '/api';
-}
 
 async function submitOnlineEntry(entry: LeaderboardEntry): Promise<void> {
   try {

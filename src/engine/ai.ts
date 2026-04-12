@@ -224,7 +224,8 @@ export function getAIMove(
       target = probabilityDensity(board, newState.triedPositions, opponentShips);
     }
     if (!target) {
-      target = getRandomUntried(board, newState.triedPositions, difficulty === 'hard');
+      // Medium and hard use checkerboard pattern in hunt mode to cover more ground.
+      target = getRandomUntried(board, newState.triedPositions, difficulty === 'medium' || difficulty === 'hard');
     }
   }
 

@@ -1,3 +1,5 @@
+import { STORAGE_KEYS } from './storageKeys';
+
 export interface ThemeConfig {
   id: string;
   name: string;
@@ -92,8 +94,6 @@ const THEMES: ThemeConfig[] = [
   },
 ];
 
-const STORAGE_KEY = 'battleship-theme';
-
 export function getAllThemes(): ThemeConfig[] {
   return THEMES;
 }
@@ -104,7 +104,7 @@ export function getTheme(themeId: string): ThemeConfig {
 
 export function loadTheme(): string {
   try {
-    return localStorage.getItem(STORAGE_KEY) || 'classic';
+    return localStorage.getItem(STORAGE_KEYS.THEME) || 'classic';
   } catch {
     return 'classic';
   }
@@ -112,7 +112,7 @@ export function loadTheme(): string {
 
 export function saveTheme(themeId: string): void {
   try {
-    localStorage.setItem(STORAGE_KEY, themeId);
+    localStorage.setItem(STORAGE_KEYS.THEME, themeId);
   } catch {
     // ignore
   }
