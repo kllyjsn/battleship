@@ -115,7 +115,7 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
         )}
 
         {/* Action buttons — 3 + 2 rows on mobile, single flex row on sm+ */}
-        <div className="mt-4 sm:mt-6 space-y-2 sm:space-y-0">
+        <div className="mt-4 sm:mt-6 space-y-2 sm:space-y-3">
           <div className="grid grid-cols-3 sm:flex gap-2 sm:gap-3 justify-center">
             <button
               onClick={() => setShowStats(true)}
@@ -161,7 +161,7 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
             </a>
           </div>
           {/* Desktop-only: settings & docs inline with the first row */}
-          <div className="hidden sm:flex gap-3 justify-center mt-0">
+          <div className="hidden sm:flex gap-3 justify-center">
             <button
               onClick={() => setShowSettings(true)}
               className="flex items-center justify-center gap-2 px-4 py-2.5 rounded metal-panel hover:border-cyan-500/40 transition-all text-sm font-mono-crt text-cyan-300"
