@@ -93,6 +93,7 @@ export default withMermaid(
           text: 'Reference',
           items: [
             { text: 'Glossary', link: '/glossary' },
+            { text: 'Changelog', link: '/changelog' },
           ]
         },
       ],
