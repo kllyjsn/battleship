@@ -264,12 +264,23 @@ export function useMultiplayer(playerName: string) {
         }
 
         if (msg.type === 'LEAVE') {
+          // Stop pinging — no opponent to heartbeat against
+          if (pingIntervalRef.current) {
+            clearInterval(pingIntervalRef.current);
+            pingIntervalRef.current = null;
+          }
+          if (pongTimeoutRef.current) {
+            clearTimeout(pongTimeoutRef.current);
+            pongTimeoutRef.current = null;
+          }
+          opponentUserIdRef.current = null;
           setState(prev => ({
             ...prev,
             opponentName: null,
             isConnected: false,
             opponentReady: false,
             gameStarted: false,
+            isReconnecting: false,
             error: 'Opponent left the game',
           }));
           return;
