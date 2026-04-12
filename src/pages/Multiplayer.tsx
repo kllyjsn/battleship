@@ -19,8 +19,12 @@ import { Chat } from '../components/Chat';
 import { useMultiplayer } from '../multiplayer/useMultiplayer';
 import { useSound } from '../hooks/useSound';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
+import { useHaptics } from '../hooks/useHaptics';
 import { saveGameResult } from '../lib/gameResults';
+import { checkAchievements } from '../lib/achievements';
+import { AchievementToast } from '../components/AchievementToast';
 import { BattleLog } from '../components/BattleLog';
+import { BoardToggle } from '../components/BoardToggle';
 import { TurnTimer } from '../components/TurnTimer';
 import { GameReplay } from '../components/GameReplay';
 import type { ReplayMove, ReplayData } from '../lib/replay';
@@ -52,6 +56,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
   const [lastDefenseResult, setLastDefenseResult] = useState<'hit' | 'miss' | 'sunk' | null>(null);
   const { play, toggle } = useSound();
   const music = useBackgroundMusic();
+  const haptics = useHaptics();
   const shotCountRef = useRef(0);
   const hitCountRef = useRef(0);
   const gameStartTimeRef = useRef<number>(0);
@@ -61,10 +66,12 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
   const [replayData, setReplayData] = useState<ReplayData | null>(null);
   const [showReplay, setShowReplay] = useState(false);
   const [scoreSubmitted, setScoreSubmitted] = useState(false);
+  const [newAchievements, setNewAchievements] = useState<string[]>([]);
   const playerShipsSnapshotRef = useRef<Ship[]>([]);
   const gameDurationRef = useRef(0);
   const [cursorPos, setCursorPos] = useState({ row: 0, col: 0 });
   const [showCursor, setShowCursor] = useState(false);
+  const [mobileBoard, setMobileBoard] = useState<'player' | 'opponent'>('opponent');
   const handlePlayerAttackRef = useRef<(row: number, col: number) => void>(() => {});
   const isProcessingRef = useRef(false);
   const [turnTimeLeft, setTurnTimeLeft] = useState(30);
@@ -291,12 +298,15 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
 
           if (result.result === 'hit') {
             play('hit');
+            haptics.hit();
             setMessage(`Enemy hit at ${String.fromCharCode(65 + msg.row)}${msg.col + 1}!`);
           } else if (result.result === 'sunk') {
             play('sunk');
+            haptics.sunk();
             setMessage(`Enemy sank your ${result.shipName}!`);
           } else {
             play('splash');
+            haptics.tap();
             setMessage(`Enemy missed at ${String.fromCharCode(65 + msg.row)}${msg.col + 1}`);
           }
 
@@ -305,6 +315,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
             setWinner('opponent');
             setMessage('You lose!');
             play('lose');
+            haptics.lose();
             gameDurationRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
             saveGameResult({
               mode: 'multiplayer',
@@ -313,6 +324,15 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
               playerHits: hitCountRef.current,
               opponentName: mp.opponentName || 'Opponent',
               durationSeconds: gameDurationRef.current,
+            });
+            checkAchievements({
+              result: 'loss',
+              mode: 'multiplayer',
+              playerShots: shotCountRef.current,
+              playerHits: hitCountRef.current,
+              durationSeconds: gameDurationRef.current,
+              playerShipsLost: SHIPS.length,
+              totalPlayerShips: SHIPS.length,
             });
             mp.sendGameOver(mp.opponentName || 'Opponent');
             setReplayData({
@@ -410,12 +430,15 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
 
           if (msg.result === 'hit') {
             play('hit');
+            haptics.hit();
             setMessage('Direct hit!');
           } else if (msg.result === 'sunk') {
             play('sunk');
+            haptics.sunk();
             setMessage(`You sank their ${msg.shipName}!`);
           } else {
             play('miss');
+            haptics.tap();
             setMessage('Miss!');
           }
 
@@ -433,6 +456,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
           setWinner('player');
           setMessage('You win!');
           play('win');
+          haptics.win();
           gameDurationRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
           saveGameResult({
             mode: 'multiplayer',
@@ -442,6 +466,17 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
             opponentName: mp.opponentName || 'Opponent',
             durationSeconds: gameDurationRef.current,
           });
+          const playerShipsLost = playerShipsRef.current.filter(s => s.sunk).length;
+          const unlocked = checkAchievements({
+            result: 'win',
+            mode: 'multiplayer',
+            playerShots: shotCountRef.current,
+            playerHits: hitCountRef.current,
+            durationSeconds: gameDurationRef.current,
+            playerShipsLost,
+            totalPlayerShips: SHIPS.length,
+          });
+          if (unlocked.length > 0) setNewAchievements(unlocked);
           setReplayData({
             playerShipPlacements: playerShipsSnapshotRef.current,
             opponentShipPlacements: [],
@@ -453,7 +488,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
         }
       }
     });
-  }, [mp, play, phase]);
+  }, [mp, play, phase, haptics, playerName]);
 
   // Both players ready -> start battle
   useEffect(() => {
@@ -657,8 +692,10 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
     setReplayData(null);
     setShowReplay(false);
     setScoreSubmitted(false);
+    setNewAchievements([]);
     setCursorPos({ row: 0, col: 0 });
     setShowCursor(false);
+    setMobileBoard('opponent');
     setLastAttackPos(null);
     setLastAttackResult(null);
     setLastDefensePos(null);
@@ -807,6 +844,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
               ships={playerShips}
               onDragSelectShip={handleDragSelectShip}
               title="Your Fleet"
+              onSwipeRotate={() => setOrientation(o => o === 'horizontal' ? 'vertical' : 'horizontal')}
             />
             <ShipRoster
               shipDefs={SHIPS}
@@ -823,58 +861,61 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
             />
           </div>
         ) : (
-          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-4 lg:gap-8">
-            <div className="flex flex-col items-center gap-4">
-              <GameBoard
-                board={playerBoard}
-                isPlayerBoard={true}
-                isPlacing={false}
-                title="Your Fleet"
-                disabled={true}
-                ships={playerShips}
-                lastAttackResult={lastDefenseResult}
-                lastAttackPos={lastDefensePos}
-                hideEnemyShots={hideEnemyShots}
-                onToggleHideEnemyShots={() => setHideEnemyShots(h => !h)}
-              />
-              <ShipRoster
-                shipDefs={SHIPS}
-                placedShips={playerShips}
-                selectedShipId={null}
-                orientation="horizontal"
-                onSelectShip={() => {}}
-                onRotate={() => {}}
-                onRandomize={() => {}}
-                onReady={() => {}}
-                isReady={false}
-                mode="battle"
-              />
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              {phase === 'battle' && isPlayerTurn && (
-                <TurnTimer
-                  seconds={turnTimeLeft}
-                  maxSeconds={30}
-                  isActive={isPlayerTurn && phase === 'battle'}
-                  onTimeout={handleTurnTimeout}
+          <>
+            <BoardToggle activeBoard={mobileBoard} onToggle={setMobileBoard} />
+            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-4 lg:gap-8">
+              <div className={`flex flex-col items-center gap-4 ${mobileBoard === 'opponent' ? 'hidden lg:flex' : 'flex'}`}>
+                <GameBoard
+                  board={playerBoard}
+                  isPlayerBoard={true}
+                  isPlacing={false}
+                  title="Your Fleet"
+                  disabled={true}
+                  ships={playerShips}
+                  lastAttackResult={lastDefenseResult}
+                  lastAttackPos={lastDefensePos}
+                  hideEnemyShots={hideEnemyShots}
+                  onToggleHideEnemyShots={() => setHideEnemyShots(h => !h)}
                 />
-              )}
-              <GameBoard
-                board={getVisibleBoard(opponentBoard, true)}
-                isPlayerBoard={false}
-                isPlacing={false}
-                onCellClick={handlePlayerAttack}
-                title="Enemy Waters"
-                disabled={!isPlayerTurn || phase === 'gameover'}
-                highlight={isPlayerTurn && phase === 'battle'}
-                lastAttackResult={lastAttackResult}
-                lastAttackPos={lastAttackPos}
-                cursorRow={cursorPos.row}
-                cursorCol={cursorPos.col}
-                showCursor={showCursor && isPlayerTurn && phase === 'battle'}
-              />
+                <ShipRoster
+                  shipDefs={SHIPS}
+                  placedShips={playerShips}
+                  selectedShipId={null}
+                  orientation="horizontal"
+                  onSelectShip={() => {}}
+                  onRotate={() => {}}
+                  onRandomize={() => {}}
+                  onReady={() => {}}
+                  isReady={false}
+                  mode="battle"
+                />
+              </div>
+              <div className={`flex flex-col items-center gap-2 ${mobileBoard === 'player' ? 'hidden lg:flex' : 'flex'}`}>
+                {phase === 'battle' && isPlayerTurn && (
+                  <TurnTimer
+                    seconds={turnTimeLeft}
+                    maxSeconds={30}
+                    isActive={isPlayerTurn && phase === 'battle'}
+                    onTimeout={handleTurnTimeout}
+                  />
+                )}
+                <GameBoard
+                  board={getVisibleBoard(opponentBoard, true)}
+                  isPlayerBoard={false}
+                  isPlacing={false}
+                  onCellClick={handlePlayerAttack}
+                  title="Enemy Waters"
+                  disabled={!isPlayerTurn || phase === 'gameover'}
+                  highlight={isPlayerTurn && phase === 'battle'}
+                  lastAttackResult={lastAttackResult}
+                  lastAttackPos={lastAttackPos}
+                  cursorRow={cursorPos.row}
+                  cursorCol={cursorPos.col}
+                  showCursor={showCursor && isPlayerTurn && phase === 'battle'}
+                />
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
 
@@ -909,6 +950,10 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
 
       {showReplay && replayData && (
         <GameReplay replayData={replayData} onClose={() => setShowReplay(false)} />
+      )}
+
+      {newAchievements.length > 0 && (
+        <AchievementToast achievementIds={newAchievements} onDone={() => setNewAchievements([])} />
       )}
     </div>
   );
