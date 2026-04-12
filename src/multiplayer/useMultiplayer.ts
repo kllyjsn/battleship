@@ -93,6 +93,7 @@ export function useMultiplayer(playerName: string) {
             ...prev,
             opponentName: msg.playerName ?? null,
             isConnected: true,
+            error: null,
           }));
 
           // BUG-0003 fix: Host responds with their name so the guest knows who they're playing
@@ -195,6 +196,7 @@ export function useMultiplayer(playerName: string) {
           setState(prev => ({
             ...prev,
             isConnecting: false,
+            isConnected: false,
             error: 'Connection failed. Please check your network and try again.',
           }));
         }
@@ -346,6 +348,7 @@ export function useMultiplayer(playerName: string) {
           return {
             ...prev,
             isConnecting: false,
+            isConnected: false,
             error: 'Room not found or host has left. Try creating a new room.',
           };
         }
