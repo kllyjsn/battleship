@@ -140,25 +140,32 @@ export function GameHUD({
         </div>
       )}
 
-      {/* Progress bars row - separate line to avoid overlap */}
+      {/* Score row - separate line to avoid overlap */}
       {phase === 'battle' && (
         <div className="flex items-center justify-center gap-3 sm:gap-4 px-3 sm:px-4 pb-2">
           <div className="flex items-center gap-1.5 sm:gap-2">
             <span className="text-[10px] sm:text-xs text-green-500/70 font-mono-crt">ALLY</span>
-            <div className="w-16 sm:w-24 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--hull-dark)' }}>
+            <span className="text-xs sm:text-sm font-bold font-mono-crt text-green-400" style={{ textShadow: '0 0 6px rgba(57,255,20,0.5)' }}>
+              {opponentHits}
+            </span>
+            <div className="w-12 sm:w-20 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--hull-dark)' }}>
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{ width: `${(opponentHits / totalShipCells) * 100}%`, background: 'linear-gradient(90deg, #39ff14, #22cc00)' }}
               />
             </div>
           </div>
+          <span className="text-[10px] sm:text-xs text-slate-500 font-mono-crt">—</span>
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <div className="w-16 sm:w-24 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--hull-dark)' }}>
+            <div className="w-12 sm:w-20 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--hull-dark)' }}>
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{ width: `${(playerHits / totalShipCells) * 100}%`, background: 'linear-gradient(90deg, #ff3c3c, #cc0000)' }}
               />
             </div>
+            <span className="text-xs sm:text-sm font-bold font-mono-crt text-red-400" style={{ textShadow: '0 0 6px rgba(255,60,60,0.5)' }}>
+              {playerHits}
+            </span>
             <span className="text-[10px] sm:text-xs text-red-500/70 font-mono-crt">ENEMY</span>
           </div>
         </div>
