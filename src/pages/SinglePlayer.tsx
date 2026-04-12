@@ -49,7 +49,11 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
   const [orientation, setOrientation] = useState<Orientation>('horizontal');
   const [isPlayerTurn, setIsPlayerTurn] = useState(resumeState ? resumeState.isPlayerTurn : true);
   const [winner, setWinner] = useState<'player' | 'opponent' | null>(null);
-  const [message, setMessage] = useState(resumeState ? 'Game resumed — your turn!' : 'Place your ships on the board');
+  const [message, setMessage] = useState(
+    resumeState
+      ? (resumeState.isPlayerTurn ? 'Game resumed — your turn!' : "Game resumed — opponent's turn...")
+      : 'Place your ships on the board'
+  );
   const [hideEnemyShots, setHideEnemyShots] = useState(false);
   const [, setLastAttack] = useState<AttackResult | null>(null);
   const [lastAttackPos, setLastAttackPos] = useState<{ row: number; col: number } | null>(null);
@@ -441,8 +445,10 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
   }, [handlePlayerAttack]);
 
   // ── Persist game state to localStorage after each state change during battle ──
+  // Only save when it is the player's turn so we never snapshot a mid-AI-turn
+  // state that would leave the game stuck on resume (no code path re-triggers AI).
   useEffect(() => {
-    if (phase !== 'battle' || winner) return;
+    if (phase !== 'battle' || winner || !isPlayerTurn) return;
     const ai = aiStateRef.current;
     saveGameState({
       version: 1,
