@@ -334,6 +334,47 @@ body {
   animation: rankUpShine 2s ease-in-out 0.5s;
 }
 
+/* ── Ship hit/sunk notification animations ── */
+@keyframes shipNotifHitIn {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.9); }
+  10% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  80% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.95); }
+}
+
+@keyframes shipNotifSunkIn {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.8); }
+  8% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.05); }
+  14% { transform: translateX(-50%) translateY(0) scale(1); }
+  80% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.95); }
+}
+
+@keyframes sunkIconSpin {
+  0% { transform: rotate(-180deg) scale(0.5); opacity: 0; }
+  100% { transform: rotate(0deg) scale(1); opacity: 1; }
+}
+
+@keyframes sunkTextPulse {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 1; }
+}
+
+@keyframes sunkSparkle {
+  0% { transform: scale(0) translateY(0); opacity: 1; }
+  50% { transform: scale(1.5) translateY(-8px); opacity: 0.8; }
+  100% { transform: scale(0) translateY(-16px); opacity: 0; }
+}
+
+.ship-sunk-celebration {
+  animation: sunkCelebrationGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes sunkCelebrationGlow {
+  0%, 100% { box-shadow: 0 0 30px rgba(255, 176, 0, 0.2), 0 4px 24px rgba(0,0,0,0.5); }
+  50% { box-shadow: 0 0 40px rgba(255, 176, 0, 0.35), 0 4px 24px rgba(0,0,0,0.5); }
+}
+
 /* ── Remove old wave animations (replaced by sonar) ── */
 .wave-animation,
 .wave-animation-slow {

@@ -135,7 +135,7 @@ export function processAttack(
     return {
       board: newBoard,
       ships: newShips,
-      result: { position: { row, col }, result: 'hit' },
+      result: { position: { row, col }, result: 'hit', shipName: ship.name, shipId: ship.id },
     };
   }
 
