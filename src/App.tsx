@@ -4,6 +4,9 @@ import { SinglePlayer } from './pages/SinglePlayer';
 import { MultiplayerPage } from './pages/Multiplayer';
 import type { Difficulty } from './engine/types';
 import { loadTheme, applyTheme } from './lib/themes';
+import { loadSavedGame, clearSavedGame } from './lib/gamePersistence';
+import type { SavedGameState } from './lib/gamePersistence';
+import { ConfirmDialog } from './components/ConfirmDialog';
 
 type Screen = 'menu' | 'single' | 'multiplayer';
 
@@ -21,6 +24,9 @@ function App() {
   const [screen, setScreen] = useState<Screen>(initialRoom ? 'multiplayer' : 'menu');
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [joinRoomCode, setJoinRoomCode] = useState<string | null>(initialRoom);
+  const [resumeState, setResumeState] = useState<SavedGameState | null>(null);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
+  const [pendingSave, setPendingSave] = useState<SavedGameState | null>(null);
 
   // Load and apply saved theme on mount
   useEffect(() => {
@@ -28,8 +34,35 @@ function App() {
     applyTheme(themeId);
   }, []);
 
+  // On mount, check for a saved game and prompt the user
+  useEffect(() => {
+    if (initialRoom) return; // Don't interrupt multiplayer join flow
+    const saved = loadSavedGame();
+    if (saved) {
+      setPendingSave(saved);
+      setShowResumePrompt(true);
+    }
+  }, []);
+
+  const handleResume = () => {
+    if (pendingSave) {
+      setDifficulty(pendingSave.difficulty);
+      setResumeState(pendingSave);
+      setScreen('single');
+    }
+    setShowResumePrompt(false);
+    setPendingSave(null);
+  };
+
+  const handleDeclineResume = () => {
+    clearSavedGame();
+    setShowResumePrompt(false);
+    setPendingSave(null);
+  };
+
   const handleStartSinglePlayer = (diff: Difficulty) => {
     setDifficulty(diff);
+    setResumeState(null);
     setScreen('single');
   };
 
@@ -39,6 +72,7 @@ function App() {
 
   const handleBack = () => {
     setJoinRoomCode(null);
+    setResumeState(null);
     // Clear join path or query params when going back
     if (window.location.pathname !== '/' || window.location.search) {
       window.history.replaceState({}, '', '/');
@@ -49,7 +83,7 @@ function App() {
   let content;
   switch (screen) {
     case 'single':
-      content = <SinglePlayer difficulty={difficulty} onBack={handleBack} />;
+      content = <SinglePlayer difficulty={difficulty} onBack={handleBack} resumeState={resumeState} />;
       break;
     case 'multiplayer':
       content = <MultiplayerPage onBack={handleBack} initialRoomCode={joinRoomCode} />;
@@ -67,6 +101,16 @@ function App() {
     <>
       {content}
       <div className="crt-overlay" />
+      {showResumePrompt && (
+        <ConfirmDialog
+          title="RESUME MISSION"
+          message={`A ${pendingSave?.difficulty?.toUpperCase() ?? ''} game in progress was found. Resume where you left off?`}
+          confirmLabel="Resume"
+          cancelLabel="New Game"
+          onConfirm={handleResume}
+          onCancel={handleDeclineResume}
+        />
+      )}
     </>
   );
 }
