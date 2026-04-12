@@ -503,8 +503,13 @@ export function useMultiplayer(playerName: string) {
   }, [publish, playerName]);
 
   const sendLeave = useCallback(async () => {
-    // Await publish so the LEAVE message is sent before destroy() tears down PubNub
-    await publish({ type: 'LEAVE' });
+    // Best-effort publish: await so the LEAVE message is sent before destroy(),
+    // but always clean up even if publish fails (network error, timeout, etc.)
+    try {
+      await publish({ type: 'LEAVE' });
+    } catch {
+      // Publish failed — opponent will detect departure via presence timeout
+    }
     cleanup();
     setState({
       roomCode: null,
