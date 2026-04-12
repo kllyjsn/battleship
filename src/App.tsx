@@ -36,6 +36,7 @@ function App() {
 
   // On mount, check for a saved game and prompt the user
   useEffect(() => {
+    if (initialRoom) return; // Don't interrupt multiplayer join flow
     const saved = loadSavedGame();
     if (saved) {
       setPendingSave(saved);

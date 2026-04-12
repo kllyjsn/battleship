@@ -86,8 +86,12 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
   const [scoreSubmitted, setScoreSubmitted] = useState(false);
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
   const [playerScore, setPlayerScore] = useState(resumeState ? resumeState.playerScore : 0);
-  const playerShipsSnapshotRef = useRef<Ship[]>([]);
-  const opponentShipsSnapshotRef = useRef<Ship[]>([]);
+  const playerShipsSnapshotRef = useRef<Ship[]>(
+    resumeState ? resumeState.playerShips.map(s => ({ ...s, positions: [...s.positions] })) : []
+  );
+  const opponentShipsSnapshotRef = useRef<Ship[]>(
+    resumeState ? resumeState.opponentShips.map(s => ({ ...s, positions: [...s.positions] })) : []
+  );
   const gameDurationRef = useRef(0);
   const [cursorPos, setCursorPos] = useState({ row: 0, col: 0 });
   const [showCursor, setShowCursor] = useState(false);
