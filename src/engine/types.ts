@@ -61,7 +61,7 @@ export interface GameState {
 }
 
 export interface MultiplayerMessage {
-  type: 'JOIN' | 'READY' | 'ATTACK' | 'ATTACK_RESULT' | 'GAME_OVER' | 'CHAT' | 'REACTION' | 'REMATCH' | 'LEAVE' | 'SPECTATE' | 'SPECTATOR_SYNC';
+  type: 'JOIN' | 'READY' | 'ATTACK' | 'ATTACK_RESULT' | 'GAME_OVER' | 'CHAT' | 'REACTION' | 'REMATCH' | 'LEAVE' | 'SPECTATE' | 'SPECTATOR_SYNC' | 'PING' | 'PONG';
   playerName?: string;
   playerId?: string;
   ships?: Ship[];
