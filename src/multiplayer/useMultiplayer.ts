@@ -198,6 +198,7 @@ export function useMultiplayer(playerName: string) {
             ...prev,
             opponentName: msg.playerName ?? null,
             isConnected: true,
+            isReconnecting: false,
             error: null,
           }));
 
