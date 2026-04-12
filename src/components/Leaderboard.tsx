@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { X, Trophy, Globe, Monitor, Loader2 } from 'lucide-react';
+import { X, Trophy, Globe, Monitor, Loader2, AlertTriangle } from 'lucide-react';
 import { getLeaderboard, getOnlineLeaderboard } from '../lib/leaderboard';
 import type { LeaderboardEntry, Period } from '../lib/leaderboard';
 
@@ -101,6 +101,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
   const [source, setSource] = useState<Source>('local');
   const [globalEntries, setGlobalEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [globalError, setGlobalError] = useState<string | null>(null);
 
   const localEntries: LeaderboardEntry[] = useMemo(() => getLeaderboard(period), [period]);
 
@@ -111,9 +112,11 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
     }
     let cancelled = false;
     setLoading(true);
-    getOnlineLeaderboard(period).then(data => {
+    setGlobalError(null);
+    getOnlineLeaderboard(period).then(result => {
       if (!cancelled) {
-        setGlobalEntries(data);
+        setGlobalEntries(result.entries);
+        setGlobalError(result.error ?? null);
         setLoading(false);
       }
     });
@@ -184,6 +187,12 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
           <div className="flex items-center justify-center py-8 gap-2 text-slate-500 font-mono-crt">
             <Loader2 size={16} className="animate-spin" />
             Loading global scores...
+          </div>
+        ) : globalError && source === 'global' ? (
+          <div className="flex flex-col items-center justify-center py-8 gap-2 text-amber-400/80 font-mono-crt">
+            <AlertTriangle size={20} />
+            <p className="text-sm text-center">Could not reach the global leaderboard.</p>
+            <p className="text-xs text-slate-500 text-center">{globalError}</p>
           </div>
         ) : (
           <LeaderboardTable entries={entries} />

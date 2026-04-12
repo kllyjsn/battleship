@@ -111,7 +111,7 @@ export function getLeaderboard(period: Period): LeaderboardEntry[] {
 
 async function submitOnlineEntry(entry: LeaderboardEntry): Promise<void> {
   try {
-    await fetch(`${getApiBase()}/leaderboard`, {
+    const resp = await fetch(`${getApiBase()}/leaderboard`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -126,18 +126,41 @@ async function submitOnlineEntry(entry: LeaderboardEntry): Promise<void> {
         durationSeconds: entry.durationSeconds,
       }),
     });
-  } catch {
-    // Silently fail — local entry is already saved
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => '');
+      console.error(
+        `[Leaderboard] POST /leaderboard failed: ${resp.status} ${resp.statusText}`,
+        body,
+      );
+    } else {
+      console.info('[Leaderboard] Score submitted to global leaderboard');
+    }
+  } catch (err) {
+    console.error('[Leaderboard] Network error submitting score:', err);
   }
 }
 
-export async function getOnlineLeaderboard(period?: Period): Promise<LeaderboardEntry[]> {
+export interface OnlineLeaderboardResult {
+  entries: LeaderboardEntry[];
+  error?: string;
+}
+
+export async function getOnlineLeaderboard(period?: Period): Promise<OnlineLeaderboardResult> {
   try {
     const params = period ? `?period=${period}` : '';
     const resp = await fetch(`${getApiBase()}/leaderboard${params}`);
-    if (!resp.ok) return [];
-    return (await resp.json()) as LeaderboardEntry[];
-  } catch {
-    return [];
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => '');
+      const msg = `GET /leaderboard failed: ${resp.status} ${resp.statusText}`;
+      console.error(`[Leaderboard] ${msg}`, body);
+      return { entries: [], error: msg };
+    }
+    const entries = (await resp.json()) as LeaderboardEntry[];
+    console.info(`[Leaderboard] Fetched ${entries.length} global entries (period=${period ?? 'all'})`);
+    return { entries };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Network error';
+    console.error('[Leaderboard] Network error fetching global leaderboard:', err);
+    return { entries: [], error: msg };
   }
 }
