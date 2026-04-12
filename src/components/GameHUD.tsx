@@ -1,6 +1,9 @@
-import { Volume2, VolumeX, ArrowLeft, Crosshair } from 'lucide-react';
+import { Volume2, VolumeX, ArrowLeft, Crosshair, Flame, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 import { MusicVisualizer } from './MusicVisualizer';
+import { loadStats } from '../lib/stats';
+import { getPlayerRank } from '../lib/ranks';
+import { RankBadge } from './RankBadge';
 
 interface GameHUDProps {
   isPlayerTurn: boolean;
@@ -15,6 +18,9 @@ interface GameHUDProps {
   musicFreqData: number[];
   onToggleMusic: () => void;
   score?: number;
+  showStreak?: boolean;
+  playerShipsRemaining?: number;
+  opponentShipsRemaining?: number;
 }
 
 export function GameHUD({
@@ -30,9 +36,18 @@ export function GameHUD({
   musicFreqData,
   onToggleMusic,
   score,
+  showStreak = false,
+  playerShipsRemaining,
+  opponentShipsRemaining,
 }: GameHUDProps) {
   const [soundOn, setSoundOn] = useState(true);
   const displayScore = score ?? 0;
+  const streak = showStreak ? loadStats().currentWinStreak : 0;
+  const { rank } = getPlayerRank();
+  const dangerZone = phase === 'battle' && (
+    (playerShipsRemaining !== undefined && playerShipsRemaining <= 1) ||
+    (opponentShipsRemaining !== undefined && opponentShipsRemaining <= 1)
+  );
 
   const handleToggle = () => {
     const newState = onToggleSound();
@@ -43,13 +58,18 @@ export function GameHUD({
     <div className="w-full metal-panel" style={{ borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>
       {/* Top row: back button, turn message, sound toggle */}
       <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-3">
-        <button
-          onClick={onBack}
-          className="flex-shrink-0 flex items-center gap-1.5 text-slate-500 hover:text-green-400 transition-colors font-mono-crt"
-        >
-          <ArrowLeft size={16} />
-          <span className="text-sm hidden sm:inline">MENU</span>
-        </button>
+        <div className="flex-shrink-0 flex items-center gap-2">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-slate-500 hover:text-green-400 transition-colors font-mono-crt"
+          >
+            <ArrowLeft size={16} />
+            <span className="text-sm hidden sm:inline">MENU</span>
+          </button>
+          <div className="hidden sm:flex">
+            <RankBadge rank={rank} size="sm" />
+          </div>
+        </div>
 
         <div
           className={`text-[11px] sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded font-mono-crt truncate max-w-[55%] sm:max-w-none text-center ${
@@ -84,6 +104,12 @@ export function GameHUD({
                 <Crosshair size={13} className="text-amber-400" />
                 <span className="text-xs sm:text-sm font-bold font-mono-crt text-glow-amber">{displayScore}</span>
               </div>
+              {streak >= 2 && (
+                <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded metal-panel-light" style={{ border: '1px solid var(--steel-border)' }}>
+                  <Flame size={13} className="text-orange-400" />
+                  <span className="text-xs font-bold font-mono-crt text-orange-300">{streak}</span>
+                </div>
+              )}
               <div className="w-px h-4 bg-slate-700/50" />
             </>
           )}
@@ -102,6 +128,17 @@ export function GameHUD({
           </button>
         </div>
       </div>
+
+      {/* Danger zone alert */}
+      {dangerZone && (
+        <div className="flex items-center justify-center gap-2 px-3 py-1" style={{ animation: 'dangerTextPulse 1.5s ease-in-out infinite' }}>
+          <AlertTriangle size={13} className="text-red-400" />
+          <span className="text-[10px] sm:text-xs font-bold font-mono-crt text-red-400 tracking-widest">
+            {playerShipsRemaining !== undefined && playerShipsRemaining <= 1 ? 'HULL CRITICAL' : 'ENEMY FINAL SHIP'}
+          </span>
+          <AlertTriangle size={13} className="text-red-400" />
+        </div>
+      )}
 
       {/* Progress bars row - separate line to avoid overlap */}
       {phase === 'battle' && (

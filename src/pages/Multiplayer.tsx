@@ -22,11 +22,14 @@ import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 import { useHaptics } from '../hooks/useHaptics';
 import { saveGameResult } from '../lib/gameResults';
 import { checkAchievements } from '../lib/achievements';
+import { loadStats } from '../lib/stats';
 import { AchievementToast } from '../components/AchievementToast';
 import { BattleLog } from '../components/BattleLog';
 import { BoardToggle } from '../components/BoardToggle';
 import { TurnTimer } from '../components/TurnTimer';
 import { GameReplay } from '../components/GameReplay';
+import { ScorePopup } from '../components/ScorePopup';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import type { ReplayMove, ReplayData } from '../lib/replay';
 import { Eye } from 'lucide-react';
 
@@ -75,6 +78,10 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
   const [mobileBoard, setMobileBoard] = useState<'player' | 'opponent'>('opponent');
   const handlePlayerAttackRef = useRef<(row: number, col: number) => void>(() => {});
   const isProcessingRef = useRef(false);
+  const [scorePopup, setScorePopup] = useState({ points: 0, label: '', trigger: 0 });
+  const [showConfirmLeave, setShowConfirmLeave] = useState(false);
+  const previousWinsRef = useRef(loadStats().games.filter(g => g.result === 'win').length);
+  const [opponentShipsRemaining, setOpponentShipsRemaining] = useState(SHIPS.length);
   const [turnTimeLeft, setTurnTimeLeft] = useState(30);
   const turnTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [spectatorHostBoard, setSpectatorHostBoard] = useState<Board>(createEmptyBoard());
@@ -411,7 +418,9 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
           }
 
           // Track score for every move
-          setPlayerScore(prev => prev + scoreForResult(msg.result!));
+          const movePoints = scoreForResult(msg.result!);
+          setPlayerScore(prev => prev + movePoints);
+          setScorePopup({ points: movePoints, label: msg.result === 'sunk' ? 'SUNK' : msg.result === 'hit' ? 'HIT' : 'MISS', trigger: Date.now() });
 
           turnCountRef.current++;
           setBattleLog(prev => [...prev, {
@@ -440,6 +449,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
             play('sunk');
             haptics.sunk();
             setMessage(`You sank their ${msg.shipName}!`);
+            setOpponentShipsRemaining(prev => Math.max(0, prev - 1));
           } else {
             play('miss');
             haptics.tap();
@@ -705,6 +715,8 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
     setLastAttackResult(null);
     setLastDefensePos(null);
     setLastDefenseResult(null);
+    setOpponentShipsRemaining(SHIPS.length);
+    previousWinsRef.current = loadStats().games.filter(g => g.result === 'win').length;
     // BUG-0005 fix: Use REMATCH handshake instead of resetReady() to avoid
     // race condition where opponent's early READY gets wiped.
     mp.sendRematch();
@@ -826,7 +838,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
         message={message}
         phase={phase}
         onToggleSound={toggle}
-        onBack={handleGoHome}
+        onBack={phase === 'battle' ? () => setShowConfirmLeave(true) : handleGoHome}
         playerHits={opponentHitsOnPlayer}
         opponentHits={playerHitsOnOpponent}
         totalShipCells={TOTAL_SHIP_CELLS}
@@ -834,6 +846,9 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
         musicFreqData={music.freqData}
         onToggleMusic={music.toggle}
         score={playerScore}
+        showStreak={true}
+        playerShipsRemaining={playerShips.filter(s => !s.sunk).length}
+        opponentShipsRemaining={opponentShipsRemaining}
       />
 
       <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-3 sm:gap-4 lg:gap-8 p-2 sm:p-4">
@@ -952,6 +967,10 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
           }}
           alreadySubmitted={scoreSubmitted}
           onScoreSubmitted={() => setScoreSubmitted(true)}
+          shipsLost={playerShips.filter(s => s.sunk).length}
+          totalShips={SHIPS.length}
+          opponentBoard={opponentBoard}
+          previousWins={previousWinsRef.current}
         />
       )}
 
@@ -961,6 +980,24 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
 
       {newAchievements.length > 0 && (
         <AchievementToast achievementIds={newAchievements} onDone={() => setNewAchievements([])} />
+      )}
+
+      <ScorePopup
+        points={scorePopup.points}
+        label={scorePopup.label}
+        position={lastAttackPos}
+        trigger={scorePopup.trigger}
+      />
+
+      {showConfirmLeave && (
+        <ConfirmDialog
+          title="ABANDON MATCH?"
+          message="Leaving will forfeit the match to your opponent. Are you sure?"
+          confirmLabel="LEAVE"
+          cancelLabel="STAY"
+          onConfirm={() => { setShowConfirmLeave(false); handleGoHome(); }}
+          onCancel={() => setShowConfirmLeave(false)}
+        />
       )}
     </div>
   );
