@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { Board, Ship, Orientation, GamePhase, MultiplayerMessage, BattleLogEntry } from '../engine/types';
-import { SHIPS, TOTAL_SHIP_CELLS } from '../engine/constants';
+import { SHIPS, TOTAL_SHIP_CELLS, scoreForResult } from '../engine/constants';
 import {
   createEmptyBoard,
   placeShip,
@@ -67,6 +67,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
   const [showReplay, setShowReplay] = useState(false);
   const [scoreSubmitted, setScoreSubmitted] = useState(false);
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
+  const [playerScore, setPlayerScore] = useState(0);
   const playerShipsSnapshotRef = useRef<Ship[]>([]);
   const gameDurationRef = useRef(0);
   const [cursorPos, setCursorPos] = useState({ row: 0, col: 0 });
@@ -409,6 +410,9 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
             setPlayerHitsOnOpponentCount(prev => prev + 1);
           }
 
+          // Track score for every move
+          setPlayerScore(prev => prev + scoreForResult(msg.result!));
+
           turnCountRef.current++;
           setBattleLog(prev => [...prev, {
             id: `p-${turnCountRef.current}`,
@@ -693,6 +697,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
     setShowReplay(false);
     setScoreSubmitted(false);
     setNewAchievements([]);
+    setPlayerScore(0);
     setCursorPos({ row: 0, col: 0 });
     setShowCursor(false);
     setMobileBoard('opponent');
@@ -828,6 +833,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
         isMusicPlaying={music.isPlaying}
         musicFreqData={music.freqData}
         onToggleMusic={music.toggle}
+        score={playerScore}
       />
 
       <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-8 p-4">
@@ -941,6 +947,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
             mode: 'multiplayer',
             shots: shotCountRef.current,
             hits: hitCountRef.current,
+            totalScore: playerScore,
             durationSeconds: gameDurationRef.current,
           }}
           alreadySubmitted={scoreSubmitted}

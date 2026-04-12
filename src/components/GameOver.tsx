@@ -14,6 +14,7 @@ interface GameOverProps {
     difficulty?: 'easy' | 'medium' | 'hard';
     shots: number;
     hits: number;
+    totalScore: number;
     durationSeconds: number;
   };
   alreadySubmitted?: boolean;
@@ -40,7 +41,7 @@ function saveSessionName(name: string): void {
 
 export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', opponentName = 'Opponent', onWatchReplay, gameStats, alreadySubmitted = false, onScoreSubmitted }: GameOverProps) {
   const isWin = winner === 'player';
-  const [showNamePrompt, setShowNamePrompt] = useState(isWin && !!gameStats && !alreadySubmitted);
+  const [showNamePrompt, setShowNamePrompt] = useState(!!gameStats && !alreadySubmitted);
   const [sessionName, setSessionName] = useState(loadSessionName());
   const [saved, setSaved] = useState(alreadySubmitted);
 
@@ -53,6 +54,8 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
         difficulty: gameStats.difficulty,
         shots: gameStats.shots,
         hits: gameStats.hits,
+        totalScore: gameStats.totalScore,
+        won: isWin,
         durationSeconds: gameStats.durationSeconds,
       });
     }
@@ -96,7 +99,8 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
         {/* Session name prompt for winners */}
         {showNamePrompt && (
           <div className="mb-6 p-4 rounded-lg metal-panel-light">
-            <p className="text-sm text-glow-amber font-mono-crt mb-3">ENTER YOUR CALLSIGN FOR THE LEADERBOARD</p>
+            <p className="text-sm text-glow-amber font-mono-crt mb-2">ENTER YOUR CALLSIGN FOR THE LEADERBOARD</p>
+            <p className="text-xs text-slate-400 font-mono-crt mb-3">SCORE: <span className="text-glow-amber">{gameStats?.totalScore ?? 0}</span> PTS</p>
             <input
               type="text"
               value={sessionName}

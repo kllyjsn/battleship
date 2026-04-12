@@ -44,7 +44,9 @@ function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
           <tr className="text-green-500/60 border-b border-slate-700">
             <th className="py-2 px-2 text-left">#</th>
             <th className="py-2 px-2 text-left">Player</th>
+            <th className="py-2 px-2 text-center">Score</th>
             <th className="py-2 px-2 text-center">Acc%</th>
+            <th className="py-2 px-2 text-center">W/L</th>
             <th className="py-2 px-2 text-center">Shots</th>
             <th className="py-2 px-2 text-center">Time</th>
             <th className="py-2 px-2 text-center">Mode</th>
@@ -62,8 +64,16 @@ function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
               <td className="py-2 px-2 text-slate-300">
                 {entry.playerName}
               </td>
-              <td className="py-2 px-2 text-center text-glow-amber">
+              <td className="py-2 px-2 text-center text-glow-amber font-bold">
+                {entry.totalScore ?? 0}
+              </td>
+              <td className="py-2 px-2 text-center text-slate-400">
                 {entry.score.toFixed(1)}%
+              </td>
+              <td className="py-2 px-2 text-center">
+                <span className={entry.won !== false ? 'text-green-400' : 'text-red-400'}>
+                  {entry.won !== false ? 'W' : 'L'}
+                </span>
               </td>
               <td className="py-2 px-2 text-center text-slate-400">
                 {entry.shots}
