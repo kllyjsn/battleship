@@ -1,9 +1,9 @@
-import { Crosshair, Users, Anchor, Zap, Brain, Shield, Cpu, Target, BarChart3, Dice5, Swords, Gamepad2, Palette, Trophy, Award, BookOpen } from 'lucide-react';
+import { Crosshair, Users, Anchor, Zap, Brain, Shield, Cpu, Target, BarChart3, Dice5, Swords, Gamepad2, Trophy, Award, BookOpen, Settings } from 'lucide-react';
 import type { Difficulty } from '../engine/types';
 import { useState } from 'react';
 import { StatsPanel } from './StatsPanel';
 import { Leaderboard } from './Leaderboard';
-import { ThemeSelector } from './ThemeSelector';
+import { SettingsPanel } from './SettingsPanel';
 import { AchievementsPanel } from './AchievementsPanel';
 import { loadTheme } from '../lib/themes';
 import { getPlayerRank } from '../lib/ranks';
@@ -17,7 +17,7 @@ interface MainMenuProps {
 export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuProps) {
   const [showDifficulty, setShowDifficulty] = useState(false);
   const [showStats, setShowStats] = useState(false);
-  const [showThemes, setShowThemes] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(loadTheme());
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
@@ -141,12 +141,12 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
             MEDALS
           </button>
           <button
-            onClick={() => setShowThemes(true)}
+            onClick={() => setShowSettings(true)}
             className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded metal-panel hover:border-cyan-500/40 transition-all text-xs sm:text-sm font-mono-crt text-cyan-300"
           >
-            <Palette size={14} className="sm:hidden" />
-            <Palette size={16} className="hidden sm:block" />
-            THEMES
+            <Settings size={14} className="sm:hidden" />
+            <Settings size={16} className="hidden sm:block" />
+            SETTINGS
           </button>
           <a
             href="/docs/"
@@ -270,11 +270,11 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
       {showStats && <StatsPanel onClose={() => setShowStats(false)} />}
       {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
       {showAchievements && <AchievementsPanel onClose={() => setShowAchievements(false)} />}
-      {showThemes && (
-        <ThemeSelector
+      {showSettings && (
+        <SettingsPanel
           currentTheme={currentTheme}
           onSelectTheme={setCurrentTheme}
-          onClose={() => setShowThemes(false)}
+          onClose={() => setShowSettings(false)}
         />
       )}
 
