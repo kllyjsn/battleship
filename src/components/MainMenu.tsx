@@ -1,4 +1,4 @@
-import { Crosshair, Users, Anchor, Zap, Brain, Shield, Cpu, Target, BarChart3, Dice5, Swords, Gamepad2, Palette, Trophy, Award } from 'lucide-react';
+import { Crosshair, Users, Anchor, Zap, Brain, Shield, Cpu, Target, BarChart3, Dice5, Swords, Gamepad2, Palette, Trophy, Award, BookOpen } from 'lucide-react';
 import type { Difficulty } from '../engine/types';
 import { useState } from 'react';
 import { StatsPanel } from './StatsPanel';
@@ -148,6 +148,16 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
             <Palette size={16} className="hidden sm:block" />
             THEMES
           </button>
+          <a
+            href="/docs/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded metal-panel hover:border-blue-500/40 transition-all text-xs sm:text-sm font-mono-crt text-blue-300"
+          >
+            <BookOpen size={14} className="sm:hidden" />
+            <BookOpen size={16} className="hidden sm:block" />
+            DOCS
+          </a>
         </div>
 
         <p className="mt-5 sm:mt-8 text-[10px] sm:text-xs text-slate-700 font-mono-crt">
