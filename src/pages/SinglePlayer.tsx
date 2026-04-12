@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { Board, Ship, Difficulty, Orientation, GamePhase, AttackResult, BattleLogEntry } from '../engine/types';
-import { SHIPS, TOTAL_SHIP_CELLS } from '../engine/constants';
+import { SHIPS, TOTAL_SHIP_CELLS, scoreForResult } from '../engine/constants';
 import {
   createEmptyBoard,
   placeShip,
@@ -62,6 +62,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const [showReplay, setShowReplay] = useState(false);
   const [scoreSubmitted, setScoreSubmitted] = useState(false);
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
+  const [playerScore, setPlayerScore] = useState(0);
   const playerShipsSnapshotRef = useRef<Ship[]>([]);
   const opponentShipsSnapshotRef = useRef<Ship[]>([]);
   const gameDurationRef = useRef(0);
@@ -232,6 +233,9 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         shipId: result.shipId,
         shipPositions: result.shipPositions,
       });
+
+      const movePoints = scoreForResult(result.result);
+      setPlayerScore(prev => prev + movePoints);
 
       if (result.result === 'hit') {
         hitCountRef.current += 1;
@@ -426,6 +430,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     setShowReplay(false);
     setScoreSubmitted(false);
     setNewAchievements([]);
+    setPlayerScore(0);
     setCursorPos({ row: 0, col: 0 });
     setShowCursor(false);
     setMobileBoard('opponent');
@@ -452,6 +457,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         isMusicPlaying={music.isPlaying}
         musicFreqData={music.freqData}
         onToggleMusic={music.toggle}
+        score={playerScore}
       />
 
       <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-8 p-4">
@@ -551,6 +557,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
             difficulty,
             shots: shotCountRef.current,
             hits: hitCountRef.current,
+            totalScore: playerScore,
             durationSeconds: gameDurationRef.current,
           }}
           alreadySubmitted={scoreSubmitted}

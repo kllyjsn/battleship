@@ -1,4 +1,4 @@
-import { Volume2, VolumeX, ArrowLeft } from 'lucide-react';
+import { Volume2, VolumeX, ArrowLeft, Crosshair } from 'lucide-react';
 import { useState } from 'react';
 import { MusicVisualizer } from './MusicVisualizer';
 
@@ -14,6 +14,7 @@ interface GameHUDProps {
   isMusicPlaying: boolean;
   musicFreqData: number[];
   onToggleMusic: () => void;
+  score?: number;
 }
 
 export function GameHUD({
@@ -28,8 +29,10 @@ export function GameHUD({
   isMusicPlaying,
   musicFreqData,
   onToggleMusic,
+  score,
 }: GameHUDProps) {
   const [soundOn, setSoundOn] = useState(true);
+  const displayScore = score ?? 0;
 
   const handleToggle = () => {
     const newState = onToggleSound();
@@ -73,8 +76,17 @@ export function GameHUD({
           </span>
         </div>
 
-        {/* Audio controls */}
-        <div className="flex-shrink-0 flex items-center gap-0.5">
+        {/* Score + Audio controls */}
+        <div className="flex-shrink-0 flex items-center gap-1.5">
+          {phase !== 'placement' && (
+            <>
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded metal-panel-light" style={{ border: '1px solid var(--steel-border)' }}>
+                <Crosshair size={13} className="text-amber-400" />
+                <span className="text-xs sm:text-sm font-bold font-mono-crt text-glow-amber">{displayScore}</span>
+              </div>
+              <div className="w-px h-4 bg-slate-700/50" />
+            </>
+          )}
           <MusicVisualizer
             isPlaying={isMusicPlaying}
             freqData={musicFreqData}

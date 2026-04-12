@@ -2,8 +2,10 @@ export interface LeaderboardEntry {
   id: string;
   playerName: string;
   score: number; // accuracy percentage
+  totalScore: number; // point-based score (hits, sinks, misses)
   shots: number;
   hits: number;
+  won: boolean;
   mode: 'single' | 'multiplayer';
   difficulty?: 'easy' | 'medium' | 'hard';
   durationSeconds: number;
@@ -33,6 +35,8 @@ export function addLeaderboardEntry(
     difficulty?: 'easy' | 'medium' | 'hard';
     shots: number;
     hits: number;
+    totalScore: number;
+    won: boolean;
     durationSeconds: number;
   }
 ): LeaderboardEntry {
@@ -40,8 +44,10 @@ export function addLeaderboardEntry(
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     playerName,
     score: input.shots > 0 ? Math.round((input.hits / input.shots) * 1000) / 10 : 0,
+    totalScore: input.totalScore,
     shots: input.shots,
     hits: input.hits,
+    won: input.won,
     mode: input.mode,
     difficulty: input.difficulty,
     durationSeconds: input.durationSeconds,
@@ -91,7 +97,10 @@ export function getLeaderboard(period: Period): LeaderboardEntry[] {
   return entries
     .filter((e) => new Date(e.date) >= cutoff)
     .sort((a, b) => {
-      // Sort by accuracy descending, then fewest shots ascending
+      // Sort by total score descending, then accuracy descending, then fewest shots ascending
+      const aTotal = a.totalScore ?? 0;
+      const bTotal = b.totalScore ?? 0;
+      if (bTotal !== aTotal) return bTotal - aTotal;
       if (b.score !== a.score) return b.score - a.score;
       return a.shots - b.shots;
     })
@@ -114,8 +123,10 @@ async function submitOnlineEntry(entry: LeaderboardEntry): Promise<void> {
       body: JSON.stringify({
         playerName: entry.playerName,
         score: entry.score,
+        totalScore: entry.totalScore,
         shots: entry.shots,
         hits: entry.hits,
+        won: entry.won,
         mode: entry.mode,
         difficulty: entry.difficulty,
         durationSeconds: entry.durationSeconds,
