@@ -178,6 +178,14 @@ export function useMultiplayer(playerName: string) {
             clearTimeout(opponentTimeoutRef.current);
             opponentTimeoutRef.current = null;
           }
+          // Clear any stale PONG timeout from pre-opponent PING cycles and
+          // restart the PING interval so the next cycle targets the new peer
+          if (pongTimeoutRef.current) {
+            clearTimeout(pongTimeoutRef.current);
+            pongTimeoutRef.current = null;
+          }
+          startPingInterval();
+
           setState(prev => ({
             ...prev,
             opponentName: msg.playerName ?? null,
