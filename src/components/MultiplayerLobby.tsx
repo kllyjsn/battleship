@@ -152,7 +152,7 @@ export function MultiplayerLobby({
 
           {mode === 'join' && (
             <div className="space-y-4">
-              {initialRoomCode ? (
+              {initialRoomCode && joinCode ? (
                 <div className="flex items-center gap-2 px-3 py-2 rounded metal-panel-light font-mono-crt text-sm">
                   <Link size={14} className="text-green-500/60 shrink-0" />
                   <span className="text-green-500/60">ROOM:</span>

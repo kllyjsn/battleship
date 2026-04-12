@@ -105,8 +105,26 @@ export function useMultiplayer(playerName: string) {
                 sender: msg.sender!,
                 message: msg.message!,
                 timestamp: Date.now(),
+                reactions: [],
               },
             ],
+          }));
+          return;
+        }
+
+        if (msg.type === 'REACTION' && msg.messageId && msg.emoji && msg.sender) {
+          setState(prev => ({
+            ...prev,
+            chatMessages: prev.chatMessages.map(m =>
+              m.id === msg.messageId
+                ? {
+                    ...m,
+                    reactions: m.reactions.some(r => r.emoji === msg.emoji && r.sender === msg.sender!)
+                      ? m.reactions.filter(r => !(r.emoji === msg.emoji && r.sender === msg.sender!))
+                      : [...m.reactions, { emoji: msg.emoji!, sender: msg.sender! }],
+                  }
+                : m
+            ),
           }));
           return;
         }
@@ -319,12 +337,31 @@ export function useMultiplayer(playerName: string) {
       sender: playerName,
       message,
       timestamp: Date.now(),
+      reactions: [],
     };
     setState(prev => ({
       ...prev,
       chatMessages: [...prev.chatMessages, chatMsg],
     }));
     publish({ type: 'CHAT', message, sender: playerName });
+  }, [publish, playerName]);
+
+  const sendReaction = useCallback((messageId: string, emoji: string) => {
+    // Toggle locally
+    setState(prev => ({
+      ...prev,
+      chatMessages: prev.chatMessages.map(m =>
+        m.id === messageId
+          ? {
+              ...m,
+              reactions: m.reactions.some(r => r.emoji === emoji && r.sender === playerName)
+                ? m.reactions.filter(r => !(r.emoji === emoji && r.sender === playerName))
+                : [...m.reactions, { emoji, sender: playerName }],
+            }
+          : m
+      ),
+    }));
+    publish({ type: 'REACTION', messageId, emoji, sender: playerName });
   }, [publish, playerName]);
 
   const sendLeave = useCallback(() => {
@@ -392,6 +429,7 @@ export function useMultiplayer(playerName: string) {
     sendAttackResult,
     sendGameOver,
     sendChat,
+    sendReaction,
     sendLeave,
     setMessageHandler,
     publish,

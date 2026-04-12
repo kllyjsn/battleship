@@ -872,6 +872,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
         <Chat
           messages={mp.chatMessages}
           onSend={mp.sendChat}
+          onReaction={mp.sendReaction}
           playerName={playerName}
         />
       )}
