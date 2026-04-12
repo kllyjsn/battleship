@@ -52,6 +52,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const body = req.body as Partial<StoredEntry>;
       if (!body.playerName || typeof body.score !== 'number' || typeof body.shots !== 'number') {
+        console.warn('[Leaderboard] POST rejected — invalid entry:', {
+          playerName: body.playerName,
+          score: body.score,
+          shots: body.shots,
+        });
         return res.status(400).json({ error: 'Invalid entry' });
       }
 
@@ -70,6 +75,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       };
 
       await collection.insertOne(entry);
+      console.info('[Leaderboard] New entry saved:', {
+        id: entry.id,
+        playerName: entry.playerName,
+        totalScore: entry.totalScore,
+        mode: entry.mode,
+      });
 
       return res.status(201).json(entry);
     }
@@ -101,12 +112,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .limit(50)
         .toArray();
 
+      console.info(`[Leaderboard] GET returned ${entries.length} entries (period=${period ?? 'all'})`);
       return res.status(200).json(entries);
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
-    console.error('Leaderboard API error:', err);
+    console.error('[Leaderboard] API error:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
