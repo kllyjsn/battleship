@@ -295,9 +295,30 @@ export function useMultiplayer(playerName: string) {
           fetchOccupancy();
         }
 
-        if (cat === 'PNNetworkDownCategory' || cat === 'PNTimeoutCategory') {
+        if (cat === 'PNNetworkDownCategory') {
           setState(prev => ({ ...prev, isReconnecting: true }));
           // Stop pinging while disconnected
+          if (pingIntervalRef.current) {
+            clearInterval(pingIntervalRef.current);
+            pingIntervalRef.current = null;
+          }
+        }
+
+        // PNTimeoutCategory: soft reconnect if already connected, hard error if still connecting
+        if (cat === 'PNTimeoutCategory') {
+          setState(prev => {
+            if (prev.isConnected) {
+              // Already in a session — treat as recoverable
+              return { ...prev, isReconnecting: true };
+            }
+            // Still connecting — treat as hard failure
+            return {
+              ...prev,
+              isConnecting: false,
+              isConnected: false,
+              error: 'Connection failed. Please check your network and try again.',
+            };
+          });
           if (pingIntervalRef.current) {
             clearInterval(pingIntervalRef.current);
             pingIntervalRef.current = null;
@@ -308,9 +329,8 @@ export function useMultiplayer(playerName: string) {
           // SDK will auto-resubscribe (restore: true), but clear flag optimistically
           setState(prev => prev.isReconnecting ? { ...prev, isReconnecting: false } : prev);
         }
-        if (event.category === 'PNNetworkIssuesCategory' ||
-            event.category === 'PNAccessDeniedCategory' ||
-            event.category === 'PNTimeoutCategory') {
+
+        if (cat === 'PNNetworkIssuesCategory' || cat === 'PNAccessDeniedCategory') {
           if (connectTimeoutRef.current) {
             clearTimeout(connectTimeoutRef.current);
             connectTimeoutRef.current = null;
