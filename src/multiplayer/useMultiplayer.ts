@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import PubNub from 'pubnub';
 import type { MultiplayerMessage, ChatMessage, Position } from '../engine/types';
-import { getPubNub, resetPubNub, generateRoomCode, getChannelName } from './pubnub';
+import { getPubNub, resetPubNub, generateRoomCode, getChannelName, hasPubNubKeys } from './pubnub';
 
 interface MultiplayerState {
   roomCode: string | null;
@@ -358,19 +358,35 @@ export function useMultiplayer(playerName: string) {
           setState(prev => prev.isReconnecting ? { ...prev, isReconnecting: false } : prev);
         }
 
-        // Hard failures — immediately surface an error and stop waiting
-        const hardFailures = new Set([
-          'PNNetworkIssuesCategory',
-          'PNAccessDeniedCategory',
-          'PNBadRequestCategory',
-          'PNValidationErrorCategory',
-          'PNServerErrorCategory',
-          'PNMalformedResponseCategory',
-          'PNDisconnectedCategory',
-          'PNUnknownCategory',
-        ]);
+        // PNDisconnectedCategory: if we were already connected this is a
+        // recoverable disconnect (the SDK will auto-resubscribe with restore: true).
+        // Only treat it as a hard failure if we never finished connecting.
+        if (cat === 'PNDisconnectedCategory') {
+          setState(prev => {
+            if (prev.isConnected) {
+              return { ...prev, isReconnecting: true };
+            }
+            return prev; // still connecting — let the connect timeout handle it
+          });
+          // Stop pinging while disconnected (consistent with PNNetworkDownCategory)
+          if (pingIntervalRef.current) {
+            clearInterval(pingIntervalRef.current);
+            pingIntervalRef.current = null;
+          }
+        }
 
-        if (hardFailures.has(cat)) {
+        // Hard failures — immediately surface an error and stop waiting
+        const hardFailures: Record<string, string> = {
+          PNNetworkIssuesCategory: 'Network error — check your internet connection.',
+          PNAccessDeniedCategory: 'Access denied — PubNub keys may be invalid or missing.',
+          PNBadRequestCategory: 'Bad request — PubNub keys may be misconfigured.',
+          PNValidationErrorCategory: 'Configuration error — PubNub keys may be missing.',
+          PNServerErrorCategory: 'Server error — please try again in a moment.',
+          PNMalformedResponseCategory: 'Unexpected server response — please try again.',
+          PNUnknownCategory: 'Connection failed — please try again.',
+        };
+
+        if (cat in hardFailures) {
           if (connectTimeoutRef.current) {
             clearTimeout(connectTimeoutRef.current);
             connectTimeoutRef.current = null;
@@ -383,7 +399,7 @@ export function useMultiplayer(playerName: string) {
             ...prev,
             isConnecting: false,
             isConnected: false,
-            error: 'Connection failed. Please check your network and try again.',
+            error: hardFailures[cat],
           }));
         }
       },
@@ -431,6 +447,10 @@ export function useMultiplayer(playerName: string) {
   }, []);
 
   const createRoom = useCallback(() => {
+    if (!hasPubNubKeys()) {
+      setState(prev => ({ ...prev, error: 'Multiplayer is unavailable — server keys are not configured.' }));
+      return;
+    }
     cleanup();
     const userId = `player-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     userIdRef.current = userId;
@@ -463,6 +483,10 @@ export function useMultiplayer(playerName: string) {
   }, [cleanup, subscribe]);
 
   const joinAsSpectator = useCallback((roomCode: string, name: string) => {
+    if (!hasPubNubKeys()) {
+      setState(prev => ({ ...prev, error: 'Multiplayer is unavailable — server keys are not configured.' }));
+      return;
+    }
     cleanup();
     const userId = `spectator-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     userIdRef.current = userId;
@@ -504,6 +528,10 @@ export function useMultiplayer(playerName: string) {
   }, [cleanup, subscribe]);
 
   const joinRoom = useCallback((roomCode: string, name: string) => {
+    if (!hasPubNubKeys()) {
+      setState(prev => ({ ...prev, error: 'Multiplayer is unavailable — server keys are not configured.' }));
+      return;
+    }
     cleanup();
     const userId = `player-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     userIdRef.current = userId;
