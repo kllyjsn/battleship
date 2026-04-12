@@ -57,6 +57,7 @@ export function useMultiplayer(playerName: string) {
   const listenerRef = useRef<PubNub.Listener | null>(null);
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pongTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const opponentTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep playerNameRef in sync with the playerName prop
   useEffect(() => {
@@ -75,6 +76,10 @@ export function useMultiplayer(playerName: string) {
     if (pongTimeoutRef.current) {
       clearTimeout(pongTimeoutRef.current);
       pongTimeoutRef.current = null;
+    }
+    if (opponentTimeoutRef.current) {
+      clearTimeout(opponentTimeoutRef.current);
+      opponentTimeoutRef.current = null;
     }
     pendingJoinRef.current = null;
     listenerRef.current = null;
@@ -168,10 +173,16 @@ export function useMultiplayer(playerName: string) {
         }
 
         if (msg.type === 'JOIN' && msg.playerName) {
+          // Clear opponent timeout since we found the host/opponent
+          if (opponentTimeoutRef.current) {
+            clearTimeout(opponentTimeoutRef.current);
+            opponentTimeoutRef.current = null;
+          }
           setState(prev => ({
             ...prev,
             opponentName: msg.playerName ?? null,
             isConnected: true,
+            error: null,
           }));
 
           // BUG-0003 fix: Host responds with their name so the guest knows who they're playing
@@ -296,6 +307,24 @@ export function useMultiplayer(playerName: string) {
         if (cat === 'PNNetworkUpCategory') {
           // SDK will auto-resubscribe (restore: true), but clear flag optimistically
           setState(prev => prev.isReconnecting ? { ...prev, isReconnecting: false } : prev);
+        }
+        if (event.category === 'PNNetworkIssuesCategory' ||
+            event.category === 'PNAccessDeniedCategory' ||
+            event.category === 'PNTimeoutCategory') {
+          if (connectTimeoutRef.current) {
+            clearTimeout(connectTimeoutRef.current);
+            connectTimeoutRef.current = null;
+          }
+          if (opponentTimeoutRef.current) {
+            clearTimeout(opponentTimeoutRef.current);
+            opponentTimeoutRef.current = null;
+          }
+          setState(prev => ({
+            ...prev,
+            isConnecting: false,
+            isConnected: false,
+            error: 'Connection failed. Please check your network and try again.',
+          }));
         }
       },
 
@@ -449,6 +478,21 @@ export function useMultiplayer(playerName: string) {
         return prev;
       });
     }, 10000);
+
+    // Timeout for waiting for host/opponent to respond
+    opponentTimeoutRef.current = setTimeout(() => {
+      setState(prev => {
+        if (!prev.opponentName) {
+          return {
+            ...prev,
+            isConnecting: false,
+            isConnected: false,
+            error: 'Room not found or host has left. Try creating a new room.',
+          };
+        }
+        return prev;
+      });
+    }, 15000);
   }, [cleanup, subscribe]);
 
   const sendReady = useCallback(() => {
