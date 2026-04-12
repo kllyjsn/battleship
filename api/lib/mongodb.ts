@@ -5,6 +5,14 @@ const DB_NAME = 'battleship';
 
 let cachedPromise: Promise<{ client: MongoClient; db: Db }> | null = null;
 
+/** Error subclass so callers can distinguish config issues from runtime failures. */
+export class MongoConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'MongoConfigError';
+  }
+}
+
 export async function getDb(): Promise<Db> {
   if (cachedPromise) {
     const { db } = await cachedPromise;
@@ -12,7 +20,10 @@ export async function getDb(): Promise<Db> {
   }
 
   if (!MONGODB_URI) {
-    throw new Error('MONGODB_URI environment variable is not set');
+    throw new MongoConfigError(
+      'MONGODB_URI environment variable is not set. ' +
+      'Add it in your Vercel project settings and redeploy.',
+    );
   }
 
   cachedPromise = (async () => {
