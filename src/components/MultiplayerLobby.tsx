@@ -8,6 +8,8 @@ interface MultiplayerLobbyProps {
   onBack: () => void;
   roomCode: string | null;
   isConnecting: boolean;
+  /** True when PubNub connected but still waiting for host/opponent to respond */
+  isWaitingForOpponent: boolean;
   error: string | null;
   defaultName?: string;
   initialRoomCode?: string;
@@ -24,6 +26,7 @@ export function MultiplayerLobby({
   onBack,
   roomCode,
   isConnecting,
+  isWaitingForOpponent,
   error,
   defaultName,
   initialRoomCode,
@@ -194,7 +197,7 @@ export function MultiplayerLobby({
                     onJoinRoom(joinCode, playerName.trim());
                   }
                 }}
-                disabled={joinCode.length < 4 || !playerName.trim() || isConnecting}
+                disabled={joinCode.length < 4 || !playerName.trim() || isConnecting || isWaitingForOpponent}
                 className="w-full py-3 rounded metal-panel-light text-glow-green font-semibold hover:ring-1 hover:ring-green-400/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-mono-crt"
                 style={{ borderColor: 'rgba(57, 255, 20, 0.2)' }}
               >
@@ -207,6 +210,13 @@ export function MultiplayerLobby({
                   'LINK UP'
                 )}
               </button>
+
+              {isWaitingForOpponent && (
+                <div className="flex items-center justify-center gap-2 text-sm text-slate-500 font-mono-crt py-2">
+                  <Loader2 size={14} className="animate-spin text-green-500/50" />
+                  SEARCHING FOR HOST...
+                </div>
+              )}
 
               <button
                 onClick={() => {
