@@ -8,6 +8,12 @@ export function getPubNub(userId: string): PubNub {
       publishKey: import.meta.env.VITE_PUBNUB_PUBLISH_KEY || '',
       subscribeKey: import.meta.env.VITE_PUBNUB_SUBSCRIBE_KEY || '',
       userId,
+      // Presence: detect users within 20s of disconnect
+      presenceTimeout: 20,
+      // Heartbeat interval keeps the presence lease alive
+      heartbeatInterval: 9,
+      // Restore subscription after temporary network loss
+      restore: true,
     });
   }
   return pubnubInstance;
@@ -15,7 +21,13 @@ export function getPubNub(userId: string): PubNub {
 
 export function resetPubNub(): void {
   if (pubnubInstance) {
-    pubnubInstance.unsubscribeAll();
+    try {
+      pubnubInstance.removeAllListeners();
+      pubnubInstance.unsubscribeAll();
+      pubnubInstance.destroy();
+    } catch {
+      // Best-effort cleanup
+    }
     pubnubInstance = null;
   }
 }

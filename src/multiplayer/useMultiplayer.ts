@@ -16,7 +16,16 @@ interface MultiplayerState {
   error: string | null;
   gameStarted: boolean;
   isSpectator: boolean;
+  /** Number of users present in the channel (via PubNub presence) */
+  occupancy: number;
+  /** True when PubNub detects a network interruption */
+  isReconnecting: boolean;
 }
+
+/** Interval (ms) between application-level PING messages */
+const PING_INTERVAL_MS = 15_000;
+/** How long to wait for a PONG before considering the peer unresponsive */
+const PONG_TIMEOUT_MS = 10_000;
 
 export function useMultiplayer(playerName: string) {
   const [state, setState] = useState<MultiplayerState>({
@@ -32,6 +41,8 @@ export function useMultiplayer(playerName: string) {
     error: null,
     gameStarted: false,
     isSpectator: false,
+    occupancy: 0,
+    isReconnecting: false,
   });
 
   const pubnubRef = useRef<PubNub | null>(null);
@@ -41,6 +52,11 @@ export function useMultiplayer(playerName: string) {
   const playerNameRef = useRef<string>(playerName);
   const isHostRef = useRef<boolean>(false);
   const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Queued message to send once PubNub confirms we are subscribed */
+  const pendingJoinRef = useRef<MultiplayerMessage | null>(null);
+  const listenerRef = useRef<PubNub.Listener | null>(null);
+  const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pongTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep playerNameRef in sync with the playerName prop
   useEffect(() => {
@@ -52,6 +68,17 @@ export function useMultiplayer(playerName: string) {
       clearTimeout(connectTimeoutRef.current);
       connectTimeoutRef.current = null;
     }
+    if (pingIntervalRef.current) {
+      clearInterval(pingIntervalRef.current);
+      pingIntervalRef.current = null;
+    }
+    if (pongTimeoutRef.current) {
+      clearTimeout(pongTimeoutRef.current);
+      pongTimeoutRef.current = null;
+    }
+    pendingJoinRef.current = null;
+    listenerRef.current = null;
+    // resetPubNub now also removes listeners and calls destroy()
     resetPubNub();
     pubnubRef.current = null;
     channelRef.current = '';
@@ -67,16 +94,78 @@ export function useMultiplayer(playerName: string) {
     onMessageRef.current = handler;
   }, []);
 
+  // ── Application-level heartbeat (PING / PONG) ──────────────────────────
+  const startPingInterval = useCallback(() => {
+    if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
+
+    pingIntervalRef.current = setInterval(() => {
+      const pn = pubnubRef.current;
+      if (!pn || !channelRef.current) return;
+
+      pn.publish({
+        channel: channelRef.current,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        message: { type: 'PING' } as any,
+      });
+
+      // Start a PONG timeout — if we don't hear back, flag connection
+      if (pongTimeoutRef.current) clearTimeout(pongTimeoutRef.current);
+      pongTimeoutRef.current = setTimeout(() => {
+        setState(prev => prev.isConnected ? { ...prev, isReconnecting: true } : prev);
+      }, PONG_TIMEOUT_MS);
+    }, PING_INTERVAL_MS);
+  }, []);
+
+  // ── Fetch initial occupancy via hereNow ────────────────────────────────
+  const fetchOccupancy = useCallback(async () => {
+    const pn = pubnubRef.current;
+    if (!pn || !channelRef.current) return;
+    try {
+      const resp = await pn.hereNow({ channels: [channelRef.current], includeUUIDs: true });
+      const ch = resp.channels[channelRef.current];
+      if (ch) {
+        setState(prev => ({ ...prev, occupancy: ch.occupancy }));
+      }
+    } catch {
+      // Non-critical — presence events will keep occupancy up to date
+    }
+  }, []);
+
   const subscribe = useCallback((channel: string) => {
     const pn = pubnubRef.current;
     if (!pn) return;
 
-    pn.addListener({
-      message: (event) => {
+    // Remove any previously attached listener to prevent accumulation
+    if (listenerRef.current) {
+      pn.removeListener(listenerRef.current);
+    }
+
+    const listener = {
+      message: (event: PubNub.Subscription.Message) => {
         // BUG-0001 fix: Skip self-published messages
         if (event.publisher === userIdRef.current) return;
 
         const msg = event.message as unknown as MultiplayerMessage;
+
+        // ── Application-level heartbeat ──────────────────────────────
+        if (msg.type === 'PING') {
+          // Respond with PONG so the peer knows we're alive
+          pn.publish({
+            channel,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            message: { type: 'PONG' } as any,
+          });
+          return;
+        }
+        if (msg.type === 'PONG') {
+          // Peer is alive — clear any reconnecting flag & PONG timeout
+          if (pongTimeoutRef.current) {
+            clearTimeout(pongTimeoutRef.current);
+            pongTimeoutRef.current = null;
+          }
+          setState(prev => prev.isReconnecting ? { ...prev, isReconnecting: false } : prev);
+          return;
+        }
 
         if (msg.type === 'JOIN' && msg.playerName) {
           setState(prev => ({
@@ -163,19 +252,81 @@ export function useMultiplayer(playerName: string) {
           onMessageRef.current(msg);
         }
       },
-      status: (event: { category: string }) => {
-        if (event.category === 'PNConnectedCategory') {
+
+      // ── Network / subscription status ────────────────────────────────
+      status: (event: PubNub.Status | PubNub.StatusEvent) => {
+        const cat = event.category;
+        if (cat === 'PNConnectedCategory') {
           if (connectTimeoutRef.current) {
             clearTimeout(connectTimeoutRef.current);
             connectTimeoutRef.current = null;
           }
-          setState(prev => ({ ...prev, isConnecting: false }));
+          setState(prev => ({ ...prev, isConnecting: false, isReconnecting: false }));
+
+          // Publish any queued JOIN / SPECTATE message now that subscription is confirmed
+          if (pendingJoinRef.current) {
+            pn.publish({
+              channel,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              message: pendingJoinRef.current as any,
+            });
+            pendingJoinRef.current = null;
+          }
+
+          // Start application-level heartbeat & fetch initial occupancy
+          startPingInterval();
+          fetchOccupancy();
+        }
+
+        if (cat === 'PNReconnectedCategory') {
+          setState(prev => ({ ...prev, isReconnecting: false }));
+          startPingInterval();
+          fetchOccupancy();
+        }
+
+        if (cat === 'PNNetworkDownCategory' || cat === 'PNTimeoutCategory') {
+          setState(prev => ({ ...prev, isReconnecting: true }));
+          // Stop pinging while disconnected
+          if (pingIntervalRef.current) {
+            clearInterval(pingIntervalRef.current);
+            pingIntervalRef.current = null;
+          }
+        }
+
+        if (cat === 'PNNetworkUpCategory') {
+          // SDK will auto-resubscribe (restore: true), but clear flag optimistically
+          setState(prev => prev.isReconnecting ? { ...prev, isReconnecting: false } : prev);
         }
       },
-    });
 
-    pn.subscribe({ channels: [channel] });
-  }, []);
+      // ── Presence events ──────────────────────────────────────────────
+      presence: (event: PubNub.Subscription.Presence) => {
+        if (event.action === 'join' || event.action === 'leave' || event.action === 'timeout') {
+          setState(prev => ({
+            ...prev,
+            occupancy: event.occupancy ?? prev.occupancy,
+          }));
+        }
+
+        // If the opponent timed out / left via presence, treat as a soft disconnect
+        if ((event.action === 'timeout' || event.action === 'leave') &&
+            event.uuid !== userIdRef.current) {
+          setState(prev => {
+            if (prev.isConnected && prev.opponentName) {
+              return { ...prev, isReconnecting: true };
+            }
+            return prev;
+          });
+        }
+      },
+    };
+
+    listenerRef.current = listener;
+    pn.addListener(listener);
+
+    // Subscribe WITH presence enabled
+    pn.subscribe({ channels: [channel], withPresence: true });
+  }, [startPingInterval, fetchOccupancy]);
 
   const publish = useCallback((msg: MultiplayerMessage) => {
     const pn = pubnubRef.current;
@@ -241,6 +392,14 @@ export function useMultiplayer(playerName: string) {
       error: null,
     }));
 
+    // Queue the SPECTATE message — it will be sent once PNConnectedCategory fires
+    pendingJoinRef.current = {
+      type: 'SPECTATE',
+      playerName: name,
+      playerId: userId,
+      isSpectator: true,
+    };
+
     subscribe(channel);
 
     connectTimeoutRef.current = setTimeout(() => {
@@ -251,20 +410,6 @@ export function useMultiplayer(playerName: string) {
         return prev;
       });
     }, 10000);
-
-    // Send spectate message after subscribing
-    setTimeout(() => {
-      pn.publish({
-        channel,
-        message: {
-          type: 'SPECTATE',
-          playerName: name,
-          playerId: userId,
-          isSpectator: true,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any,
-      });
-    }, 1000);
   }, [cleanup, subscribe]);
 
   const joinRoom = useCallback((roomCode: string, name: string) => {
@@ -278,14 +423,21 @@ export function useMultiplayer(playerName: string) {
     const channel = getChannelName(roomCode);
     channelRef.current = channel;
 
+    // Don't set isConnected yet — wait for host to respond with their JOIN
     setState(prev => ({
       ...prev,
       roomCode,
       isHost: false,
       isConnecting: true,
-      isConnected: true,
       error: null,
     }));
+
+    // Queue the JOIN message — it will be sent once PNConnectedCategory fires
+    pendingJoinRef.current = {
+      type: 'JOIN',
+      playerName: name,
+      playerId: userId,
+    };
 
     subscribe(channel);
 
@@ -297,20 +449,6 @@ export function useMultiplayer(playerName: string) {
         return prev;
       });
     }, 10000);
-
-    // Send join message after subscribing, using the name parameter directly
-    // to avoid stale closure over playerName state
-    setTimeout(() => {
-      pn.publish({
-        channel,
-          message: {
-            type: 'JOIN',
-            playerName: name,
-            playerId: userId,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          } as any,
-      });
-    }, 1000);
   }, [cleanup, subscribe]);
 
   const sendReady = useCallback(() => {
@@ -380,6 +518,8 @@ export function useMultiplayer(playerName: string) {
       error: null,
       gameStarted: false,
       isSpectator: false,
+      occupancy: 0,
+      isReconnecting: false,
     });
   }, [publish, cleanup]);
 
