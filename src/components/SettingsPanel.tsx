@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Volume2, VolumeX, Music, Trash2, User } from 'lucide-react';
-import { STORAGE_KEYS, getSessionName } from '../lib/storageKeys';
+import { STORAGE_KEYS, getSessionName, setSessionName, getApiBase } from '../lib/storageKeys';
 import { clearStats } from '../lib/stats';
 import { getAllThemes, getTheme, saveTheme, applyTheme } from '../lib/themes';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -22,15 +22,7 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
 
   const handleCallsignChange = (value: string) => {
     setCallsign(value);
-    try {
-      if (value.trim()) {
-        localStorage.setItem(STORAGE_KEYS.SESSION_NAME, value.trim());
-      } else {
-        localStorage.removeItem(STORAGE_KEYS.SESSION_NAME);
-      }
-    } catch {
-      // Storage unavailable
-    }
+    setSessionName(value);
   };
 
   const handleSoundToggle = () => {
@@ -41,6 +33,15 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
     } catch {
       // Storage unavailable
     }
+    // Primary persistence: sync to MongoDB
+    const playerName = getSessionName();
+    if (playerName) {
+      fetch(`${getApiBase()}/preferences`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerName, soundMuted: !newState }),
+      }).catch(() => {});
+    }
   };
 
   const handleThemeSelect = (themeId: string) => {
@@ -50,10 +51,19 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
   };
 
   const handleConfirmClear = () => {
+    const playerName = getSessionName();
     if (confirmAction === 'stats') {
       clearStats();
     } else if (confirmAction === 'achievements') {
       try { localStorage.removeItem(STORAGE_KEYS.ACHIEVEMENTS); } catch { /* ignore */ }
+      // Clear on MongoDB too
+      if (playerName) {
+        fetch(`${getApiBase()}/achievements`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playerName, unlocked: [] }),
+        }).catch(() => {});
+      }
     } else if (confirmAction === 'all') {
       clearStats();
       try {
@@ -62,6 +72,19 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
         localStorage.removeItem(STORAGE_KEYS.SAVED_GAME);
       } catch {
         // ignore
+      }
+      // Clear on MongoDB too
+      if (playerName) {
+        Promise.all([
+          fetch(`${getApiBase()}/achievements`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ playerName, unlocked: [] }),
+          }),
+          fetch(`${getApiBase()}/game-save?player=${encodeURIComponent(playerName)}`, {
+            method: 'DELETE',
+          }),
+        ]).catch(() => {});
       }
     }
     setConfirmAction(null);

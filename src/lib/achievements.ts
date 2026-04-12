@@ -47,7 +47,33 @@ function loadUnlocked(): UnlockedAchievement[] {
 }
 
 function saveUnlocked(unlocked: UnlockedAchievement[]): void {
-  localStorage.setItem(STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(unlocked));
+  try { localStorage.setItem(STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(unlocked)); } catch { /* ignore */ }
+}
+
+/**
+ * Fetch achievements from MongoDB and update the local cache.
+ * Returns MongoDB achievements, falling back to local cache on failure.
+ */
+export async function fetchAchievements(): Promise<UnlockedAchievement[]> {
+  const playerName = getSessionName();
+  if (!playerName) return loadUnlocked();
+  try {
+    const online = await getOnlineAchievements(playerName);
+    if (online.length > 0) {
+      // Merge: keep any local achievements not yet online
+      const local = loadUnlocked();
+      const onlineIds = new Set(online.map(a => a.id));
+      const merged = [...online];
+      for (const a of local) {
+        if (!onlineIds.has(a.id)) merged.push(a);
+      }
+      saveUnlocked(merged);
+      return merged;
+    }
+    return loadUnlocked();
+  } catch {
+    return loadUnlocked();
+  }
 }
 
 export function getUnlockedAchievements(): UnlockedAchievement[] {
@@ -151,7 +177,7 @@ export function checkAchievements(ctx: GameEndContext): string[] {
     if (r) newlyUnlocked.push(r.id);
   }
 
-  // Fire-and-forget: sync all unlocked achievements to online API
+  // Primary persistence: sync all unlocked achievements to MongoDB
   if (newlyUnlocked.length > 0) {
     syncAchievementsOnline(loadUnlocked()).catch(() => {});
   }

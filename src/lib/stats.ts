@@ -32,7 +32,7 @@ async function syncStatsOnline(stats: Stats): Promise<void> {
       }),
     });
   } catch {
-    // Silently fail — local stats are already saved
+    // Silently fail — local cache is already saved
   }
 }
 
@@ -40,6 +40,7 @@ function defaultStats(): Stats {
   return { games: [], currentWinStreak: 0, bestWinStreak: 0 };
 }
 
+/** Load stats from localStorage cache (synchronous, for immediate UI). */
 export function loadStats(): Stats {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.STATS);
@@ -52,6 +53,30 @@ export function loadStats(): Stats {
     };
   } catch {
     return defaultStats();
+  }
+}
+
+/**
+ * Fetch stats from MongoDB and update the local cache.
+ * Returns the MongoDB stats, falling back to local cache on failure.
+ */
+export async function fetchStats(): Promise<Stats> {
+  const playerName = getSessionName();
+  if (!playerName) return loadStats();
+  try {
+    const resp = await fetch(`${getApiBase()}/stats?player=${encodeURIComponent(playerName)}`);
+    if (!resp.ok) return loadStats();
+    const data = await resp.json() as Stats;
+    const stats: Stats = {
+      games: data.games ?? [],
+      currentWinStreak: data.currentWinStreak ?? 0,
+      bestWinStreak: data.bestWinStreak ?? 0,
+    };
+    // Update local cache
+    try { localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(stats)); } catch { /* ignore */ }
+    return stats.games.length > 0 ? stats : loadStats();
+  } catch {
+    return loadStats();
   }
 }
 
@@ -68,9 +93,10 @@ export function saveGame(record: GameRecord): Stats {
     stats.currentWinStreak = 0;
   }
 
-  localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(stats));
+  // Cache locally for fast reads
+  try { localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(stats)); } catch { /* ignore */ }
 
-  // Fire-and-forget: sync to online API
+  // Primary persistence: sync to MongoDB
   syncStatsOnline(stats).catch(() => {});
 
   return stats;
@@ -143,5 +169,10 @@ export async function getOnlineStats(playerName: string): Promise<Stats | null> 
 }
 
 export function clearStats(): void {
-  localStorage.removeItem(STORAGE_KEYS.STATS);
+  try { localStorage.removeItem(STORAGE_KEYS.STATS); } catch { /* ignore */ }
+  // Clear on MongoDB too
+  const playerName = getSessionName();
+  if (playerName) {
+    syncStatsOnline(defaultStats()).catch(() => {});
+  }
 }
