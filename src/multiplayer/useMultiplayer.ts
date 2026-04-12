@@ -58,6 +58,7 @@ export function useMultiplayer(playerName: string) {
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pongTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const opponentTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const opponentUserIdRef = useRef<string | null>(null);
 
   // Keep playerNameRef in sync with the playerName prop
   useEffect(() => {
@@ -83,6 +84,7 @@ export function useMultiplayer(playerName: string) {
     }
     pendingJoinRef.current = null;
     listenerRef.current = null;
+    opponentUserIdRef.current = null;
     // resetPubNub now also removes listeners and calls destroy()
     resetPubNub();
     pubnubRef.current = null;
@@ -163,7 +165,9 @@ export function useMultiplayer(playerName: string) {
           return;
         }
         if (msg.type === 'PONG') {
-          // Peer is alive — clear any reconnecting flag & PONG timeout
+          // Only clear reconnecting state if PONG is from the actual opponent,
+          // not from a spectator (who would mask a real opponent disconnect)
+          if (opponentUserIdRef.current && event.publisher !== opponentUserIdRef.current) return;
           if (pongTimeoutRef.current) {
             clearTimeout(pongTimeoutRef.current);
             pongTimeoutRef.current = null;
@@ -173,6 +177,10 @@ export function useMultiplayer(playerName: string) {
         }
 
         if (msg.type === 'JOIN' && msg.playerName) {
+          // Track the opponent's userId for targeted PONG / presence filtering
+          if (msg.playerId) {
+            opponentUserIdRef.current = msg.playerId;
+          }
           // Clear opponent timeout since we found the host/opponent
           if (opponentTimeoutRef.current) {
             clearTimeout(opponentTimeoutRef.current);
@@ -365,9 +373,11 @@ export function useMultiplayer(playerName: string) {
           }));
         }
 
-        // If the opponent timed out / left via presence, treat as a soft disconnect
+        // If the opponent timed out / left via presence, treat as a soft disconnect.
+        // Only trigger for the actual opponent, not spectators.
         if ((event.action === 'timeout' || event.action === 'leave') &&
-            event.uuid !== userIdRef.current) {
+            event.uuid !== userIdRef.current &&
+            (!opponentUserIdRef.current || event.uuid === opponentUserIdRef.current)) {
           setState(prev => {
             if (prev.isConnected && prev.opponentName) {
               return { ...prev, isReconnecting: true };
