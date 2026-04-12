@@ -28,9 +28,10 @@ import { Eye } from 'lucide-react';
 
 interface MultiplayerPageProps {
   onBack: () => void;
+  initialRoomCode?: string | null;
 }
 
-export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
+export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProps) {
   const [playerName, setPlayerName] = useState('');
   const [phase, setPhase] = useState<GamePhase>('placement');
   const [playerBoard, setPlayerBoard] = useState<Board>(createEmptyBoard());
@@ -678,6 +679,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
         isConnecting={mp.isConnecting}
         error={mp.error}
         defaultName={playerName || undefined}
+        initialRoomCode={initialRoomCode || undefined}
       />
     );
   }
@@ -870,6 +872,7 @@ export function MultiplayerPage({ onBack }: MultiplayerPageProps) {
         <Chat
           messages={mp.chatMessages}
           onSend={mp.sendChat}
+          onReaction={mp.sendReaction}
           playerName={playerName}
         />
       )}

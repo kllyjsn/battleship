@@ -1,17 +1,21 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, MessageCircle, X, ChevronDown } from 'lucide-react';
+import { Send, MessageCircle, X, ChevronDown, SmilePlus } from 'lucide-react';
 import type { ChatMessage } from '../engine/types';
+
+const REACTION_EMOJIS = ['👍', '😂', '🔥', '💀', '🎯', '💣'];
 
 interface ChatProps {
   messages: ChatMessage[];
   onSend: (message: string) => void;
+  onReaction: (messageId: string, emoji: string) => void;
   playerName: string;
 }
 
-export function Chat({ messages, onSend, playerName }: ChatProps) {
+export function Chat({ messages, onSend, onReaction, playerName }: ChatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [unread, setUnread] = useState(0);
+  const [reactionPickerMsgId, setReactionPickerMsgId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastSeenCountRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -52,13 +56,37 @@ export function Chat({ messages, onSend, playerName }: ChatProps) {
     }
   }, [messages, isOpen, playerName]);
 
+  // Close reaction picker when clicking elsewhere
+  useEffect(() => {
+    if (!reactionPickerMsgId) return;
+    const handleClick = () => setReactionPickerMsgId(null);
+    const timer = setTimeout(() => window.addEventListener('click', handleClick), 0);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('click', handleClick);
+    };
+  }, [reactionPickerMsgId]);
+
   const handleSend = () => {
     if (input.trim()) {
       onSend(input.trim());
       setInput('');
-      // Re-focus after send on mobile
       inputRef.current?.focus();
     }
+  };
+
+  const handleReaction = (messageId: string, emoji: string) => {
+    onReaction(messageId, emoji);
+    setReactionPickerMsgId(null);
+  };
+
+  const groupReactions = (reactions: ChatMessage['reactions']) => {
+    const grouped: Record<string, string[]> = {};
+    for (const r of reactions) {
+      if (!grouped[r.emoji]) grouped[r.emoji] = [];
+      grouped[r.emoji].push(r.sender);
+    }
+    return grouped;
   };
 
   if (!isOpen) {
@@ -112,24 +140,91 @@ export function Chat({ messages, onSend, playerName }: ChatProps) {
         {messages.length === 0 && (
           <p className="text-center text-slate-600 text-xs sm:text-sm mt-4 font-mono-crt">NO TRANSMISSIONS</p>
         )}
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex flex-col ${msg.sender === playerName ? 'items-end' : 'items-start'}`}
-          >
-            <span className="text-[10px] sm:text-xs text-slate-600 mb-0.5 font-mono-crt">{msg.sender}</span>
+        {messages.map((msg) => {
+          const isOwn = msg.sender === playerName;
+          const grouped = groupReactions(msg.reactions);
+          const hasReactions = Object.keys(grouped).length > 0;
+
+          return (
             <div
-              className={`max-w-[85%] sm:max-w-[80%] px-2.5 sm:px-3 py-1.5 rounded text-sm font-mono-crt break-words ${
-                msg.sender === playerName
-                  ? 'metal-panel-light text-green-300/80 rounded-br-sm'
-                  : 'text-slate-300 rounded-bl-sm'
-              }`}
-              style={msg.sender !== playerName ? { background: 'var(--hull-dark)', border: '1px solid var(--steel-border)' } : undefined}
+              key={msg.id}
+              className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} group`}
             >
-              {msg.message}
+              <span className="text-[10px] sm:text-xs text-slate-600 mb-0.5 font-mono-crt">{msg.sender}</span>
+              <div className="relative">
+                <div
+                  className={`max-w-[85%] sm:max-w-[80%] px-2.5 sm:px-3 py-1.5 rounded text-sm font-mono-crt break-words ${
+                    isOwn
+                      ? 'metal-panel-light text-green-300/80 rounded-br-sm'
+                      : 'text-slate-300 rounded-bl-sm'
+                  }`}
+                  style={!isOwn ? { background: 'var(--hull-dark)', border: '1px solid var(--steel-border)' } : undefined}
+                >
+                  {msg.message}
+                </div>
+
+                {/* Reaction trigger */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setReactionPickerMsgId(reactionPickerMsgId === msg.id ? null : msg.id);
+                  }}
+                  className={`absolute -bottom-1 ${isOwn ? '-left-6' : '-right-6'} w-5 h-5 rounded-full flex items-center justify-center text-slate-600 hover:text-green-400 transition-all opacity-0 group-hover:opacity-100 hover:scale-110`}
+                  title="React"
+                >
+                  <SmilePlus size={12} />
+                </button>
+
+                {/* Reaction picker */}
+                {reactionPickerMsgId === msg.id && (
+                  <div
+                    className={`absolute z-50 ${isOwn ? 'right-0' : 'left-0'} -top-9 flex gap-0.5 px-1.5 py-1 rounded-lg metal-panel shadow-lg`}
+                    style={{ border: '1px solid var(--steel-border)' }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {REACTION_EMOJIS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => handleReaction(msg.id, emoji)}
+                        className="w-7 h-7 flex items-center justify-center rounded hover:bg-green-500/10 transition-colors text-base"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Reaction badges */}
+              {hasReactions && (
+                <div className={`flex flex-wrap gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                  {Object.entries(grouped).map(([emoji, senders]) => {
+                    const iReacted = senders.includes(playerName);
+                    return (
+                      <button
+                        key={emoji}
+                        onClick={() => handleReaction(msg.id, emoji)}
+                        className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs transition-all ${
+                          iReacted
+                            ? 'bg-green-500/20 border border-green-500/30'
+                            : 'bg-slate-800/50 border border-slate-700/50 hover:border-green-500/30'
+                        }`}
+                        title={senders.join(', ')}
+                      >
+                        <span>{emoji}</span>
+                        {senders.length > 1 && (
+                          <span className={`font-mono-crt text-[10px] ${iReacted ? 'text-green-400' : 'text-slate-500'}`}>
+                            {senders.length}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 

@@ -61,7 +61,7 @@ export interface GameState {
 }
 
 export interface MultiplayerMessage {
-  type: 'JOIN' | 'READY' | 'ATTACK' | 'ATTACK_RESULT' | 'GAME_OVER' | 'CHAT' | 'REMATCH' | 'LEAVE' | 'SPECTATE' | 'SPECTATOR_SYNC';
+  type: 'JOIN' | 'READY' | 'ATTACK' | 'ATTACK_RESULT' | 'GAME_OVER' | 'CHAT' | 'REACTION' | 'REMATCH' | 'LEAVE' | 'SPECTATE' | 'SPECTATOR_SYNC';
   playerName?: string;
   playerId?: string;
   ships?: Ship[];
@@ -81,6 +81,13 @@ export interface MultiplayerMessage {
   hostName?: string;
   guestName?: string;
   isHostTurn?: boolean;
+  messageId?: string;
+  emoji?: string;
+}
+
+export interface ChatReaction {
+  emoji: string;
+  sender: string;
 }
 
 export interface ChatMessage {
@@ -88,6 +95,7 @@ export interface ChatMessage {
   sender: string;
   message: string;
   timestamp: number;
+  reactions: ChatReaction[];
 }
 
 export interface BattleLogEntry {
