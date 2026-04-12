@@ -679,7 +679,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
           message="Your current battle will be lost. Are you sure you want to return to base?"
           confirmLabel="ABANDON"
           cancelLabel="STAY"
-          onConfirm={() => { setShowConfirmLeave(false); onBack(); }}
+          onConfirm={() => { clearSavedGame(); setShowConfirmLeave(false); onBack(); }}
           onCancel={() => setShowConfirmLeave(false)}
         />
       )}
