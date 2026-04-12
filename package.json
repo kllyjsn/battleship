@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && cd docs && npx vitepress build && cp -r .vitepress/dist ../dist/docs",
+    "build": "tsc -b && vite build && cd docs && npm install && npx vitepress build && cp -r .vitepress/dist ../dist/docs",
     "docs:dev": "cd docs && npx vitepress dev",
     "docs:build": "cd docs && npx vitepress build",
     "lint": "eslint . --ignore-pattern docs",

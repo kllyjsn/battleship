@@ -1,14 +1,12 @@
 {
   "name": "docs",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vitepress dev",
+    "build": "vitepress build"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "description": "ShipBattle documentation powered by VitePress",
   "devDependencies": {
     "mermaid": "^11.14.0",
     "vitepress": "^1.6.4",
