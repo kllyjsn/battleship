@@ -27,7 +27,7 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
   ];
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start p-4 pt-12 md:pt-16" style={{ background: 'radial-gradient(ellipse at center, #141c2b 0%, #0a0e1a 70%)' }}>
+    <div className="min-h-screen flex flex-col items-center justify-start p-3 sm:p-4 pt-8 sm:pt-12 md:pt-16" style={{ background: 'radial-gradient(ellipse at center, #141c2b 0%, #0a0e1a 70%)' }}>
       {/* Sonar rings background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none flex items-center justify-center">
         <div className="absolute w-[600px] h-[600px] rounded-full border border-green-500/5 sonar-pulse" />
@@ -37,11 +37,12 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
 
       <div className="relative z-10 text-center max-w-lg w-full">
         {/* Logo */}
-        <div className="mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl metal-panel mb-4" style={{ boxShadow: '0 0 20px rgba(57, 255, 20, 0.1), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
-            <Anchor size={40} className="text-glow-green" />
+        <div className="mb-6 sm:mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl metal-panel mb-3 sm:mb-4" style={{ boxShadow: '0 0 20px rgba(57, 255, 20, 0.1), inset 0 1px 0 rgba(255,255,255,0.05)' }}>
+            <Anchor size={32} className="text-glow-green sm:hidden" />
+            <Anchor size={40} className="text-glow-green hidden sm:block" />
           </div>
-          <h1 className="text-5xl font-extrabold tracking-tight font-mono-crt text-glow-green">
+          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight font-mono-crt text-glow-green">
             BATTLESHIP
           </h1>
           <div className="flex items-center justify-center gap-3 mt-2">
@@ -109,51 +110,55 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
         )}
 
         {/* Stats, Themes & Leaderboard buttons */}
-        <div className="flex gap-3 mt-6 justify-center flex-wrap">
+        <div className="grid grid-cols-2 sm:flex gap-2 sm:gap-3 mt-4 sm:mt-6 justify-center">
           <button
             onClick={() => setShowStats(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded metal-panel hover:border-green-500/40 transition-all text-sm font-mono-crt text-green-300"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded metal-panel hover:border-green-500/40 transition-all text-xs sm:text-sm font-mono-crt text-green-300"
           >
-            <BarChart3 size={16} />
+            <BarChart3 size={14} className="sm:hidden" />
+            <BarChart3 size={16} className="hidden sm:block" />
             STATS
           </button>
           <button
             onClick={() => setShowLeaderboard(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded metal-panel hover:border-amber-500/40 transition-all text-sm font-mono-crt text-amber-300"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded metal-panel hover:border-amber-500/40 transition-all text-xs sm:text-sm font-mono-crt text-amber-300"
           >
-            <Trophy size={16} />
+            <Trophy size={14} className="sm:hidden" />
+            <Trophy size={16} className="hidden sm:block" />
             LEADERBOARD
           </button>
           <button
             onClick={() => setShowAchievements(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded metal-panel hover:border-purple-500/40 transition-all text-sm font-mono-crt text-purple-300"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded metal-panel hover:border-purple-500/40 transition-all text-xs sm:text-sm font-mono-crt text-purple-300"
           >
-            <Award size={16} />
+            <Award size={14} className="sm:hidden" />
+            <Award size={16} className="hidden sm:block" />
             MEDALS
           </button>
           <button
             onClick={() => setShowThemes(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded metal-panel hover:border-cyan-500/40 transition-all text-sm font-mono-crt text-cyan-300"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded metal-panel hover:border-cyan-500/40 transition-all text-xs sm:text-sm font-mono-crt text-cyan-300"
           >
-            <Palette size={16} />
+            <Palette size={14} className="sm:hidden" />
+            <Palette size={16} className="hidden sm:block" />
             THEMES
           </button>
         </div>
 
-        <p className="mt-8 text-xs text-slate-700 font-mono-crt">
+        <p className="mt-5 sm:mt-8 text-[10px] sm:text-xs text-slate-700 font-mono-crt">
           SYSTEM ONLINE // PUBNUB LINK ACTIVE
         </p>
       </div>
 
       {/* ── AI Intelligence Briefing ── */}
-      <div className="relative z-10 w-full max-w-3xl mt-12">
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <div className="w-12 h-px bg-green-500/20" />
-          <div className="flex items-center gap-2">
+      <div className="relative z-10 w-full max-w-3xl mt-8 sm:mt-12">
+        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+          <div className="w-8 sm:w-12 h-px bg-green-500/20" />
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Cpu size={16} className="text-green-500/50" />
-            <h2 className="text-sm tracking-[0.3em] uppercase font-mono-crt text-green-500/50">AI Intelligence Briefing</h2>
+            <h2 className="text-xs sm:text-sm tracking-[0.2em] sm:tracking-[0.3em] uppercase font-mono-crt text-green-500/50">AI Briefing</h2>
           </div>
-          <div className="w-12 h-px bg-green-500/20" />
+          <div className="w-8 sm:w-12 h-px bg-green-500/20" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -208,14 +213,14 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
       </div>
 
       {/* ── Why Play Battleship ── */}
-      <div className="relative z-10 w-full max-w-3xl mt-10 mb-12">
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <div className="w-12 h-px bg-amber-500/20" />
-          <div className="flex items-center gap-2">
+      <div className="relative z-10 w-full max-w-3xl mt-8 sm:mt-10 mb-8 sm:mb-12">
+        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+          <div className="w-8 sm:w-12 h-px bg-amber-500/20" />
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Gamepad2 size={16} className="text-amber-500/50" />
-            <h2 className="text-sm tracking-[0.3em] uppercase font-mono-crt text-amber-500/50">Battle Stations</h2>
+            <h2 className="text-xs sm:text-sm tracking-[0.2em] sm:tracking-[0.3em] uppercase font-mono-crt text-amber-500/50">Battle Stations</h2>
           </div>
-          <div className="w-12 h-px bg-amber-500/20" />
+          <div className="w-8 sm:w-12 h-px bg-amber-500/20" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

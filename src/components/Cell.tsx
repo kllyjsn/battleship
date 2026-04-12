@@ -69,7 +69,7 @@ export function Cell({
 
   const getClassName = () => {
     const base =
-      'w-[11vw] h-[11vw] min-w-[32px] min-h-[32px] sm:w-9 sm:h-9 md:w-10 md:h-10 border relative transition-all duration-150 select-none overflow-hidden touch-manipulation';
+      'w-[8.2vw] h-[8.2vw] min-w-[28px] min-h-[28px] sm:w-9 sm:h-9 md:w-10 md:h-10 border relative transition-all duration-150 select-none overflow-hidden touch-manipulation';
 
     if (isPreview) {
       return `${base} ${isInvalid ? 'bg-red-500/30 border-red-400/60' : 'bg-green-500/20 border-green-400/50'} cursor-pointer`;

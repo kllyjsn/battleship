@@ -460,9 +460,9 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         score={playerScore}
       />
 
-      <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-8 p-4">
+      <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-3 sm:gap-4 lg:gap-8 p-2 sm:p-4">
         {phase === 'placement' ? (
-          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
+          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 sm:gap-6 w-full">
             <GameBoard
               board={playerBoard}
               isPlayerBoard={true}
@@ -493,7 +493,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         ) : (
           <>
             <BoardToggle activeBoard={mobileBoard} onToggle={setMobileBoard} />
-            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-4 lg:gap-8">
+            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 sm:gap-4 lg:gap-8">
               <div className={`flex flex-col items-center gap-4 ${mobileBoard === 'opponent' ? 'hidden lg:flex' : 'flex'}`}>
                 <GameBoard
                   board={playerBoard}
