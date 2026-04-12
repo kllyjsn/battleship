@@ -778,7 +778,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-8 p-4">
+        <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-3 sm:gap-4 lg:gap-8 p-2 sm:p-4">
           {phase === 'placement' ? (
             <div className="text-center font-mono-crt text-slate-500">
               <Eye size={32} className="mx-auto mb-4 text-amber-400/50" />
@@ -786,7 +786,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
               <p className="text-sm mt-2">Players are placing their ships...</p>
             </div>
           ) : (
-            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-4 lg:gap-8">
+            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 sm:gap-4 lg:gap-8">
               <div className="flex flex-col items-center gap-2">
                 <div className={`text-sm font-mono-crt mb-1 ${spectatorHostTurn && phase === 'battle' ? 'text-glow-green' : 'text-slate-500'}`}>
                   {spectatorHostName}{spectatorHostTurn && phase === 'battle' ? ' ◄' : ''}
@@ -851,9 +851,9 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
         opponentShipsRemaining={opponentShipsRemaining}
       />
 
-      <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-8 p-4">
+      <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-3 sm:gap-4 lg:gap-8 p-2 sm:p-4">
         {phase === 'placement' ? (
-          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
+          <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 sm:gap-6 w-full">
             <GameBoard
               board={playerBoard}
               isPlayerBoard={true}
@@ -884,7 +884,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
         ) : (
           <>
             <BoardToggle activeBoard={mobileBoard} onToggle={setMobileBoard} />
-            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-4 lg:gap-8">
+            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 sm:gap-4 lg:gap-8">
               <div className={`flex flex-col items-center gap-4 ${mobileBoard === 'opponent' ? 'hidden lg:flex' : 'flex'}`}>
                 <GameBoard
                   board={playerBoard}

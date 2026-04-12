@@ -57,7 +57,7 @@ export function GameHUD({
   return (
     <div className="w-full metal-panel" style={{ borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>
       {/* Top row: back button, turn message, sound toggle */}
-      <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3">
+      <div className="flex items-center justify-between px-2 sm:px-4 py-1.5 sm:py-3">
         <div className="flex-shrink-0 flex items-center gap-2">
           <button
             onClick={onBack}
@@ -72,7 +72,7 @@ export function GameHUD({
         </div>
 
         <div
-          className={`text-xs sm:text-sm font-semibold px-3 py-1 rounded font-mono-crt truncate max-w-[60%] sm:max-w-none text-center ${
+          className={`text-[11px] sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded font-mono-crt truncate max-w-[55%] sm:max-w-none text-center ${
             phase === 'gameover'
               ? 'text-glow-amber metal-panel-light'
               : isPlayerTurn
@@ -142,7 +142,7 @@ export function GameHUD({
 
       {/* Progress bars row - separate line to avoid overlap */}
       {phase === 'battle' && (
-        <div className="flex items-center justify-center gap-3 sm:gap-4 px-3 sm:px-4 pb-2">
+        <div className="flex items-center justify-center gap-2 sm:gap-4 px-2 sm:px-4 pb-1.5 sm:pb-2">
           <div className="flex items-center gap-1.5 sm:gap-2">
             <span className="text-[10px] sm:text-xs text-green-500/70 font-mono-crt">ALLY</span>
             <div className="w-16 sm:w-24 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--hull-dark)' }}>
