@@ -2,6 +2,14 @@ import PubNub from 'pubnub';
 
 let pubnubInstance: PubNub | null = null;
 
+/**
+ * Returns true when the required PubNub env vars are present.
+ * Call this before getPubNub() to show a user-friendly error early.
+ */
+export function hasPubNubKeys(): boolean {
+  return !!(import.meta.env.VITE_PUBNUB_PUBLISH_KEY && import.meta.env.VITE_PUBNUB_SUBSCRIBE_KEY);
+}
+
 export function getPubNub(userId: string): PubNub {
   if (!pubnubInstance) {
     pubnubInstance = new PubNub({
