@@ -101,7 +101,7 @@ export function useMultiplayer(playerName: string) {
             chatMessages: [
               ...prev.chatMessages,
               {
-                id: `${Date.now()}-${Math.random()}`,
+                id: msg.messageId || `${Date.now()}-${Math.random()}`,
                 sender: msg.sender!,
                 message: msg.message!,
                 timestamp: Date.now(),
@@ -343,7 +343,7 @@ export function useMultiplayer(playerName: string) {
       ...prev,
       chatMessages: [...prev.chatMessages, chatMsg],
     }));
-    publish({ type: 'CHAT', message, sender: playerName });
+    publish({ type: 'CHAT', message, sender: playerName, messageId: chatMsg.id });
   }, [publish, playerName]);
 
   const sendReaction = useCallback((messageId: string, emoji: string) => {
