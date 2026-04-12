@@ -105,7 +105,10 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
   const localEntries: LeaderboardEntry[] = useMemo(() => getLeaderboard(period), [period]);
 
   useEffect(() => {
-    if (source !== 'global') return;
+    if (source !== 'global') {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     setLoading(true);
     getOnlineLeaderboard(period).then(data => {
