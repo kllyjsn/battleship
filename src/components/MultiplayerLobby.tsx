@@ -14,7 +14,7 @@ interface MultiplayerLobbyProps {
 }
 
 function buildRoomURL(code: string): string {
-  return `${window.location.origin}/join/${code}`;
+  return `https://shipbattle.dev/join/${code}`;
 }
 
 export function MultiplayerLobby({
