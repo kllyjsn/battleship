@@ -368,6 +368,11 @@ export function useMultiplayer(playerName: string) {
             }
             return prev; // still connecting — let the connect timeout handle it
           });
+          // Stop pinging while disconnected (consistent with PNNetworkDownCategory)
+          if (pingIntervalRef.current) {
+            clearInterval(pingIntervalRef.current);
+            pingIntervalRef.current = null;
+          }
         }
 
         // Hard failures — immediately surface an error and stop waiting
