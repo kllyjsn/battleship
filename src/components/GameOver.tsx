@@ -5,6 +5,7 @@ import { loadStats } from '../lib/stats';
 import { getPlayerRank, getRankForWins } from '../lib/ranks';
 import { RankBadge } from './RankBadge';
 import { AttackHeatmap } from './AttackHeatmap';
+import { STORAGE_KEYS } from '../lib/storageKeys';
 import type { Board } from '../engine/types';
 
 interface GameOverProps {
@@ -30,11 +31,9 @@ interface GameOverProps {
   previousWins?: number;
 }
 
-const SESSION_NAME_KEY = 'battleship-session-name';
-
 function loadSessionName(): string {
   try {
-    return localStorage.getItem(SESSION_NAME_KEY) || '';
+    return localStorage.getItem(STORAGE_KEYS.SESSION_NAME) || '';
   } catch {
     return '';
   }
@@ -42,7 +41,7 @@ function loadSessionName(): string {
 
 function saveSessionName(name: string): void {
   try {
-    localStorage.setItem(SESSION_NAME_KEY, name);
+    localStorage.setItem(STORAGE_KEYS.SESSION_NAME, name);
   } catch {
     // ignore
   }

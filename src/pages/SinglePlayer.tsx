@@ -172,12 +172,48 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
     play('click');
   }, [playerShips, playerBoard, play]);
 
-  // Keyboard handling: R to rotate during placement, arrow keys + Enter during battle
+  // Keyboard handling: arrow keys + Enter in both placement and battle phases
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (phase === 'placement' && (e.key === 'r' || e.key === 'R')) {
-        setOrientation(o => o === 'horizontal' ? 'vertical' : 'horizontal');
+      // ── Placement phase: R to rotate, arrows to move cursor, Enter to place ──
+      if (phase === 'placement') {
+        if (e.key === 'r' || e.key === 'R') {
+          setOrientation(o => o === 'horizontal' ? 'vertical' : 'horizontal');
+          return;
+        }
+        switch (e.key) {
+          case 'ArrowUp':
+            e.preventDefault();
+            setShowCursor(true);
+            setCursorPos(p => ({ ...p, row: Math.max(0, p.row - 1) }));
+            break;
+          case 'ArrowDown':
+            e.preventDefault();
+            setShowCursor(true);
+            setCursorPos(p => ({ ...p, row: Math.min(BOARD_MAX_INDEX, p.row + 1) }));
+            break;
+          case 'ArrowLeft':
+            e.preventDefault();
+            setShowCursor(true);
+            setCursorPos(p => ({ ...p, col: Math.max(0, p.col - 1) }));
+            break;
+          case 'ArrowRight':
+            e.preventDefault();
+            setShowCursor(true);
+            setCursorPos(p => ({ ...p, col: Math.min(BOARD_MAX_INDEX, p.col + 1) }));
+            break;
+          case 'Enter':
+          case ' ':
+            e.preventDefault();
+            if (showCursor) {
+              handlePlaceShip(cursorPos.row, cursorPos.col);
+            }
+            break;
+        }
+        return;
       }
+
+      // ── Battle phase: arrows to move cursor, Enter/Space to fire ──
       if (phase === 'battle' && isPlayerTurn) {
         switch (e.key) {
           case 'ArrowUp':
@@ -212,7 +248,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [phase, isPlayerTurn, showCursor, cursorPos]);
+  }, [phase, isPlayerTurn, showCursor, cursorPos, handlePlaceShip]);
 
   // Handle drag-select from roster (sets selected ship so placement preview works)
   const handleDragSelectShip = useCallback((shipId: string) => {
@@ -406,10 +442,10 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
               result: 'loss',
               playerShots: shotCountRef.current,
               playerHits: hitCountRef.current,
-                opponentName: aiName,
-                durationSeconds: gameDurationRef.current,
-              });
-              clearSavedGame();
+              opponentName: aiName,
+              durationSeconds: gameDurationRef.current,
+            });
+            clearSavedGame();
             checkAchievements({
               result: 'loss',
               mode: 'single',
@@ -559,6 +595,9 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
               onDragSelectShip={handleDragSelectShip}
               title="Your Fleet"
               onSwipeRotate={() => setOrientation(o => o === 'horizontal' ? 'vertical' : 'horizontal')}
+              cursorRow={cursorPos.row}
+              cursorCol={cursorPos.col}
+              showCursor={showCursor && phase === 'placement'}
             />
             <ShipRoster
               shipDefs={SHIPS}

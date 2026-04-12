@@ -1,6 +1,5 @@
 import type { Board, Ship, Difficulty, GamePhase, BattleLogEntry } from '../engine/types';
-
-const STORAGE_KEY = 'battleship-saved-game';
+import { STORAGE_KEYS } from './storageKeys';
 
 /**
  * Serialisable snapshot of a single-player game in progress.
@@ -35,7 +34,7 @@ export interface SavedGameState {
 /** Persist the current game state to localStorage. */
 export function saveGameState(state: SavedGameState): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(STORAGE_KEYS.SAVED_GAME, JSON.stringify(state));
   } catch {
     // Storage full or unavailable — silently ignore
   }
@@ -44,7 +43,7 @@ export function saveGameState(state: SavedGameState): void {
 /** Load a previously saved game, or null if none exists / data is corrupt. */
 export function loadSavedGame(): SavedGameState | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEYS.SAVED_GAME);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as SavedGameState;
     // Basic validation: must have version 1 and be in battle phase
@@ -58,7 +57,7 @@ export function loadSavedGame(): SavedGameState | null {
 /** Remove saved game data (called on game over or new game). */
 export function clearSavedGame(): void {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEYS.SAVED_GAME);
   } catch {
     // ignore
   }
@@ -67,7 +66,7 @@ export function clearSavedGame(): void {
 /** Check whether a saved game exists without fully parsing it. */
 export function hasSavedGame(): boolean {
   try {
-    return localStorage.getItem(STORAGE_KEY) !== null;
+    return localStorage.getItem(STORAGE_KEYS.SAVED_GAME) !== null;
   } catch {
     return false;
   }

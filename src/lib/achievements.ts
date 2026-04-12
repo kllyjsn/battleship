@@ -1,5 +1,6 @@
 import type { GameRecord } from './stats';
 import { loadStats } from './stats';
+import { STORAGE_KEYS, getSessionName, getApiBase } from './storageKeys';
 
 export interface AchievementDef {
   id: string;
@@ -34,24 +35,10 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'fleet_commander', name: 'Fleet Commander', description: 'Win 50 games total', icon: '👑', category: 'milestone' },
 ];
 
-const STORAGE_KEY = 'battleship-achievements';
-const SESSION_NAME_KEY = 'battleship-session-name';
-
-function getSessionName(): string {
-  try {
-    return localStorage.getItem(SESSION_NAME_KEY) || '';
-  } catch {
-    return '';
-  }
-}
-
-function getApiBase(): string {
-  return '/api';
-}
 
 function loadUnlocked(): UnlockedAchievement[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEYS.ACHIEVEMENTS);
     if (!raw) return [];
     return JSON.parse(raw) as UnlockedAchievement[];
   } catch {
@@ -60,7 +47,7 @@ function loadUnlocked(): UnlockedAchievement[] {
 }
 
 function saveUnlocked(unlocked: UnlockedAchievement[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(unlocked));
+  localStorage.setItem(STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(unlocked));
 }
 
 export function getUnlockedAchievements(): UnlockedAchievement[] {
