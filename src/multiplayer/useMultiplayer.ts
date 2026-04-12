@@ -358,7 +358,19 @@ export function useMultiplayer(playerName: string) {
           setState(prev => prev.isReconnecting ? { ...prev, isReconnecting: false } : prev);
         }
 
-        if (cat === 'PNNetworkIssuesCategory' || cat === 'PNAccessDeniedCategory') {
+        // Hard failures — immediately surface an error and stop waiting
+        const hardFailures = new Set([
+          'PNNetworkIssuesCategory',
+          'PNAccessDeniedCategory',
+          'PNBadRequestCategory',
+          'PNValidationErrorCategory',
+          'PNServerErrorCategory',
+          'PNMalformedResponseCategory',
+          'PNDisconnectedCategory',
+          'PNUnknownCategory',
+        ]);
+
+        if (hardFailures.has(cat)) {
           if (connectTimeoutRef.current) {
             clearTimeout(connectTimeoutRef.current);
             connectTimeoutRef.current = null;

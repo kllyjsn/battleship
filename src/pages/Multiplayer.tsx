@@ -688,6 +688,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
         onBack={onBack}
         roomCode={mp.roomCode}
         isConnecting={mp.isConnecting}
+        isWaitingForOpponent={!mp.isConnecting && !mp.isConnected && !mp.error && mp.roomCode !== null && !mp.isHost}
         error={mp.error}
         defaultName={playerName || undefined}
         initialRoomCode={initialRoomCode || undefined}
