@@ -41,6 +41,7 @@ export function useMultiplayer(playerName: string) {
   const playerNameRef = useRef<string>(playerName);
   const isHostRef = useRef<boolean>(false);
   const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const opponentTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep playerNameRef in sync with the playerName prop
   useEffect(() => {
@@ -51,6 +52,10 @@ export function useMultiplayer(playerName: string) {
     if (connectTimeoutRef.current) {
       clearTimeout(connectTimeoutRef.current);
       connectTimeoutRef.current = null;
+    }
+    if (opponentTimeoutRef.current) {
+      clearTimeout(opponentTimeoutRef.current);
+      opponentTimeoutRef.current = null;
     }
     resetPubNub();
     pubnubRef.current = null;
@@ -79,6 +84,11 @@ export function useMultiplayer(playerName: string) {
         const msg = event.message as unknown as MultiplayerMessage;
 
         if (msg.type === 'JOIN' && msg.playerName) {
+          // Clear opponent timeout since we found the host/opponent
+          if (opponentTimeoutRef.current) {
+            clearTimeout(opponentTimeoutRef.current);
+            opponentTimeoutRef.current = null;
+          }
           setState(prev => ({
             ...prev,
             opponentName: msg.playerName ?? null,
@@ -170,6 +180,23 @@ export function useMultiplayer(playerName: string) {
             connectTimeoutRef.current = null;
           }
           setState(prev => ({ ...prev, isConnecting: false }));
+        }
+        if (event.category === 'PNNetworkIssuesCategory' ||
+            event.category === 'PNAccessDeniedCategory' ||
+            event.category === 'PNTimeoutCategory') {
+          if (connectTimeoutRef.current) {
+            clearTimeout(connectTimeoutRef.current);
+            connectTimeoutRef.current = null;
+          }
+          if (opponentTimeoutRef.current) {
+            clearTimeout(opponentTimeoutRef.current);
+            opponentTimeoutRef.current = null;
+          }
+          setState(prev => ({
+            ...prev,
+            isConnecting: false,
+            error: 'Connection failed. Please check your network and try again.',
+          }));
         }
       },
     });
@@ -311,6 +338,20 @@ export function useMultiplayer(playerName: string) {
           } as any,
       });
     }, 1000);
+
+    // Timeout for waiting for host/opponent to respond
+    opponentTimeoutRef.current = setTimeout(() => {
+      setState(prev => {
+        if (!prev.opponentName) {
+          return {
+            ...prev,
+            isConnecting: false,
+            error: 'Room not found or host has left. Try creating a new room.',
+          };
+        }
+        return prev;
+      });
+    }, 15000);
   }, [cleanup, subscribe]);
 
   const sendReady = useCallback(() => {
