@@ -23,7 +23,7 @@ export function AttackHeatmap({ board, onClose, title = 'TACTICAL MAP' }: Attack
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fadeIn">
-      <div className="metal-panel rounded-xl p-5 max-w-sm w-full mx-4 text-center">
+      <div className="metal-panel rounded-xl p-5 max-w-sm w-full mx-4 text-center relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-500 hover:text-green-400 transition-colors"
