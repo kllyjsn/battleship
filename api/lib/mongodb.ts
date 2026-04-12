@@ -24,10 +24,14 @@ export async function getDb(): Promise<Db> {
     });
 
     await client.connect();
-    const db = client.db(DB_NAME);
-    return { client, db };
+    return { client, db: client.db(DB_NAME) };
   })();
 
-  const { db } = await cachedPromise;
-  return db;
+  try {
+    const { db } = await cachedPromise;
+    return db;
+  } catch (err) {
+    cachedPromise = null;
+    throw err;
+  }
 }
