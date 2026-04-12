@@ -1,9 +1,9 @@
-import { Crosshair, Users, Anchor, Zap, Brain, Shield, Cpu, Target, BarChart3, Dice5, Swords, Gamepad2, Palette, Trophy, Award, BookOpen } from 'lucide-react';
+import { Crosshair, Users, Anchor, Zap, Brain, Shield, Cpu, Target, BarChart3, Dice5, Swords, Gamepad2, Trophy, Award, BookOpen, Settings } from 'lucide-react';
 import type { Difficulty } from '../engine/types';
 import { useState } from 'react';
 import { StatsPanel } from './StatsPanel';
 import { Leaderboard } from './Leaderboard';
-import { ThemeSelector } from './ThemeSelector';
+import { SettingsPanel } from './SettingsPanel';
 import { AchievementsPanel } from './AchievementsPanel';
 import { loadTheme } from '../lib/themes';
 import { getPlayerRank } from '../lib/ranks';
@@ -17,7 +17,7 @@ interface MainMenuProps {
 export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuProps) {
   const [showDifficulty, setShowDifficulty] = useState(false);
   const [showStats, setShowStats] = useState(false);
-  const [showThemes, setShowThemes] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(loadTheme());
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
@@ -114,50 +114,71 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
           </div>
         )}
 
-        {/* Stats, Themes & Leaderboard buttons */}
-        <div className="grid grid-cols-2 sm:flex gap-2 sm:gap-3 mt-4 sm:mt-6 justify-center">
-          <button
-            onClick={() => setShowStats(true)}
-            className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded metal-panel hover:border-green-500/40 transition-all text-xs sm:text-sm font-mono-crt text-green-300"
-          >
-            <BarChart3 size={14} className="sm:hidden" />
-            <BarChart3 size={16} className="hidden sm:block" />
-            STATS
-          </button>
-          <button
-            onClick={() => setShowLeaderboard(true)}
-            className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded metal-panel hover:border-amber-500/40 transition-all text-xs sm:text-sm font-mono-crt text-amber-300"
-          >
-            <Trophy size={14} className="sm:hidden" />
-            <Trophy size={16} className="hidden sm:block" />
-            LEADERBOARD
-          </button>
-          <button
-            onClick={() => setShowAchievements(true)}
-            className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded metal-panel hover:border-purple-500/40 transition-all text-xs sm:text-sm font-mono-crt text-purple-300"
-          >
-            <Award size={14} className="sm:hidden" />
-            <Award size={16} className="hidden sm:block" />
-            MEDALS
-          </button>
-          <button
-            onClick={() => setShowThemes(true)}
-            className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded metal-panel hover:border-cyan-500/40 transition-all text-xs sm:text-sm font-mono-crt text-cyan-300"
-          >
-            <Palette size={14} className="sm:hidden" />
-            <Palette size={16} className="hidden sm:block" />
-            THEMES
-          </button>
-          <a
-            href="/docs/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded metal-panel hover:border-blue-500/40 transition-all text-xs sm:text-sm font-mono-crt text-blue-300"
-          >
-            <BookOpen size={14} className="sm:hidden" />
-            <BookOpen size={16} className="hidden sm:block" />
-            DOCS
-          </a>
+        {/* Action buttons — 3 + 2 rows on mobile, single flex row on sm+ */}
+        <div className="mt-4 sm:mt-6 space-y-2 sm:space-y-0">
+          <div className="grid grid-cols-3 sm:flex gap-2 sm:gap-3 justify-center">
+            <button
+              onClick={() => setShowStats(true)}
+              className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded metal-panel hover:border-green-500/40 transition-all text-xs sm:text-sm font-mono-crt text-green-300"
+            >
+              <BarChart3 size={14} className="sm:hidden" />
+              <BarChart3 size={16} className="hidden sm:block" />
+              STATS
+            </button>
+            <button
+              onClick={() => setShowLeaderboard(true)}
+              className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded metal-panel hover:border-amber-500/40 transition-all text-xs sm:text-sm font-mono-crt text-amber-300"
+            >
+              <Trophy size={14} className="sm:hidden" />
+              <Trophy size={16} className="hidden sm:block" />
+              RANKS
+            </button>
+            <button
+              onClick={() => setShowAchievements(true)}
+              className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded metal-panel hover:border-purple-500/40 transition-all text-xs sm:text-sm font-mono-crt text-purple-300"
+            >
+              <Award size={14} className="sm:hidden" />
+              <Award size={16} className="hidden sm:block" />
+              MEDALS
+            </button>
+          </div>
+          <div className="grid grid-cols-2 sm:hidden gap-2">
+            <button
+              onClick={() => setShowSettings(true)}
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded metal-panel hover:border-cyan-500/40 transition-all text-xs font-mono-crt text-cyan-300"
+            >
+              <Settings size={14} />
+              SETTINGS
+            </button>
+            <a
+              href="/docs/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded metal-panel hover:border-blue-500/40 transition-all text-xs font-mono-crt text-blue-300"
+            >
+              <BookOpen size={14} />
+              DOCS
+            </a>
+          </div>
+          {/* Desktop-only: settings & docs inline with the first row */}
+          <div className="hidden sm:flex gap-3 justify-center mt-0">
+            <button
+              onClick={() => setShowSettings(true)}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded metal-panel hover:border-cyan-500/40 transition-all text-sm font-mono-crt text-cyan-300"
+            >
+              <Settings size={16} />
+              SETTINGS
+            </button>
+            <a
+              href="/docs/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded metal-panel hover:border-blue-500/40 transition-all text-sm font-mono-crt text-blue-300"
+            >
+              <BookOpen size={16} />
+              DOCS
+            </a>
+          </div>
         </div>
 
         <p className="mt-5 sm:mt-8 text-[10px] sm:text-xs text-slate-700 font-mono-crt">
@@ -270,11 +291,11 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
       {showStats && <StatsPanel onClose={() => setShowStats(false)} />}
       {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
       {showAchievements && <AchievementsPanel onClose={() => setShowAchievements(false)} />}
-      {showThemes && (
-        <ThemeSelector
+      {showSettings && (
+        <SettingsPanel
           currentTheme={currentTheme}
           onSelectTheme={setCurrentTheme}
-          onClose={() => setShowThemes(false)}
+          onClose={() => setShowSettings(false)}
         />
       )}
 
