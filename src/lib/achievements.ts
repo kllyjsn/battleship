@@ -35,6 +35,19 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 ];
 
 const STORAGE_KEY = 'battleship-achievements';
+const SESSION_NAME_KEY = 'battleship-session-name';
+
+function getSessionName(): string {
+  try {
+    return localStorage.getItem(SESSION_NAME_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+function getApiBase(): string {
+  return '/api';
+}
 
 function loadUnlocked(): UnlockedAchievement[] {
   try {
@@ -151,9 +164,39 @@ export function checkAchievements(ctx: GameEndContext): string[] {
     if (r) newlyUnlocked.push(r.id);
   }
 
+  // Fire-and-forget: sync all unlocked achievements to online API
+  if (newlyUnlocked.length > 0) {
+    syncAchievementsOnline(loadUnlocked()).catch(() => {});
+  }
+
   return newlyUnlocked;
 }
 
 export function getAchievementDef(id: string): AchievementDef | undefined {
   return ACHIEVEMENTS.find(a => a.id === id);
+}
+
+async function syncAchievementsOnline(unlocked: UnlockedAchievement[]): Promise<void> {
+  const playerName = getSessionName();
+  if (!playerName || unlocked.length === 0) return;
+  try {
+    await fetch(`${getApiBase()}/achievements`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playerName, unlocked }),
+    });
+  } catch {
+    // Silently fail — local achievements are already saved
+  }
+}
+
+export async function getOnlineAchievements(playerName: string): Promise<UnlockedAchievement[]> {
+  try {
+    const resp = await fetch(`${getApiBase()}/achievements?player=${encodeURIComponent(playerName)}`);
+    if (!resp.ok) return [];
+    const data = await resp.json() as { unlocked: UnlockedAchievement[] };
+    return data.unlocked ?? [];
+  } catch {
+    return [];
+  }
 }

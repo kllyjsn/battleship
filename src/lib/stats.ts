@@ -16,6 +16,38 @@ export interface Stats {
 }
 
 const STORAGE_KEY = 'battleship-stats';
+const SESSION_NAME_KEY = 'battleship-session-name';
+
+function getSessionName(): string {
+  try {
+    return localStorage.getItem(SESSION_NAME_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+function getApiBase(): string {
+  return '/api';
+}
+
+async function syncStatsOnline(stats: Stats): Promise<void> {
+  const playerName = getSessionName();
+  if (!playerName) return;
+  try {
+    await fetch(`${getApiBase()}/stats`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        playerName,
+        games: stats.games,
+        currentWinStreak: stats.currentWinStreak,
+        bestWinStreak: stats.bestWinStreak,
+      }),
+    });
+  } catch {
+    // Silently fail — local stats are already saved
+  }
+}
 
 function defaultStats(): Stats {
   return { games: [], currentWinStreak: 0, bestWinStreak: 0 };
@@ -50,6 +82,10 @@ export function saveGame(record: GameRecord): Stats {
   }
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
+
+  // Fire-and-forget: sync to online API
+  syncStatsOnline(stats).catch(() => {});
+
   return stats;
 }
 
@@ -105,6 +141,18 @@ export function getStatsOverview(stats: Stats): StatsOverview {
     multiplayerWins,
     multiplayerLosses,
   };
+}
+
+export async function getOnlineStats(playerName: string): Promise<Stats | null> {
+  try {
+    const resp = await fetch(`${getApiBase()}/stats?player=${encodeURIComponent(playerName)}`);
+    if (!resp.ok) return null;
+    const data = await resp.json() as Stats;
+    if (!data.games || data.games.length === 0) return null;
+    return data;
+  } catch {
+    return null;
+  }
 }
 
 export function clearStats(): void {
