@@ -26,6 +26,7 @@ import { BoardToggle } from '../components/BoardToggle';
 import { GameReplay } from '../components/GameReplay';
 import { ScorePopup } from '../components/ScorePopup';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { ShipNotification } from '../components/ShipNotification';
 import type { ReplayMove, ReplayData } from '../lib/replay';
 
 interface SinglePlayerProps {
@@ -75,6 +76,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const handlePlayerAttackRef = useRef<(row: number, col: number) => void>(() => {});
   const [scorePopup, setScorePopup] = useState({ points: 0, label: '', trigger: 0 });
   const [showConfirmLeave, setShowConfirmLeave] = useState(false);
+  const [shipNotif, setShipNotif] = useState({ type: 'hit' as 'hit' | 'sunk', shipName: '', actor: 'player' as 'player' | 'opponent', trigger: 0 });
   const previousWinsRef = useRef(loadStats().games.filter(g => g.result === 'win').length);
 
   // Setup opponent board
@@ -248,12 +250,14 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         hitCountRef.current += 1;
         play('hit');
         haptics.hit();
-        setMessage('Direct hit!');
+        setMessage(`Direct hit on their ${result.shipName}!`);
+        setShipNotif({ type: 'hit', shipName: result.shipName || '', actor: 'player', trigger: Date.now() });
       } else if (result.result === 'sunk') {
         hitCountRef.current += 1;
         play('sunk');
         haptics.sunk();
         setMessage(`You sank their ${result.shipName}!`);
+        setShipNotif({ type: 'sunk', shipName: result.shipName || '', actor: 'player', trigger: Date.now() });
       } else {
         play('miss');
         haptics.tap();
@@ -350,10 +354,12 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
 
           if (aiResult.result.result === 'hit') {
             play('hit');
-            setMessage(`Enemy hit at ${String.fromCharCode(65 + position.row)}${position.col + 1}!`);
+            setMessage(`Enemy hit your ${aiResult.result.shipName} at ${String.fromCharCode(65 + position.row)}${position.col + 1}!`);
+            setShipNotif({ type: 'hit', shipName: aiResult.result.shipName || '', actor: 'opponent', trigger: Date.now() });
           } else if (aiResult.result.result === 'sunk') {
             play('sunk');
             setMessage(`Enemy sank your ${aiResult.result.shipName}!`);
+            setShipNotif({ type: 'sunk', shipName: aiResult.result.shipName || '', actor: 'opponent', trigger: Date.now() });
           } else {
             play('splash');
             setMessage(`Enemy missed at ${String.fromCharCode(65 + position.row)}${position.col + 1}`);
@@ -593,6 +599,13 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         label={scorePopup.label}
         position={lastAttackPos}
         trigger={scorePopup.trigger}
+      />
+
+      <ShipNotification
+        type={shipNotif.type}
+        shipName={shipNotif.shipName}
+        actor={shipNotif.actor}
+        trigger={shipNotif.trigger}
       />
 
       {showConfirmLeave && (

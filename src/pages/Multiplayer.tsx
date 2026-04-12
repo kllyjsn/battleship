@@ -30,6 +30,7 @@ import { TurnTimer } from '../components/TurnTimer';
 import { GameReplay } from '../components/GameReplay';
 import { ScorePopup } from '../components/ScorePopup';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { ShipNotification } from '../components/ShipNotification';
 import type { ReplayMove, ReplayData } from '../lib/replay';
 import { Eye } from 'lucide-react';
 
@@ -80,6 +81,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
   const isProcessingRef = useRef(false);
   const [scorePopup, setScorePopup] = useState({ points: 0, label: '', trigger: 0 });
   const [showConfirmLeave, setShowConfirmLeave] = useState(false);
+  const [shipNotif, setShipNotif] = useState({ type: 'hit' as 'hit' | 'sunk', shipName: '', actor: 'player' as 'player' | 'opponent', trigger: 0 });
   const previousWinsRef = useRef(loadStats().games.filter(g => g.result === 'win').length);
   const [opponentShipsRemaining, setOpponentShipsRemaining] = useState(SHIPS.length);
   const [turnTimeLeft, setTurnTimeLeft] = useState(30);
@@ -307,11 +309,13 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
           if (result.result === 'hit') {
             play('hit');
             haptics.hit();
-            setMessage(`Enemy hit at ${String.fromCharCode(65 + msg.row)}${msg.col + 1}!`);
+            setMessage(`Enemy hit your ${result.shipName} at ${String.fromCharCode(65 + msg.row)}${msg.col + 1}!`);
+            setShipNotif({ type: 'hit', shipName: result.shipName || '', actor: 'opponent', trigger: Date.now() });
           } else if (result.result === 'sunk') {
             play('sunk');
             haptics.sunk();
             setMessage(`Enemy sank your ${result.shipName}!`);
+            setShipNotif({ type: 'sunk', shipName: result.shipName || '', actor: 'opponent', trigger: Date.now() });
           } else {
             play('splash');
             haptics.tap();
@@ -444,12 +448,14 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
           if (msg.result === 'hit') {
             play('hit');
             haptics.hit();
-            setMessage('Direct hit!');
+            setMessage(`Direct hit on their ${msg.shipName}!`);
+            setShipNotif({ type: 'hit', shipName: msg.shipName || '', actor: 'player', trigger: Date.now() });
           } else if (msg.result === 'sunk') {
             play('sunk');
             haptics.sunk();
             setMessage(`You sank their ${msg.shipName}!`);
             setOpponentShipsRemaining(prev => Math.max(0, prev - 1));
+            setShipNotif({ type: 'sunk', shipName: msg.shipName || '', actor: 'player', trigger: Date.now() });
           } else {
             play('miss');
             haptics.tap();
@@ -987,6 +993,13 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
         label={scorePopup.label}
         position={lastAttackPos}
         trigger={scorePopup.trigger}
+      />
+
+      <ShipNotification
+        type={shipNotif.type}
+        shipName={shipNotif.shipName}
+        actor={shipNotif.actor}
+        trigger={shipNotif.trigger}
       />
 
       {showConfirmLeave && (
