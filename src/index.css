@@ -260,6 +260,80 @@ body {
   z-index: 20;
 }
 
+/* ── Floating score popup ── */
+@keyframes scoreFloat {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  20% { opacity: 1; transform: translateX(-50%) translateY(-10px) scale(1.15); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-60px) scale(0.8); }
+}
+
+/* ── Ocean shimmer on empty cells ── */
+@keyframes oceanShimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.cell-ocean-shimmer {
+  background-image: linear-gradient(
+    135deg,
+    var(--cell-empty) 0%,
+    rgba(20, 40, 60, 0.8) 25%,
+    var(--cell-empty) 50%,
+    rgba(15, 35, 55, 0.8) 75%,
+    var(--cell-empty) 100%
+  );
+  background-size: 400% 400%;
+  animation: oceanShimmer 8s ease-in-out infinite;
+}
+
+/* ── Danger zone pulse ── */
+@keyframes dangerPulse {
+  0%, 100% { box-shadow: inset 0 0 8px rgba(255, 60, 60, 0.15); border-color: rgba(255, 60, 60, 0.2); }
+  50% { box-shadow: inset 0 0 16px rgba(255, 60, 60, 0.3); border-color: rgba(255, 60, 60, 0.5); }
+}
+
+@keyframes dangerTextPulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+.danger-zone-border {
+  animation: dangerPulse 1.5s ease-in-out infinite;
+  border: 1px solid rgba(255, 60, 60, 0.3);
+  border-radius: 0.5rem;
+}
+
+/* ── Rank up celebration ── */
+@keyframes rankUpGlow {
+  0% { transform: scale(0.8); opacity: 0; }
+  30% { transform: scale(1.15); opacity: 1; }
+  60% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes rankUpShine {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.rank-up-glow {
+  animation: rankUpGlow 0.8s ease-out;
+}
+
+.rank-up-shine {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 176, 0, 0.15) 45%,
+    rgba(255, 176, 0, 0.3) 50%,
+    rgba(255, 176, 0, 0.15) 55%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: rankUpShine 2s ease-in-out 0.5s;
+}
+
 /* ── Remove old wave animations (replaced by sonar) ── */
 .wave-animation,
 .wave-animation-slow {

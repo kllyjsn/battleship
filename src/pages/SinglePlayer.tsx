@@ -19,10 +19,13 @@ import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 import { useHaptics } from '../hooks/useHaptics';
 import { saveGameResult } from '../lib/gameResults';
 import { checkAchievements } from '../lib/achievements';
+import { loadStats } from '../lib/stats';
 import { AchievementToast } from '../components/AchievementToast';
 import { BattleLog } from '../components/BattleLog';
 import { BoardToggle } from '../components/BoardToggle';
 import { GameReplay } from '../components/GameReplay';
+import { ScorePopup } from '../components/ScorePopup';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import type { ReplayMove, ReplayData } from '../lib/replay';
 
 interface SinglePlayerProps {
@@ -70,6 +73,9 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const [showCursor, setShowCursor] = useState(false);
   const [mobileBoard, setMobileBoard] = useState<'player' | 'opponent'>('opponent');
   const handlePlayerAttackRef = useRef<(row: number, col: number) => void>(() => {});
+  const [scorePopup, setScorePopup] = useState({ points: 0, label: '', trigger: 0 });
+  const [showConfirmLeave, setShowConfirmLeave] = useState(false);
+  const previousWinsRef = useRef(loadStats().games.filter(g => g.result === 'win').length);
 
   // Setup opponent board
   useEffect(() => {
@@ -236,6 +242,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
 
       const movePoints = scoreForResult(result.result);
       setPlayerScore(prev => prev + movePoints);
+      setScorePopup({ points: movePoints, label: result.result === 'sunk' ? 'SUNK' : result.result === 'hit' ? 'HIT' : 'MISS', trigger: Date.now() });
 
       if (result.result === 'hit') {
         hitCountRef.current += 1;
@@ -438,6 +445,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     isProcessingRef.current = false;
     shotCountRef.current = 0;
     hitCountRef.current = 0;
+    previousWinsRef.current = loadStats().games.filter(g => g.result === 'win').length;
   }, []);
 
   const playerHitsOnOpponent = opponentShips.reduce((sum, s) => sum + s.hits, 0);
@@ -450,7 +458,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         message={message}
         phase={phase}
         onToggleSound={toggle}
-        onBack={onBack}
+        onBack={phase === 'battle' ? () => setShowConfirmLeave(true) : onBack}
         playerHits={opponentHitsOnPlayer}
         opponentHits={playerHitsOnOpponent}
         totalShipCells={TOTAL_SHIP_CELLS}
@@ -458,6 +466,9 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
         musicFreqData={music.freqData}
         onToggleMusic={music.toggle}
         score={playerScore}
+        showStreak={true}
+        playerShipsRemaining={playerShips.filter(s => !s.sunk).length}
+        opponentShipsRemaining={opponentShips.filter(s => !s.sunk).length}
       />
 
       <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-8 p-4">
@@ -562,6 +573,10 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
           }}
           alreadySubmitted={scoreSubmitted}
           onScoreSubmitted={() => setScoreSubmitted(true)}
+          shipsLost={playerShips.filter(s => s.sunk).length}
+          totalShips={SHIPS.length}
+          opponentBoard={opponentBoard}
+          previousWins={previousWinsRef.current}
         />
       )}
 
@@ -571,6 +586,24 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
 
       {newAchievements.length > 0 && (
         <AchievementToast achievementIds={newAchievements} onDone={() => setNewAchievements([])} />
+      )}
+
+      <ScorePopup
+        points={scorePopup.points}
+        label={scorePopup.label}
+        position={lastAttackPos}
+        trigger={scorePopup.trigger}
+      />
+
+      {showConfirmLeave && (
+        <ConfirmDialog
+          title="ABORT MISSION?"
+          message="Your current battle will be lost. Are you sure you want to return to base?"
+          confirmLabel="ABANDON"
+          cancelLabel="STAY"
+          onConfirm={() => { setShowConfirmLeave(false); onBack(); }}
+          onCancel={() => setShowConfirmLeave(false)}
+        />
       )}
     </div>
   );

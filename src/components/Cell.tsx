@@ -79,10 +79,10 @@ export function Cell({
       case 'empty':
         return `${base} ${
           !isPlayerBoard && !isPlacing && !disabled
-            ? 'bg-[var(--cell-empty)] border-[var(--cell-empty-border)] hover:bg-[var(--cell-hover)] hover:border-[var(--cell-hover-border)] cursor-crosshair'
+            ? 'cell-ocean-shimmer border-[var(--cell-empty-border)] hover:bg-[var(--cell-hover)] hover:border-[var(--cell-hover-border)] cursor-crosshair'
             : isPlacing && isPlayerBoard
-              ? 'bg-[var(--cell-empty)] border-[var(--cell-empty-border)] hover:bg-[var(--cell-hover)] cursor-pointer'
-              : 'bg-[var(--cell-empty)] border-[var(--cell-empty-border)]'
+              ? 'cell-ocean-shimmer border-[var(--cell-empty-border)] hover:bg-[var(--cell-hover)] cursor-pointer'
+              : 'cell-ocean-shimmer border-[var(--cell-empty-border)]'
         }`;
       case 'ship':
         return `${base} ${isPlayerBoard ? (hideShipFill ? 'bg-[var(--cell-empty)]/80 border-[var(--cell-empty-border)]' : 'bg-[var(--cell-ship)] border-[var(--cell-ship-border)]') : 'bg-[var(--cell-empty)] border-[var(--cell-empty-border)] hover:bg-[var(--cell-hover)] hover:border-[var(--cell-hover-border)] cursor-crosshair'}`;
