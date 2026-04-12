@@ -328,11 +328,11 @@ export function useMultiplayer(playerName: string) {
     pn.subscribe({ channels: [channel], withPresence: true });
   }, [startPingInterval, fetchOccupancy]);
 
-  const publish = useCallback((msg: MultiplayerMessage) => {
+  const publish = useCallback(async (msg: MultiplayerMessage) => {
     const pn = pubnubRef.current;
     if (!pn || !channelRef.current) return;
 
-    pn.publish({
+    await pn.publish({
       channel: channelRef.current,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       message: msg as any,
@@ -502,8 +502,9 @@ export function useMultiplayer(playerName: string) {
     publish({ type: 'REACTION', messageId, emoji, sender: playerName });
   }, [publish, playerName]);
 
-  const sendLeave = useCallback(() => {
-    publish({ type: 'LEAVE' });
+  const sendLeave = useCallback(async () => {
+    // Await publish so the LEAVE message is sent before destroy() tears down PubNub
+    await publish({ type: 'LEAVE' });
     cleanup();
     setState({
       roomCode: null,
