@@ -1,4 +1,4 @@
-import { STORAGE_KEYS } from './storageKeys';
+import { STORAGE_KEYS, getSessionName, getApiBase } from './storageKeys';
 
 export interface ThemeConfig {
   id: string;
@@ -102,6 +102,7 @@ export function getTheme(themeId: string): ThemeConfig {
   return THEMES.find((t) => t.id === themeId) || THEMES[0];
 }
 
+/** Load theme from localStorage cache (synchronous, for immediate UI). */
 export function loadTheme(): string {
   try {
     return localStorage.getItem(STORAGE_KEYS.THEME) || 'classic';
@@ -110,11 +111,47 @@ export function loadTheme(): string {
   }
 }
 
+/**
+ * Fetch theme preference from MongoDB and update local cache.
+ * Falls back to local cache on failure.
+ */
+export async function fetchTheme(): Promise<string> {
+  const playerName = getSessionName();
+  if (!playerName) return loadTheme();
+  try {
+    const resp = await fetch(`${getApiBase()}/preferences?player=${encodeURIComponent(playerName)}`);
+    if (!resp.ok) return loadTheme();
+    const data = await resp.json() as { theme?: string };
+    const theme = data.theme ?? 'classic';
+    try { localStorage.setItem(STORAGE_KEYS.THEME, theme); } catch { /* ignore */ }
+    return theme;
+  } catch {
+    return loadTheme();
+  }
+}
+
+/** Save theme to both localStorage cache and MongoDB. */
 export function saveTheme(themeId: string): void {
   try {
     localStorage.setItem(STORAGE_KEYS.THEME, themeId);
   } catch {
     // ignore
+  }
+  // Primary persistence: sync to MongoDB
+  syncThemeOnline(themeId).catch(() => {});
+}
+
+async function syncThemeOnline(themeId: string): Promise<void> {
+  const playerName = getSessionName();
+  if (!playerName) return;
+  try {
+    await fetch(`${getApiBase()}/preferences`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playerName, theme: themeId }),
+    });
+  } catch {
+    // Silently fail — local cache is already saved
   }
 }
 

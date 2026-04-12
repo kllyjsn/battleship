@@ -25,7 +25,7 @@ function loadEntries(): LeaderboardEntry[] {
 }
 
 function saveEntries(entries: LeaderboardEntry[]): void {
-  localStorage.setItem(STORAGE_KEYS.LEADERBOARD, JSON.stringify(entries));
+  try { localStorage.setItem(STORAGE_KEYS.LEADERBOARD, JSON.stringify(entries)); } catch { /* ignore */ }
 }
 
 export function addLeaderboardEntry(
@@ -56,9 +56,10 @@ export function addLeaderboardEntry(
 
   const entries = loadEntries();
   entries.push(entry);
+  // Cache locally for fast reads
   saveEntries(entries);
 
-  // Fire-and-forget: also submit to online API
+  // Primary persistence: submit to MongoDB via API
   submitOnlineEntry(entry).catch(() => {});
 
   return entry;
@@ -90,6 +91,7 @@ function getStartOfPeriod(period: Period): Date {
   }
 }
 
+/** Get leaderboard from local cache (synchronous, for immediate UI). */
 export function getLeaderboard(period: Period): LeaderboardEntry[] {
   const entries = loadEntries();
   const cutoff = getStartOfPeriod(period);
@@ -105,6 +107,24 @@ export function getLeaderboard(period: Period): LeaderboardEntry[] {
       return a.shots - b.shots;
     })
     .slice(0, 50);
+}
+
+/**
+ * Fetch leaderboard from MongoDB and update the local cache.
+ * Returns MongoDB entries, falling back to local cache on failure.
+ */
+export async function fetchLeaderboard(period?: Period): Promise<LeaderboardEntry[]> {
+  try {
+    const result = await getOnlineLeaderboard(period);
+    if (result.entries.length > 0) {
+      // Update local cache with online data
+      saveEntries(result.entries);
+      return result.entries;
+    }
+    return getLeaderboard(period ?? 'month');
+  } catch {
+    return getLeaderboard(period ?? 'month');
+  }
 }
 
 // --- Online leaderboard API ---

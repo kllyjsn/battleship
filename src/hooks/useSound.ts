@@ -1,5 +1,5 @@
 import { useCallback, useRef, useEffect } from 'react';
-import { STORAGE_KEYS } from '../lib/storageKeys';
+import { STORAGE_KEYS, getSessionName, getApiBase } from '../lib/storageKeys';
 
 type SoundType = 'hit' | 'miss' | 'sunk' | 'place' | 'click' | 'win' | 'lose' | 'splash' | 'sonarPing';
 
@@ -345,7 +345,7 @@ function stopAmbient() {
   }
 }
 
-/** Read persisted mute preference (default: enabled / not muted). */
+/** Read persisted mute preference from localStorage cache (default: enabled / not muted). */
 function loadSoundEnabled(): boolean {
   try {
     return localStorage.getItem(STORAGE_KEYS.SOUND_MUTED) !== 'true';
@@ -354,11 +354,47 @@ function loadSoundEnabled(): boolean {
   }
 }
 
+/** Save sound preference to both localStorage cache and MongoDB. */
 function saveSoundEnabled(on: boolean): void {
   try {
     localStorage.setItem(STORAGE_KEYS.SOUND_MUTED, on ? 'false' : 'true');
   } catch {
     // Storage unavailable — ignore
+  }
+  // Primary persistence: sync to MongoDB
+  syncSoundPreferenceOnline(!on).catch(() => {});
+}
+
+async function syncSoundPreferenceOnline(muted: boolean): Promise<void> {
+  const playerName = getSessionName();
+  if (!playerName) return;
+  try {
+    await fetch(`${getApiBase()}/preferences`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playerName, soundMuted: muted }),
+    });
+  } catch {
+    // Silently fail — local cache is already saved
+  }
+}
+
+/**
+ * Fetch sound preference from MongoDB and update local cache.
+ * Falls back to local cache on failure.
+ */
+export async function fetchSoundPreference(): Promise<boolean> {
+  const playerName = getSessionName();
+  if (!playerName) return loadSoundEnabled();
+  try {
+    const resp = await fetch(`${getApiBase()}/preferences?player=${encodeURIComponent(playerName)}`);
+    if (!resp.ok) return loadSoundEnabled();
+    const data = await resp.json() as { soundMuted?: boolean };
+    const enabled = !(data.soundMuted ?? false);
+    try { localStorage.setItem(STORAGE_KEYS.SOUND_MUTED, enabled ? 'false' : 'true'); } catch { /* ignore */ }
+    return enabled;
+  } catch {
+    return loadSoundEnabled();
   }
 }
 

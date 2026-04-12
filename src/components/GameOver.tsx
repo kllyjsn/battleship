@@ -5,7 +5,7 @@ import { loadStats } from '../lib/stats';
 import { getPlayerRank, getRankForWins } from '../lib/ranks';
 import { RankBadge } from './RankBadge';
 import { AttackHeatmap } from './AttackHeatmap';
-import { STORAGE_KEYS } from '../lib/storageKeys';
+import { getSessionName, setSessionName } from '../lib/storageKeys';
 import type { Board } from '../engine/types';
 
 interface GameOverProps {
@@ -31,26 +31,11 @@ interface GameOverProps {
   previousWins?: number;
 }
 
-function loadSessionName(): string {
-  try {
-    return localStorage.getItem(STORAGE_KEYS.SESSION_NAME) || '';
-  } catch {
-    return '';
-  }
-}
-
-function saveSessionName(name: string): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.SESSION_NAME, name);
-  } catch {
-    // ignore
-  }
-}
 
 export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', opponentName = 'Opponent', onWatchReplay, gameStats, alreadySubmitted = false, onScoreSubmitted, shipsLost = 0, totalShips = 5, opponentBoard, previousWins }: GameOverProps) {
   const isWin = winner === 'player';
   const [showNamePrompt, setShowNamePrompt] = useState(!!gameStats && !alreadySubmitted);
-  const [sessionName, setSessionName] = useState(loadSessionName());
+  const [sessionName, setSessionNameLocal] = useState(getSessionName());
   const [saved, setSaved] = useState(alreadySubmitted);
   const [showHeatmap, setShowHeatmap] = useState(false);
 
@@ -61,7 +46,7 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
 
   const handleSaveScore = () => {
     const name = sessionName.trim() || 'Anonymous';
-    saveSessionName(name);
+    setSessionName(name);
     if (gameStats) {
       addLeaderboardEntry(name, {
         mode: gameStats.mode,
@@ -197,7 +182,7 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
             <input
               type="text"
               value={sessionName}
-              onChange={(e) => setSessionName(e.target.value)}
+              onChange={(e) => setSessionNameLocal(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleSaveScore(); }}
               placeholder="Your callsign..."
               maxLength={20}

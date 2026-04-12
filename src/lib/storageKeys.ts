@@ -1,6 +1,7 @@
 /**
  * Centralised localStorage key constants.
- * Prevents typos and makes it easy to find every persistence touch-point.
+ * localStorage is used only as a fast local cache; MongoDB (via API) is the
+ * primary persistence layer for all player data.
  */
 
 export const STORAGE_KEYS = {
@@ -22,7 +23,7 @@ export const STORAGE_KEYS = {
 
 // ── Shared helpers used by multiple modules ──
 
-/** Read the player's callsign from localStorage. */
+/** Read the player's callsign from localStorage (cache). */
 export function getSessionName(): string {
   try {
     return localStorage.getItem(STORAGE_KEYS.SESSION_NAME) || '';
@@ -31,7 +32,37 @@ export function getSessionName(): string {
   }
 }
 
-/** Base path for the optional online API. */
+/** Save the player's callsign to both localStorage cache and MongoDB. */
+export function setSessionName(name: string): void {
+  try {
+    if (name.trim()) {
+      localStorage.setItem(STORAGE_KEYS.SESSION_NAME, name.trim());
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.SESSION_NAME);
+    }
+  } catch {
+    // Storage unavailable
+  }
+  // Fire-and-forget sync to MongoDB
+  syncSessionNameOnline(name.trim()).catch(() => {});
+}
+
+/** Base path for the online API. */
 export function getApiBase(): string {
   return '/api';
+}
+
+// ── MongoDB sync helpers ──
+
+async function syncSessionNameOnline(name: string): Promise<void> {
+  if (!name) return;
+  try {
+    await fetch(`${getApiBase()}/preferences`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playerName: name }),
+    });
+  } catch {
+    // Silently fail — local cache is already saved
+  }
 }
