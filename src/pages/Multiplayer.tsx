@@ -672,8 +672,10 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
     onBack();
   }, [onBack]);
 
-  const handleGoHome = useCallback(() => {
-    mp.sendLeave();
+  const handleGoHome = useCallback(async () => {
+    // Await sendLeave so the LEAVE message is delivered before navigation
+    // triggers component unmount and PubNub cleanup/destroy
+    await mp.sendLeave();
     onBack();
   }, [mp, onBack]);
 
