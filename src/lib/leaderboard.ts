@@ -123,8 +123,10 @@ async function submitOnlineEntry(entry: LeaderboardEntry): Promise<void> {
       body: JSON.stringify({
         playerName: entry.playerName,
         score: entry.score,
+        totalScore: entry.totalScore,
         shots: entry.shots,
         hits: entry.hits,
+        won: entry.won,
         mode: entry.mode,
         difficulty: entry.difficulty,
         durationSeconds: entry.durationSeconds,

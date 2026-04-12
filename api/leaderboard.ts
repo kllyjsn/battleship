@@ -6,8 +6,10 @@ interface StoredEntry {
   id: string;
   playerName: string;
   score: number;
+  totalScore: number;
   shots: number;
   hits: number;
+  won: boolean;
   mode: 'single' | 'multiplayer';
   difficulty?: string;
   durationSeconds: number;
@@ -57,8 +59,10 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       playerName: String(body.playerName).slice(0, 20),
       score: Number(body.score),
+      totalScore: Number(body.totalScore) || 0,
       shots: Number(body.shots),
       hits: Number(body.hits) || 0,
+      won: body.won !== false,
       mode: body.mode === 'multiplayer' ? 'multiplayer' : 'single',
       difficulty: body.difficulty,
       durationSeconds: Number(body.durationSeconds) || 0,
@@ -98,6 +102,10 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       : [...entries];
 
     filtered.sort((a, b) => {
+      // Sort by total score descending, then accuracy, then fewest shots
+      const aTotal = a.totalScore ?? 0;
+      const bTotal = b.totalScore ?? 0;
+      if (bTotal !== aTotal) return bTotal - aTotal;
       if (b.score !== a.score) return b.score - a.score;
       return a.shots - b.shots;
     });
