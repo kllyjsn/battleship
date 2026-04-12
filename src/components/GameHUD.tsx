@@ -1,6 +1,7 @@
-import { Volume2, VolumeX, ArrowLeft, Crosshair } from 'lucide-react';
+import { Volume2, VolumeX, ArrowLeft, Crosshair, Flame } from 'lucide-react';
 import { useState } from 'react';
 import { MusicVisualizer } from './MusicVisualizer';
+import { loadStats } from '../lib/stats';
 
 interface GameHUDProps {
   isPlayerTurn: boolean;
@@ -15,6 +16,7 @@ interface GameHUDProps {
   musicFreqData: number[];
   onToggleMusic: () => void;
   score?: number;
+  showStreak?: boolean;
 }
 
 export function GameHUD({
@@ -30,9 +32,11 @@ export function GameHUD({
   musicFreqData,
   onToggleMusic,
   score,
+  showStreak = false,
 }: GameHUDProps) {
   const [soundOn, setSoundOn] = useState(true);
   const displayScore = score ?? 0;
+  const streak = showStreak ? loadStats().currentWinStreak : 0;
 
   const handleToggle = () => {
     const newState = onToggleSound();
@@ -84,6 +88,12 @@ export function GameHUD({
                 <Crosshair size={13} className="text-amber-400" />
                 <span className="text-xs sm:text-sm font-bold font-mono-crt text-glow-amber">{displayScore}</span>
               </div>
+              {streak >= 2 && (
+                <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded metal-panel-light" style={{ border: '1px solid var(--steel-border)' }}>
+                  <Flame size={13} className="text-orange-400" />
+                  <span className="text-xs font-bold font-mono-crt text-orange-300">{streak}</span>
+                </div>
+              )}
               <div className="w-px h-4 bg-slate-700/50" />
             </>
           )}
