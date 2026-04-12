@@ -85,7 +85,7 @@ export function Cell({
               : 'cell-ocean-shimmer border-[var(--cell-empty-border)]'
         }`;
       case 'ship':
-        return `${base} ${isPlayerBoard ? (hideShipFill ? 'bg-[var(--cell-empty)]/80 border-[var(--cell-empty-border)]' : 'bg-[var(--cell-ship)] border-[var(--cell-ship-border)]') : 'bg-[var(--cell-empty)] border-[var(--cell-empty-border)] hover:bg-[var(--cell-hover)] hover:border-[var(--cell-hover-border)] cursor-crosshair'}`;
+        return `${base} ${isPlayerBoard ? (hideShipFill ? 'bg-[var(--cell-empty)]/80 border-[var(--cell-empty-border)]' : 'bg-[var(--cell-ship)] border-[var(--cell-ship-border)]') : 'cell-ocean-shimmer border-[var(--cell-empty-border)] hover:bg-[var(--cell-hover)] hover:border-[var(--cell-hover-border)] cursor-crosshair'}`;
       case 'hit':
         return `${base} bg-[var(--cell-hit)] border-red-700/50 cell-hit`;
       case 'miss':
