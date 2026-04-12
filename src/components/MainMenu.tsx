@@ -5,6 +5,7 @@ import { StatsPanel } from './StatsPanel';
 import { Leaderboard } from './Leaderboard';
 import { SettingsPanel } from './SettingsPanel';
 import { AchievementsPanel } from './AchievementsPanel';
+import { AudioAdvisory } from './AudioAdvisory';
 import { loadTheme } from '../lib/themes';
 import { getPlayerRank } from '../lib/ranks';
 import { RankBadge } from './RankBadge';
@@ -55,6 +56,11 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
           <div className="flex items-center justify-center mt-3">
             <RankBadge rank={getPlayerRank().rank} size="md" showTitle />
           </div>
+        </div>
+
+        {/* Audio volume hint — themed as a naval comms advisory */}
+        <div className="mb-4 sm:mb-5">
+          <AudioAdvisory />
         </div>
 
         {!showDifficulty ? (
