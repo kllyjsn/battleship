@@ -151,9 +151,9 @@ export function Chat({ messages, onSend, onReaction, playerName }: ChatProps) {
               className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} group`}
             >
               <span className="text-[10px] sm:text-xs text-slate-600 mb-0.5 font-mono-crt">{msg.sender}</span>
-              <div className="relative">
+              <div className="relative max-w-[85%] sm:max-w-[80%]">
                 <div
-                  className={`max-w-[85%] sm:max-w-[80%] px-2.5 sm:px-3 py-1.5 rounded text-sm font-mono-crt break-words ${
+                  className={`px-2.5 sm:px-3 py-1.5 rounded text-sm font-mono-crt break-words ${
                     isOwn
                       ? 'metal-panel-light text-green-300/80 rounded-br-sm'
                       : 'text-slate-300 rounded-bl-sm'
