@@ -206,7 +206,7 @@ export function useMultiplayer(playerName: string) {
             pn.publish({
               channel,
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              message: { type: 'JOIN', playerName: playerNameRef.current } as any,
+              message: { type: 'JOIN', playerName: playerNameRef.current, playerId: userIdRef.current } as any,
             });
           }
         }
