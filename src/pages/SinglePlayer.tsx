@@ -55,6 +55,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
   const replayMovesRef = useRef<ReplayMove[]>([]);
   const [replayData, setReplayData] = useState<ReplayData | null>(null);
   const [showReplay, setShowReplay] = useState(false);
+  const [scoreSubmitted, setScoreSubmitted] = useState(false);
   const playerShipsSnapshotRef = useRef<Ship[]>([]);
   const opponentShipsSnapshotRef = useRef<Ship[]>([]);
   const gameDurationRef = useRef(0);
@@ -93,10 +94,16 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
       setPlayerBoard(result.board);
       setPlayerShips([...currentShips, result.ship]);
 
-      // Auto-select next unplaced ship
-      const nextShip = SHIPS.find(
-        (s) => s.id !== selectedShipId && !currentShips.some((ps) => ps.id === s.id)
-      );
+      // Auto-select next unplaced ship (continue from current position in roster)
+      const currentIndex = SHIPS.findIndex((s) => s.id === selectedShipId);
+      let nextShip: typeof SHIPS[number] | undefined;
+      for (let i = 1; i < SHIPS.length; i++) {
+        const idx = (currentIndex + i) % SHIPS.length;
+        if (!currentShips.some((ps) => ps.id === SHIPS[idx].id)) {
+          nextShip = SHIPS[idx];
+          break;
+        }
+      }
       setSelectedShipId(nextShip?.id ?? null);
     },
     [phase, selectedShipId, orientation, playerBoard, playerShips, play]
@@ -383,6 +390,7 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
     replayMovesRef.current = [];
     setReplayData(null);
     setShowReplay(false);
+    setScoreSubmitted(false);
     setCursorPos({ row: 0, col: 0 });
     setShowCursor(false);
     aiStateRef.current = createAIState();
@@ -503,6 +511,8 @@ export function SinglePlayer({ difficulty, onBack }: SinglePlayerProps) {
             hits: hitCountRef.current,
             durationSeconds: gameDurationRef.current,
           }}
+          alreadySubmitted={scoreSubmitted}
+          onScoreSubmitted={() => setScoreSubmitted(true)}
         />
       )}
 

@@ -162,6 +162,7 @@ export function ShipRoster({
         >
           <RotateCw size={14} />
           {orientation === 'horizontal' ? 'Horizontal' : 'Vertical'}
+          <kbd className="ml-1 px-1 py-0.5 metal-panel rounded text-[10px] text-green-400/70 font-mono-crt">R</kbd>
         </button>
         <button
           onClick={onRandomize}
