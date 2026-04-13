@@ -98,7 +98,7 @@ function App() {
   }
 
   return (
-    <>
+    <main id="main-content">
       {content}
       <div className="crt-overlay" />
       {showResumePrompt && (
@@ -111,7 +111,7 @@ function App() {
           onCancel={handleDeclineResume}
         />
       )}
-    </>
+    </main>
   );
 }
 

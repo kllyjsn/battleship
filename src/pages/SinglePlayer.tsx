@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { Board, Ship, Difficulty, Orientation, GamePhase, AttackResult, BattleLogEntry } from '../engine/types';
-import { SHIPS, TOTAL_SHIP_CELLS, BOARD_MAX_INDEX, scoreForResult, getAIName, DELAY_BEFORE_AI_LABEL_MS, DELAY_BEFORE_AI_SHOT_MS, DELAY_AFTER_AI_SHOT_MS } from '../engine/constants';
+import { SHIPS, TOTAL_SHIP_CELLS, BOARD_MAX_INDEX, ROW_LABELS, scoreForResult, getAIName, DELAY_BEFORE_AI_LABEL_MS, DELAY_BEFORE_AI_SHOT_MS, DELAY_AFTER_AI_SHOT_MS } from '../engine/constants';
 import {
   createEmptyBoard,
   placeShip,
@@ -418,7 +418,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
 
           if (aiResult.result.result === 'hit') {
             play('hit');
-            setMessage(`Enemy hit your ${aiResult.result.shipName} at ${String.fromCharCode(65 + position.row)}${position.col + 1}!`);
+            setMessage(`Enemy hit your ${aiResult.result.shipName} at ${ROW_LABELS[position.row]}${position.col + 1}!`);
             setShipNotif({ type: 'hit', shipName: aiResult.result.shipName || '', actor: 'opponent', trigger: Date.now() });
           } else if (aiResult.result.result === 'sunk') {
             play('sunk');
@@ -426,7 +426,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
             setShipNotif({ type: 'sunk', shipName: aiResult.result.shipName || '', actor: 'opponent', trigger: Date.now() });
           } else {
             play('splash');
-            setMessage(`Enemy missed at ${String.fromCharCode(65 + position.row)}${position.col + 1}`);
+            setMessage(`Enemy missed at ${ROW_LABELS[position.row]}${position.col + 1}`);
           }
 
           if (allShipsSunk(aiResult.ships)) {
