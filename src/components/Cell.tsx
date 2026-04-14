@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import { type CellState } from '../engine/types';
 import { ROW_LABELS, COL_LABELS } from '../engine/constants';
 
@@ -31,7 +31,7 @@ const PARTICLE_DIRECTIONS = [
   { dx: '0px', dy: '18px' },
 ];
 
-export function Cell({
+export const Cell = memo(function Cell({
   row,
   col,
   state,
@@ -71,10 +71,10 @@ export function Cell({
   }, [state]);
 
   const getClassName = () => {
-    // Fluid cell sizing: 8.2vw on mobile (≈34px on 414px screens), clamped at 34px min.
+    // Fluid cell sizing: clamp between 34px–44px on mobile for WCAG touch targets.
     // sm: 36px, md: 40px.  touch-manipulation avoids 300ms tap delay.
     const base =
-      'w-[8.2vw] h-[8.2vw] min-w-[34px] min-h-[34px] sm:w-9 sm:h-9 md:w-10 md:h-10 border relative transition-all duration-150 select-none overflow-hidden touch-manipulation';
+      'w-[clamp(34px,8.8vw,44px)] h-[clamp(34px,8.8vw,44px)] sm:w-9 sm:h-9 md:w-10 md:h-10 border relative transition-all duration-150 select-none overflow-hidden touch-manipulation';
 
     if (isPreview) {
       return `${base} ${isInvalid ? 'bg-red-500/30 border-red-400/60' : 'bg-green-500/20 border-green-400/50'} cursor-pointer`;
@@ -196,4 +196,4 @@ export function Cell({
       )}
     </div>
   );
-}
+});

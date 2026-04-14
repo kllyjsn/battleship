@@ -161,6 +161,7 @@ export function getAIMove(
   let target: Position | null = null;
 
   if (difficulty === 'easy') {
+    // Easy mode still tracks tried positions to avoid re-attacking the same cell.
     target = getRandomUntried(board, newState.triedPositions, false);
   } else if (newState.mode === 'target' && newState.hitStack.length > 0) {
     // Target mode: try to sink a ship we've hit
@@ -213,7 +214,9 @@ export function getAIMove(
     }
 
     if (!target) {
+      // Defensive reset: all target-mode options exhausted, fall back to hunt.
       newState.mode = 'hunt';
+      newState.hitStack = [];
       newState.orientation = 'unknown';
       newState.firstHit = null;
     }

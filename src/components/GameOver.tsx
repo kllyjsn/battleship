@@ -217,7 +217,7 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
             style={{ borderColor: 'rgba(57, 255, 20, 0.3)' }}
           >
             <RotateCw size={18} />
-            DEPLOY AGAIN
+            DEPLOY AGAIN{gameStats?.difficulty ? ` (${gameStats.difficulty.toUpperCase()})` : ''}
           </button>
           {onWatchReplay && (
             <button

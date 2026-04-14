@@ -4,8 +4,7 @@ import { MusicVisualizer } from './MusicVisualizer';
 import { loadStats } from '../lib/stats';
 import { getPlayerRank } from '../lib/ranks';
 import { RankBadge } from './RankBadge';
-import { STORAGE_KEYS } from '../lib/storageKeys';
-// Sound mute state is read from localStorage cache for synchronous init
+import { isSoundEnabled } from '../lib/storageKeys';
 
 interface GameHUDProps {
   isPlayerTurn: boolean;
@@ -42,11 +41,7 @@ export function GameHUD({
   playerShipsRemaining,
   opponentShipsRemaining,
 }: GameHUDProps) {
-  // Initialise from persisted mute preference (localStorage cache) so the icon matches reality on load.
-  const [soundOn, setSoundOn] = useState(() => {
-    try { return localStorage.getItem(STORAGE_KEYS.SOUND_MUTED) !== 'true'; }
-    catch { return true; }
-  });
+  const [soundOn, setSoundOn] = useState(isSoundEnabled);
   const displayScore = score ?? 0;
   const streak = showStreak ? loadStats().currentWinStreak : 0;
   const { rank } = getPlayerRank();

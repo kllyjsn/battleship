@@ -47,6 +47,15 @@ export function setSessionName(name: string): void {
   syncSessionNameOnline(name.trim()).catch(() => {});
 }
 
+/** Read the sound-mute preference from localStorage (cache). */
+export function isSoundEnabled(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEYS.SOUND_MUTED) !== 'true';
+  } catch {
+    return true;
+  }
+}
+
 /** Base path for the online API. */
 export function getApiBase(): string {
   return '/api';

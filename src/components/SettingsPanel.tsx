@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Volume2, VolumeX, Music, Trash2, User } from 'lucide-react';
-import { STORAGE_KEYS, getSessionName, setSessionName, getApiBase } from '../lib/storageKeys';
+import { STORAGE_KEYS, getSessionName, setSessionName, getApiBase, isSoundEnabled } from '../lib/storageKeys';
 import { clearStats } from '../lib/stats';
 import { getAllThemes, getTheme, saveTheme, applyTheme } from '../lib/themes';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -13,10 +13,7 @@ interface SettingsPanelProps {
 
 export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: SettingsPanelProps) {
   const [callsign, setCallsign] = useState(getSessionName());
-  const [soundEnabled, setSoundEnabled] = useState(() => {
-    try { return localStorage.getItem(STORAGE_KEYS.SOUND_MUTED) !== 'true'; }
-    catch { return true; }
-  });
+  const [soundEnabled, setSoundEnabled] = useState(isSoundEnabled);
   const [confirmAction, setConfirmAction] = useState<'stats' | 'achievements' | 'all' | null>(null);
   const themes = getAllThemes();
 

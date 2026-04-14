@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ScrollText, X, ChevronDown } from 'lucide-react';
 import type { BattleLogEntry } from '../engine/types';
+import { ROW_LABELS } from '../engine/constants';
 
 interface BattleLogProps {
   entries: BattleLogEntry[];
 }
 
 function coordLabel(row: number, col: number): string {
-  return `${String.fromCharCode(65 + row)}${col + 1}`;
+  return `${ROW_LABELS[row]}${col + 1}`;
 }
 
 export function BattleLog({ entries }: BattleLogProps) {
@@ -77,8 +78,8 @@ export function BattleLog({ entries }: BattleLogProps) {
         </div>
       </div>
 
-      {/* Entries */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-1 overscroll-contain">
+      {/* Entries — aria-live announces new log items to screen readers */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-1 overscroll-contain" aria-live="polite" aria-relevant="additions">
         {entries.length === 0 && (
           <p className="text-center text-slate-600 text-xs sm:text-sm mt-4 font-mono-crt">NO ENGAGEMENTS</p>
         )}
