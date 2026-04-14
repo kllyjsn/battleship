@@ -10,11 +10,20 @@ interface StatsPanelProps {
 export function StatsPanel({ onClose }: StatsPanelProps) {
   const overview = useMemo(() => getStatsOverview(loadStats()), []);
 
+  const stats = useMemo(() => loadStats(), []);
   const totalGames = overview.totalGames;
   const wins = overview.wins;
   const losses = overview.losses;
   const winRate = totalGames > 0 ? overview.winRate.toFixed(1) : '0.0';
   const accuracy = totalGames > 0 ? overview.accuracy.toFixed(1) : '0.0';
+
+  // Compute average game duration from records that tracked it.
+  const gamesWithDuration = stats.games.filter((g) => typeof g.duration === 'number' && g.duration > 0);
+  const avgDuration = gamesWithDuration.length > 0
+    ? Math.round(gamesWithDuration.reduce((sum, g) => sum + (g.duration ?? 0), 0) / gamesWithDuration.length)
+    : 0;
+  const formatDuration = (secs: number) =>
+    secs >= 60 ? `${Math.floor(secs / 60)}m ${secs % 60}s` : `${secs}s`;
 
   const difficultyData = [
     { name: 'Recruit', wins: overview.perDifficulty['easy']?.wins ?? 0, losses: overview.perDifficulty['easy']?.losses ?? 0 },
@@ -66,7 +75,29 @@ export function StatsPanel({ onClose }: StatsPanelProps) {
                 <p className="text-xs text-green-500/60 font-mono-crt">ACCURACY</p>
                 <p className="text-2xl font-bold text-glow-amber font-mono-crt">{accuracy}%</p>
               </div>
+              <div className="metal-panel-light rounded-lg p-3 text-center">
+                <p className="text-xs text-green-500/60 font-mono-crt">BEST STREAK</p>
+                <p className="text-2xl font-bold text-glow-amber font-mono-crt">{overview.bestStreak}</p>
+              </div>
+              {avgDuration > 0 && (
+                <div className="metal-panel-light rounded-lg p-3 text-center">
+                  <p className="text-xs text-green-500/60 font-mono-crt">AVG DURATION</p>
+                  <p className="text-2xl font-bold text-green-300 font-mono-crt">{formatDuration(avgDuration)}</p>
+                </div>
+              )}
             </div>
+
+            {/* Multiplayer record */}
+            {(overview.multiplayerWins > 0 || overview.multiplayerLosses > 0) && (
+              <div className="metal-panel-light rounded-lg p-3 text-center">
+                <p className="text-xs text-green-500/60 font-mono-crt mb-1">MULTIPLAYER</p>
+                <p className="text-xl font-bold font-mono-crt">
+                  <span className="text-glow-green">{overview.multiplayerWins}W</span>
+                  <span className="text-slate-600"> / </span>
+                  <span className="text-glow-red">{overview.multiplayerLosses}L</span>
+                </p>
+              </div>
+            )}
 
             {/* Per-difficulty breakdown */}
             <div>

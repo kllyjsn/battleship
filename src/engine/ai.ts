@@ -45,7 +45,44 @@ function isValidTarget(board: Board, row: number, col: number, tried: Set<string
   return state === 'empty' || state === 'ship';
 }
 
-function getRandomUntried(board: Board, tried: Set<string>, checkerboard: boolean): Position | null {
+/**
+ * Check whether a cell can be part of any remaining ship placement.
+ * Returns true if at least one unsunk ship could overlap this cell
+ * given the current board state (misses, sunk markers, and tried shots).
+ */
+function canFitAnyShip(
+  board: Board,
+  row: number,
+  col: number,
+  minShipSize: number,
+): boolean {
+  // Try horizontal spans of length minShipSize that include (row, col)
+  for (let start = Math.max(0, col - minShipSize + 1); start <= col && start + minShipSize <= BOARD_SIZE; start++) {
+    let valid = true;
+    for (let i = 0; i < minShipSize; i++) {
+      const s = board[row][start + i].state;
+      if (s === 'miss' || s === 'sunk') { valid = false; break; }
+    }
+    if (valid) return true;
+  }
+  // Try vertical spans
+  for (let start = Math.max(0, row - minShipSize + 1); start <= row && start + minShipSize <= BOARD_SIZE; start++) {
+    let valid = true;
+    for (let i = 0; i < minShipSize; i++) {
+      const s = board[start + i][col].state;
+      if (s === 'miss' || s === 'sunk') { valid = false; break; }
+    }
+    if (valid) return true;
+  }
+  return false;
+}
+
+function getRandomUntried(
+  board: Board,
+  tried: Set<string>,
+  checkerboard: boolean,
+  minShipSize: number = 1,
+): Position | null {
   const candidates: Position[] = [];
   for (let r = 0; r < BOARD_SIZE; r++) {
     for (let c = 0; c < BOARD_SIZE; c++) {
@@ -53,19 +90,29 @@ function getRandomUntried(board: Board, tried: Set<string>, checkerboard: boolea
       const state = board[r][c].state;
       if (state !== 'empty' && state !== 'ship') continue;
       if (checkerboard && (r + c) % 2 !== 0) continue;
+      // Ship-length-aware pruning: skip cells that can't physically
+      // fit the smallest remaining ship in any direction.
+      if (minShipSize > 1 && !canFitAnyShip(board, r, c, minShipSize)) continue;
       candidates.push({ row: r, col: c });
     }
   }
 
+  // Fall back: drop checkerboard constraint if it left no candidates.
   if (candidates.length === 0 && checkerboard) {
     for (let r = 0; r < BOARD_SIZE; r++) {
       for (let c = 0; c < BOARD_SIZE; c++) {
         if (tried.has(posKey(r, c))) continue;
         const state = board[r][c].state;
         if (state !== 'empty' && state !== 'ship') continue;
+        if (minShipSize > 1 && !canFitAnyShip(board, r, c, minShipSize)) continue;
         candidates.push({ row: r, col: c });
       }
     }
+  }
+
+  // Ultimate fall back: drop ship-size constraint too.
+  if (candidates.length === 0 && minShipSize > 1) {
+    return getRandomUntried(board, tried, false, 1);
   }
 
   if (candidates.length === 0) return null;
@@ -223,12 +270,25 @@ export function getAIMove(
   }
 
   if (!target) {
+    // Determine the smallest unsunk ship size so hunt-mode can prune
+    // cells that can't physically fit any remaining vessel.
+    const remainingShips = opponentShips.filter(s => !s.sunk);
+    const minShipSize = remainingShips.length > 0
+      ? Math.min(...remainingShips.map(s => s.size))
+      : 2; // default to destroyer size
+
     if (difficulty === 'hard') {
       target = probabilityDensity(board, newState.triedPositions, opponentShips);
     }
     if (!target) {
-      // Medium and hard use checkerboard pattern in hunt mode to cover more ground.
-      target = getRandomUntried(board, newState.triedPositions, difficulty === 'medium' || difficulty === 'hard');
+      // Medium and hard use checkerboard + ship-length-aware pruning
+      // in hunt mode to cover more ground efficiently.
+      target = getRandomUntried(
+        board,
+        newState.triedPositions,
+        difficulty === 'medium' || difficulty === 'hard',
+        difficulty !== 'easy' ? minShipSize : 1,
+      );
     }
   }
 

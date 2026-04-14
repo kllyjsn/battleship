@@ -557,8 +557,10 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'radial-gradient(ellipse at center, #141c2b 0%, #0a0e1a 70%)' }}>
-      {/* Screen-reader live region for game status announcements */}
-      <div aria-live="polite" aria-atomic="true" className="sr-only">
+      {/* Screen-reader live region for game status announcements.
+          The message state already includes coordinates (e.g. "Enemy hit your
+          Battleship at B3!"), so this announces full context to assistive tech. */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only" role="status">
         {message}
       </div>
 
@@ -715,7 +717,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
       {showConfirmLeave && (
         <ConfirmDialog
           title="ABORT MISSION?"
-          message="Your current battle will be lost. Are you sure you want to return to base?"
+          message="Your progress is auto-saved. Return to base?"
           confirmLabel="ABANDON"
           cancelLabel="STAY"
           onConfirm={() => { clearSavedGame(); setShowConfirmLeave(false); onBack(); }}

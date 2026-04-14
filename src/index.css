@@ -274,6 +274,31 @@ button:focus-visible {
   box-shadow: 0 0 0 4px rgba(57, 255, 20, 0.2);
 }
 
+/* ── Skip-to-content link (visible on focus for keyboard users) ── */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  z-index: 200;
+  color: var(--crt-green);
+  background: var(--hull-dark);
+  font-family: 'Share Tech Mono', monospace;
+  text-decoration: none;
+}
+.skip-to-content:focus {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  padding: 0.75rem 1.5rem;
+  outline: 2px solid var(--crt-green);
+  box-shadow: 0 0 12px rgba(57, 255, 20, 0.4);
+}
+
 /* ── Screen-reader only utility ── */
 .sr-only {
   position: absolute;
