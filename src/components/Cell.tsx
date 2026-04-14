@@ -71,10 +71,13 @@ export const Cell = memo(function Cell({
   }, [state]);
 
   const getClassName = () => {
-    // Fluid cell sizing: clamp between 34px–44px on mobile for WCAG touch targets.
-    // sm: 36px, md: 40px.  touch-manipulation avoids 300ms tap delay.
+    // Fluid cell sizing: uses a CSS custom property (--cell-size) set on the
+    // grid container, falling back to a viewport-aware clamp.  The grid
+    // container calculates --cell-size as (available-width / 10) so the board
+    // always fits without horizontal scroll.  sm/md overrides provide ideal
+    // sizes on larger screens.  touch-manipulation avoids the 300ms tap delay.
     const base =
-      'w-[clamp(34px,8.8vw,44px)] h-[clamp(34px,8.8vw,44px)] sm:w-9 sm:h-9 md:w-10 md:h-10 border relative transition-all duration-150 select-none overflow-hidden touch-manipulation';
+      'w-[var(--cell-size,clamp(34px,8.8vw,44px))] h-[var(--cell-size,clamp(34px,8.8vw,44px))] sm:w-9 sm:h-9 md:w-10 md:h-10 border relative transition-all duration-150 select-none overflow-hidden touch-manipulation';
 
     if (isPreview) {
       return `${base} ${isInvalid ? 'bg-red-500/30 border-red-400/60' : 'bg-green-500/20 border-green-400/50'} cursor-pointer`;
@@ -102,8 +105,14 @@ export const Cell = memo(function Cell({
     }
   };
 
-  // Build an accessible label: "Row A, Column 3 — hit"
-  const cellLabel = `Row ${ROW_LABELS[row]}, Column ${COL_LABELS[col]} — ${state}`;
+  // Build an accessible label that describes the cell's position, board,
+  // and current state in a screen-reader-friendly way.
+  const stateLabel =
+    state === 'empty' ? (isPlayerBoard ? 'water' : 'not targeted')
+    : state === 'ship' ? (isPlayerBoard ? 'your ship' : 'not targeted')
+    : state;
+  const boardLabel = isPlayerBoard ? 'Your fleet' : 'Enemy waters';
+  const cellLabel = `${boardLabel}: Row ${ROW_LABELS[row]}, Column ${COL_LABELS[col]} — ${stateLabel}`;
 
   return (
     <div

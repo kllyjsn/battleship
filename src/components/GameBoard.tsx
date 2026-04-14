@@ -29,6 +29,7 @@ interface GameBoardProps {
   hideEnemyShots?: boolean;
   onToggleHideEnemyShots?: () => void;
   onSwipeRotate?: () => void;
+  id?: string;
 }
 
 export function GameBoard({
@@ -53,6 +54,7 @@ export function GameBoard({
   hideEnemyShots = false,
   onToggleHideEnemyShots,
   onSwipeRotate,
+  id,
 }: GameBoardProps) {
   const [hoverPos, setHoverPos] = useState<{ row: number; col: number } | null>(null);
   const [shaking, setShaking] = useState(false);
@@ -140,7 +142,8 @@ export function GameBoard({
 
   return (
     <div
-      className={`flex flex-col items-center max-w-full overflow-x-auto ${highlight ? 'ring-2 ring-green-400/30 rounded-lg p-2' : 'p-2'}`}
+      id={id}
+      className={`flex flex-col items-center max-w-full ${highlight ? 'ring-2 ring-green-400/30 rounded-lg p-2' : 'p-2'}`}
       role="region"
       aria-label={title}
     >
@@ -163,6 +166,11 @@ export function GameBoard({
         className={`inline-flex flex-col relative ${shaking ? 'screen-shake' : ''}`}
         role="grid"
         aria-label={`${title} grid`}
+        aria-roledescription="Battleship game board"
+        /* On mobile (< 640px), compute --cell-size so 10 cells + row header
+           always fit inside the viewport without horizontal scroll.
+           Row header is ~1.25rem (w-5); 1rem outer padding. */
+        style={{ '--cell-size': 'calc(min(44px, (100vw - 3.5rem) / 10))' } as React.CSSProperties}
         onMouseLeave={() => setHoverPos(null)}
         onTouchStart={isPlacing ? swipeHandlers.onTouchStart : undefined}
         onTouchEnd={isPlacing ? swipeHandlers.onTouchEnd : undefined}
@@ -174,11 +182,11 @@ export function GameBoard({
       >
         {/* Column headers */}
         <div className="flex" role="row" aria-hidden="true">
-          <div className="w-5 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+          <div className="w-5 h-[var(--cell-size,24px)] sm:w-7 sm:h-7 md:w-8 md:h-8" />
           {COL_LABELS.map((label) => (
             <div
               key={label}
-              className="w-[clamp(34px,8.8vw,44px)] h-6 sm:w-9 sm:h-7 md:w-10 md:h-8 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt"
+              className="w-[var(--cell-size,clamp(34px,8.8vw,44px))] h-6 sm:w-9 sm:h-7 md:w-10 md:h-8 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt"
               role="columnheader"
               style={{ color: 'var(--text-secondary)' }}
             >
@@ -190,7 +198,7 @@ export function GameBoard({
         {/* Rows */}
         {board.map((row, rowIdx) => (
           <div key={rowIdx} className="flex" role="row">
-            <div className="w-5 h-[clamp(34px,8.8vw,44px)] sm:w-7 sm:h-9 md:w-8 md:h-10 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt" role="rowheader" style={{ color: 'var(--text-secondary)' }}>
+            <div className="w-5 h-[var(--cell-size,clamp(34px,8.8vw,44px))] sm:w-7 sm:h-9 md:w-8 md:h-10 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt" role="rowheader" style={{ color: 'var(--text-secondary)' }}>
               {ROW_LABELS[rowIdx]}
             </div>
             {row.map((cell, colIdx) => {

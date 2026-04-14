@@ -893,6 +893,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 sm:gap-4 lg:gap-8">
               <div className={`flex flex-col items-center gap-4 ${mobileBoard === 'opponent' ? 'hidden lg:flex' : 'flex'}`}>
                 <GameBoard
+                  id="player-board"
                   board={playerBoard}
                   isPlayerBoard={true}
                   isPlacing={false}
@@ -927,6 +928,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
                   />
                 )}
                 <GameBoard
+                  id="opponent-board"
                   board={getVisibleBoard(opponentBoard, true)}
                   isPlayerBoard={false}
                   isPlacing={false}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Trophy, Skull, RotateCw, Home, Play, Crosshair, Clock, Target, Ship, Map, ChevronUp } from 'lucide-react';
 import { addLeaderboardEntry } from '../lib/leaderboard';
 import { loadStats } from '../lib/stats';
@@ -43,6 +43,9 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
   const { rank: currentRank } = getPlayerRank();
   const prevRank = previousWins !== undefined ? getRankForWins(previousWins) : null;
   const didRankUp = isWin && prevRank !== null && prevRank.id !== currentRank.id;
+
+  // Cache win streak so we don't call loadStats() on every render.
+  const currentStreak = useMemo(() => loadStats().currentWinStreak, []);
 
   const handleSaveScore = () => {
     const name = sessionName.trim() || 'Anonymous';
@@ -163,16 +166,14 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
           </div>
         )}
 
-        {/* Win streak display */}
-        {(() => {
-          const stats = loadStats();
-          return stats.currentWinStreak >= 2 ? (
-            <div className="flex items-center justify-center gap-2 mb-4 px-3 py-1.5 rounded metal-panel-light">
-              <span className="text-xs font-mono-crt text-amber-400">WIN STREAK</span>
-              <span className="text-lg font-bold font-mono-crt text-glow-amber">{stats.currentWinStreak}</span>
-            </div>
-          ) : null;
-        })()}
+        {/* Win streak display — stats loaded once via useMemo to avoid
+            re-reading localStorage on every render. */}
+        {currentStreak >= 2 && (
+          <div className="flex items-center justify-center gap-2 mb-4 px-3 py-1.5 rounded metal-panel-light">
+            <span className="text-xs font-mono-crt text-amber-400">WIN STREAK</span>
+            <span className="text-lg font-bold font-mono-crt text-glow-amber">{currentStreak}</span>
+          </div>
+        )}
 
         {/* Session name prompt for winners */}
         {showNamePrompt && (
