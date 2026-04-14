@@ -719,7 +719,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
       {showConfirmLeave && (
         <ConfirmDialog
           title="ABORT MISSION?"
-          message="Your progress is auto-saved. Return to base?"
+          message="Your current battle will be lost. Return to base?"
           confirmLabel="ABANDON"
           cancelLabel="STAY"
           onConfirm={() => { clearSavedGame(); setShowConfirmLeave(false); onBack(); }}
