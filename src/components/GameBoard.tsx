@@ -29,6 +29,7 @@ interface GameBoardProps {
   hideEnemyShots?: boolean;
   onToggleHideEnemyShots?: () => void;
   onSwipeRotate?: () => void;
+  id?: string;
 }
 
 export function GameBoard({
@@ -53,6 +54,7 @@ export function GameBoard({
   hideEnemyShots = false,
   onToggleHideEnemyShots,
   onSwipeRotate,
+  id,
 }: GameBoardProps) {
   const [hoverPos, setHoverPos] = useState<{ row: number; col: number } | null>(null);
   const [shaking, setShaking] = useState(false);
@@ -140,6 +142,7 @@ export function GameBoard({
 
   return (
     <div
+      id={id}
       className={`flex flex-col items-center max-w-full ${highlight ? 'ring-2 ring-green-400/30 rounded-lg p-2' : 'p-2'}`}
       role="region"
       aria-label={title}
@@ -167,7 +170,7 @@ export function GameBoard({
         /* On mobile (< 640px), compute --cell-size so 10 cells + row header
            always fit inside the viewport without horizontal scroll.
            Row header is ~1.25rem (w-5); 1rem outer padding. */
-        style={{ '--cell-size': 'calc(min(44px, (100vw - 3rem) / 10))' } as React.CSSProperties}
+        style={{ '--cell-size': 'calc(min(44px, (100vw - 3.5rem) / 10))' } as React.CSSProperties}
         onMouseLeave={() => setHoverPos(null)}
         onTouchStart={isPlacing ? swipeHandlers.onTouchStart : undefined}
         onTouchEnd={isPlacing ? swipeHandlers.onTouchEnd : undefined}
