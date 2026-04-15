@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { AlertTriangle } from 'lucide-react';
 
 interface ConfirmDialogProps {
@@ -17,16 +18,42 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const onCancelRef = useRef(onCancel);
+  useEffect(() => { onCancelRef.current = onCancel; });
+
+  // Trap focus inside the dialog (runs once on mount)
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const focusable = dialog.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    first?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onCancelRef.current(); return; }
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last?.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first?.focus(); }
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn">
-      <div className="metal-panel rounded-xl p-6 max-w-sm w-full mx-4 text-center">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" className="metal-panel rounded-xl p-6 max-w-sm w-full mx-4 text-center">
         <div className="w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center metal-panel-light"
           style={{ boxShadow: '0 0 15px rgba(255, 176, 0, 0.15)' }}
         >
           <AlertTriangle size={28} className="text-glow-amber" />
         </div>
 
-        <h2 className="text-xl font-bold mb-2 font-mono-crt text-glow-amber">
+        <h2 id="confirm-dialog-title" className="text-xl font-bold mb-2 font-mono-crt text-glow-amber">
           {title}
         </h2>
 

@@ -68,6 +68,33 @@ export function StatsPanel({ onClose }: StatsPanelProps) {
               </div>
             </div>
 
+            {/* Streaks */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="metal-panel-light rounded-lg p-3 text-center">
+                <p className="text-xs text-green-500/60 font-mono-crt">CURRENT STREAK</p>
+                <p className="text-2xl font-bold text-glow-green font-mono-crt">{overview.currentStreak}</p>
+              </div>
+              <div className="metal-panel-light rounded-lg p-3 text-center">
+                <p className="text-xs text-green-500/60 font-mono-crt">BEST STREAK</p>
+                <p className="text-2xl font-bold text-glow-amber font-mono-crt">{overview.bestStreak}</p>
+              </div>
+            </div>
+
+            {/* Multiplayer stats */}
+            {(overview.multiplayerWins > 0 || overview.multiplayerLosses > 0) && (
+              <div>
+                <h3 className="text-sm text-green-500/60 font-mono-crt mb-2 text-center">MULTIPLAYER</h3>
+                <div className="flex items-center justify-between metal-panel-light rounded px-3 py-2">
+                  <span className="text-sm font-mono-crt text-slate-400">Online</span>
+                  <span className="text-sm font-mono-crt">
+                    <span className="text-glow-green">{overview.multiplayerWins}W</span>
+                    <span className="text-slate-600"> / </span>
+                    <span className="text-glow-red">{overview.multiplayerLosses}L</span>
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Per-difficulty breakdown */}
             <div>
               <h3 className="text-sm text-green-500/60 font-mono-crt mb-3 text-center">WINS BY DIFFICULTY</h3>

@@ -30,6 +30,7 @@ import { ShipNotification } from '../components/ShipNotification';
 import type { ReplayMove, ReplayData } from '../lib/replay';
 import { saveGameState, clearSavedGame } from '../lib/gamePersistence';
 import type { SavedGameState } from '../lib/gamePersistence';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 interface SinglePlayerProps {
   difficulty: Difficulty;
@@ -103,6 +104,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
   const previousWinsRef = useRef(loadStats().games.filter(g => g.result === 'win').length);
 
   const aiName = getAIName(difficulty);
+  useDocumentTitle(phase, isPlayerTurn);
 
   // Setup opponent board (skip if resuming a saved game)
   useEffect(() => {

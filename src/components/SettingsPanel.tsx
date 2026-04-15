@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Volume2, VolumeX, Music, Trash2, User } from 'lucide-react';
-import { STORAGE_KEYS, getSessionName, setSessionName, getApiBase, isSoundEnabled } from '../lib/storageKeys';
+import { STORAGE_KEYS, getSessionName, setSessionName, getApiBase, isSoundEnabled, saveSoundEnabled } from '../lib/storageKeys';
 import { clearStats } from '../lib/stats';
 import { getAllThemes, getTheme, saveTheme, applyTheme } from '../lib/themes';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -25,20 +25,7 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
   const handleSoundToggle = () => {
     const newState = !soundEnabled;
     setSoundEnabled(newState);
-    try {
-      localStorage.setItem(STORAGE_KEYS.SOUND_MUTED, newState ? 'false' : 'true');
-    } catch {
-      // Storage unavailable
-    }
-    // Primary persistence: sync to MongoDB
-    const playerName = getSessionName();
-    if (playerName) {
-      fetch(`${getApiBase()}/preferences`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerName, soundMuted: !newState }),
-      }).catch(() => {});
-    }
+    saveSoundEnabled(newState);
   };
 
   const handleThemeSelect = (themeId: string) => {
@@ -133,6 +120,7 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
           <div className="space-y-2">
             <button
               onClick={handleSoundToggle}
+              aria-pressed={soundEnabled}
               className={`w-full flex items-center justify-between px-4 py-3 rounded metal-panel-light transition-all ${
                 soundEnabled ? 'ring-1 ring-green-500/30' : ''
               }`}
