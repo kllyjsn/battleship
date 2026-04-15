@@ -19,8 +19,10 @@ export function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const onCancelRef = useRef(onCancel);
+  useEffect(() => { onCancelRef.current = onCancel; });
 
-  // Trap focus inside the dialog while it is open
+  // Trap focus inside the dialog (runs once on mount)
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
@@ -30,7 +32,7 @@ export function ConfirmDialog({
     first?.focus();
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { onCancel(); return; }
+      if (e.key === 'Escape') { onCancelRef.current(); return; }
       if (e.key !== 'Tab') return;
       if (e.shiftKey) {
         if (document.activeElement === first) { e.preventDefault(); last?.focus(); }
@@ -40,7 +42,7 @@ export function ConfirmDialog({
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onCancel]);
+  }, []);
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn">
