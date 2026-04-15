@@ -12,6 +12,7 @@ export function MusicVisualizer({ isPlaying, freqData, onToggle }: MusicVisualiz
   return (
     <button
       onClick={onToggle}
+      aria-pressed={isPlaying}
       className={`flex items-center gap-1 px-1.5 py-1 rounded transition-all ${
         isPlaying
           ? 'text-green-400 hover:text-green-300'

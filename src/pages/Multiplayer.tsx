@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { Board, Ship, Orientation, GamePhase, MultiplayerMessage, BattleLogEntry } from '../engine/types';
-import { SHIPS, TOTAL_SHIP_CELLS, scoreForResult } from '../engine/constants';
+import { SHIPS, TOTAL_SHIP_CELLS, BOARD_SIZE, scoreForResult } from '../engine/constants';
 import {
   createEmptyBoard,
   placeShip,
@@ -32,6 +32,7 @@ import { ScorePopup } from '../components/ScorePopup';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ShipNotification } from '../components/ShipNotification';
 import type { ReplayMove, ReplayData } from '../lib/replay';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { Eye } from 'lucide-react';
 
 interface MultiplayerPageProps {
@@ -125,6 +126,7 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
   }, [spectatorHostName]);
 
   const mp = useMultiplayer(playerName);
+  useDocumentTitle(phase, isPlayerTurn);
 
   // Turn timer logic
   useEffect(() => {
@@ -155,8 +157,8 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
     if (phase !== 'battle' || !isPlayerTurn || isProcessingRef.current) return;
     isProcessingRef.current = true;
     const validCells: { row: number; col: number }[] = [];
-    for (let r = 0; r < 10; r++) {
-      for (let c = 0; c < 10; c++) {
+    for (let r = 0; r < BOARD_SIZE; r++) {
+      for (let c = 0; c < BOARD_SIZE; c++) {
         const cell = opponentBoard[r][c];
         if (cell.state === 'empty' || cell.state === 'ship') {
           validCells.push({ row: r, col: c });

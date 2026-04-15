@@ -73,6 +73,8 @@ export function GameHUD({
         </div>
 
         <div
+          role="status"
+          aria-live="polite"
           className={`text-[11px] sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded font-mono-crt truncate max-w-[55%] sm:max-w-none text-center ${
             phase === 'gameover'
               ? 'text-glow-amber metal-panel-light'
@@ -122,6 +124,7 @@ export function GameHUD({
           <div className="w-px h-4 bg-slate-700/50" />
           <button
             onClick={handleToggle}
+            aria-pressed={soundOn}
             className="text-slate-500 hover:text-green-400 transition-colors p-1"
             title={soundOn ? 'Mute Sonar' : 'Enable Sonar'}
           >

@@ -56,6 +56,23 @@ export function isSoundEnabled(): boolean {
   }
 }
 
+/** Persist the sound-enabled preference to localStorage and MongoDB. */
+export function saveSoundEnabled(enabled: boolean): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.SOUND_MUTED, enabled ? 'false' : 'true');
+  } catch {
+    // Storage unavailable
+  }
+  const playerName = getSessionName();
+  if (playerName) {
+    fetch(`${getApiBase()}/preferences`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playerName, soundMuted: !enabled }),
+    }).catch(() => {});
+  }
+}
+
 /** Base path for the online API. */
 export function getApiBase(): string {
   return '/api';
