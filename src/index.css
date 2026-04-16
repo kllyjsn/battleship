@@ -414,6 +414,32 @@ button:focus-visible {
   100% { background-position: 0% 0%; }
 }
 
+/* ── Last-move highlight on player board (AI's most recent shot) ── */
+@keyframes lastMoveRing {
+  0% { box-shadow: 0 0 0 0 rgba(255, 176, 0, 0.6); }
+  70% { box-shadow: 0 0 0 6px rgba(255, 176, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 176, 0, 0); }
+}
+
+.cell-last-move {
+  animation: lastMoveRing 1.5s ease-out;
+  outline: 2px solid rgba(255, 176, 0, 0.5);
+  outline-offset: -2px;
+  z-index: 10;
+}
+
+/* ── Turn transition indicator ── */
+@keyframes turnFlash {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.turn-transition {
+  animation: turnFlash 0.6s ease-in-out forwards;
+}
+
 /* ── Remove old wave animations (replaced by sonar) ── */
 .wave-animation,
 .wave-animation-slow {

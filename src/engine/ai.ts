@@ -283,6 +283,7 @@ export function updateAIAfterResult(
       newState.hitStack = newState.hitStack.filter(
         p => !sunkSet.has(posKey(p.row, p.col))
       );
+
     } else {
       newState.hitStack = [];
     }

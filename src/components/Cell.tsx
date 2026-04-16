@@ -18,6 +18,7 @@ interface CellProps {
   hideShipFill?: boolean;
   animating?: 'hit' | 'miss' | 'sunk' | null;
   isCursor?: boolean;
+  isLastMove?: boolean;
 }
 
 const PARTICLE_DIRECTIONS = [
@@ -47,6 +48,7 @@ export const Cell = memo(function Cell({
   hideShipFill = false,
   animating = null,
   isCursor = false,
+  isLastMove = false,
 }: CellProps) {
   const [activeAnim, setActiveAnim] = useState<'hit' | 'miss' | 'sunk' | null>(null);
   const prevStateRef = useRef<CellState>(state);
@@ -107,7 +109,7 @@ export const Cell = memo(function Cell({
 
   return (
     <div
-      className={`${getClassName()}${isCursor ? ' cell-cursor' : ''}`}
+      className={`${getClassName()}${isCursor ? ' cell-cursor' : ''}${isLastMove ? ' cell-last-move' : ''}`}
       onClick={!disabled ? onClick : undefined}
       onMouseEnter={onHover}
       onDragOver={onDragOver}

@@ -557,9 +557,10 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'radial-gradient(ellipse at center, #141c2b 0%, #0a0e1a 70%)' }}>
-      {/* Screen-reader live region for game status announcements */}
-      <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {message}
+      {/* Assertive region for critical events (ship sunk, game over).
+           Polite announcements are handled by GameHUD's role="status". */}
+      <div aria-live="assertive" aria-atomic="true" className="sr-only">
+        {phase === 'gameover' ? (winner === 'player' ? 'Victory! You sank all enemy ships.' : 'Defeated. The enemy sank your fleet.') : ''}
       </div>
 
       <GameHUD
@@ -617,7 +618,12 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
           <>
             <BoardToggle activeBoard={mobileBoard} onToggle={setMobileBoard} />
             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 sm:gap-4 lg:gap-8">
-              <div className={`flex flex-col items-center gap-4 ${mobileBoard === 'opponent' ? 'hidden lg:flex' : 'flex'}`}>
+              <div
+                id="player-board-panel"
+                role="tabpanel"
+                aria-labelledby="player-board-tab"
+                className={`flex flex-col items-center gap-4 ${mobileBoard === 'opponent' ? 'hidden lg:flex' : 'flex'}`}
+              >
                 <GameBoard
                   board={playerBoard}
                   isPlayerBoard={true}
@@ -629,6 +635,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
                   lastAttackPos={lastDefensePos}
                   hideEnemyShots={hideEnemyShots}
                   onToggleHideEnemyShots={() => setHideEnemyShots(h => !h)}
+                  lastMovePos={lastDefensePos}
                 />
                 <ShipRoster
                   shipDefs={SHIPS}
@@ -643,7 +650,12 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
                   mode="battle"
                 />
               </div>
-              <div className={`${mobileBoard === 'player' ? 'hidden lg:block' : 'block'}`}>
+              <div
+                id="opponent-board-panel"
+                role="tabpanel"
+                aria-labelledby="opponent-board-tab"
+                className={`${mobileBoard === 'player' ? 'hidden lg:block' : 'block'}`}
+              >
                 <GameBoard
                   board={opponentBoard}
                   isPlayerBoard={false}
