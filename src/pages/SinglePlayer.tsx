@@ -557,11 +557,8 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'radial-gradient(ellipse at center, #141c2b 0%, #0a0e1a 70%)' }}>
-      {/* Screen-reader live region for game status announcements */}
-      <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {message}
-      </div>
-      {/* Assertive region for critical events (ship sunk, game over) */}
+      {/* Assertive region for critical events (ship sunk, game over).
+           Polite announcements are handled by GameHUD's role="status". */}
       <div aria-live="assertive" aria-atomic="true" className="sr-only">
         {phase === 'gameover' ? (winner === 'player' ? 'Victory! You sank all enemy ships.' : 'Defeated. The enemy sank your fleet.') : ''}
       </div>
