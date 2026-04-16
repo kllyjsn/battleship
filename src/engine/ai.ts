@@ -284,15 +284,6 @@ export function updateAIAfterResult(
         p => !sunkSet.has(posKey(p.row, p.col))
       );
 
-      // Adjacency exclusion: cells directly adjacent to the sunk ship
-      // cannot contain another ship, so mark them as tried.
-      for (const pos of sunkShipPositions) {
-        for (const adj of getAdjacentCells(pos)) {
-          if (!sunkSet.has(posKey(adj.row, adj.col))) {
-            newState.triedPositions.add(posKey(adj.row, adj.col));
-          }
-        }
-      }
     } else {
       newState.hitStack = [];
     }
