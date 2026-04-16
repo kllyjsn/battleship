@@ -891,7 +891,12 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
           <>
             <BoardToggle activeBoard={mobileBoard} onToggle={setMobileBoard} />
             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 sm:gap-4 lg:gap-8">
-              <div className={`flex flex-col items-center gap-4 ${mobileBoard === 'opponent' ? 'hidden lg:flex' : 'flex'}`}>
+              <div
+                id="player-board-panel"
+                role="tabpanel"
+                aria-labelledby="player-board-tab"
+                className={`flex flex-col items-center gap-4 ${mobileBoard === 'opponent' ? 'hidden lg:flex' : 'flex'}`}
+              >
                 <GameBoard
                   board={playerBoard}
                   isPlayerBoard={true}
@@ -917,7 +922,12 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
                   mode="battle"
                 />
               </div>
-              <div className={`flex flex-col items-center gap-2 ${mobileBoard === 'player' ? 'hidden lg:flex' : 'flex'}`}>
+              <div
+                id="opponent-board-panel"
+                role="tabpanel"
+                aria-labelledby="opponent-board-tab"
+                className={`flex flex-col items-center gap-2 ${mobileBoard === 'player' ? 'hidden lg:flex' : 'flex'}`}
+              >
                 {phase === 'battle' && isPlayerTurn && (
                   <TurnTimer
                     seconds={turnTimeLeft}
