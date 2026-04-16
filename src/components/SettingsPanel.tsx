@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Volume2, VolumeX, Music, Trash2, User } from 'lucide-react';
-import { STORAGE_KEYS, getSessionName, setSessionName, getApiBase, isSoundEnabled } from '../lib/storageKeys';
+import { STORAGE_KEYS, getSessionName, setSessionName, getApiBase, isSoundEnabled, setSoundEnabled as persistSoundEnabled } from '../lib/storageKeys';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { clearStats } from '../lib/stats';
 import { getAllThemes, getTheme, saveTheme, applyTheme } from '../lib/themes';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -13,7 +14,7 @@ interface SettingsPanelProps {
 
 export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: SettingsPanelProps) {
   const [callsign, setCallsign] = useState(getSessionName());
-  const [soundEnabled, setSoundEnabled] = useState(isSoundEnabled);
+  const [soundEnabled, setSoundEnabledLocal] = useState(isSoundEnabled);
   const [confirmAction, setConfirmAction] = useState<'stats' | 'achievements' | 'all' | null>(null);
   const themes = getAllThemes();
 
@@ -24,21 +25,8 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
 
   const handleSoundToggle = () => {
     const newState = !soundEnabled;
-    setSoundEnabled(newState);
-    try {
-      localStorage.setItem(STORAGE_KEYS.SOUND_MUTED, newState ? 'false' : 'true');
-    } catch {
-      // Storage unavailable
-    }
-    // Primary persistence: sync to MongoDB
-    const playerName = getSessionName();
-    if (playerName) {
-      fetch(`${getApiBase()}/preferences`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerName, soundMuted: !newState }),
-      }).catch(() => {});
-    }
+    persistSoundEnabled(newState);
+    setSoundEnabledLocal(newState);
   };
 
   const handleThemeSelect = (themeId: string) => {
@@ -87,9 +75,16 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
     setConfirmAction(null);
   };
 
+  const trapRef = useFocusTrap<HTMLDivElement>();
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn">
-      <div className="metal-panel rounded-lg p-6 w-full max-w-lg mx-4 relative max-h-[85vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-title"
+    >
+      <div ref={trapRef} className="metal-panel rounded-lg p-6 w-full max-w-lg mx-4 relative max-h-[85vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-slate-400 hover:text-white transition-colors"
@@ -97,7 +92,7 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
           <X size={20} />
         </button>
 
-        <h2 className="text-xl font-bold font-mono-crt text-glow-green mb-1 text-center">
+        <h2 id="settings-title" className="text-xl font-bold font-mono-crt text-glow-green mb-1 text-center">
           SETTINGS
         </h2>
         <p className="text-xs text-slate-500 font-mono-crt text-center mb-5">

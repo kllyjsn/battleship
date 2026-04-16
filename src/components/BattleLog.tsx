@@ -39,8 +39,8 @@ export function BattleLog({ entries }: BattleLogProps) {
           setIsOpen(true);
           setSeen(entries.length);
         }}
-        className="fixed bottom-3 left-3 sm:bottom-4 sm:left-4 w-11 h-11 sm:w-12 sm:h-12 rounded-full metal-panel text-amber-400 shadow-lg hover:text-amber-300 transition-all flex items-center justify-center z-40"
-        style={{ boxShadow: '0 0 10px rgba(255, 176, 0, 0.1)' }}
+        className="fixed bottom-3 left-3 sm:bottom-4 sm:left-4 w-12 h-12 rounded-full metal-panel text-amber-400 shadow-lg hover:text-amber-300 transition-all flex items-center justify-center z-40"
+        style={{ boxShadow: '0 0 10px rgba(255, 176, 0, 0.1)', marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         <ScrollText size={20} />
         {unread > 0 && (
@@ -53,7 +53,7 @@ export function BattleLog({ entries }: BattleLogProps) {
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:bottom-4 sm:left-4 sm:w-80 h-[50vh] sm:h-96 metal-panel sm:rounded-xl shadow-2xl flex flex-col z-40 rounded-t-xl">
+    <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:bottom-4 sm:left-4 sm:w-80 h-[50vh] sm:h-96 metal-panel sm:rounded-xl shadow-2xl flex flex-col z-40 rounded-t-xl" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       {/* Header */}
       <div
         className="flex items-center justify-between px-4 py-2.5 sm:py-3 flex-shrink-0 cursor-pointer sm:cursor-default"

@@ -29,6 +29,8 @@ interface GameBoardProps {
   hideEnemyShots?: boolean;
   onToggleHideEnemyShots?: () => void;
   onSwipeRotate?: () => void;
+  /** Position of the most recent opponent move, shown as a highlight ring */
+  lastMovePos?: { row: number; col: number } | null;
 }
 
 export function GameBoard({
@@ -53,6 +55,7 @@ export function GameBoard({
   hideEnemyShots = false,
   onToggleHideEnemyShots,
   onSwipeRotate,
+  lastMovePos = null,
 }: GameBoardProps) {
   const [hoverPos, setHoverPos] = useState<{ row: number; col: number } | null>(null);
   const [shaking, setShaking] = useState(false);
@@ -224,6 +227,7 @@ export function GameBoard({
                         : null
                     }
                     isCursor={showCursor && cursorRow === rowIdx && cursorCol === colIdx}
+                    isLastMove={lastMovePos !== null && lastMovePos.row === rowIdx && lastMovePos.col === colIdx}
                   />
                 </div>
               );
