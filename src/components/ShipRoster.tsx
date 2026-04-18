@@ -122,7 +122,13 @@ export function ShipRoster({
               aria-disabled={isReady || undefined}
               aria-label={placed ? `${def.name} placed — activate to move` : `${def.name} — activate to place`}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isReady) onSelectShip(def.id);
+                if (e.key === 'Enter' && !isReady) {
+                  // Stop propagation so the page-level window keydown listener
+                  // (which handles Enter-to-fire / Enter-to-place) doesn't also
+                  // act on this event and operate on stale selectedShipId.
+                  e.stopPropagation();
+                  onSelectShip(def.id);
+                }
               }}
               className={`w-full flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded transition-all ${
                 isReady
