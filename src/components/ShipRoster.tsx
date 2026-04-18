@@ -114,21 +114,24 @@ export function ShipRoster({
           return (
             <div
               key={def.id}
-              draggable={!placed}
-              onDragStart={!placed ? (e) => handleDragStart(e, def.id) : undefined}
-              onClick={() => onSelectShip(def.id)}
+              draggable={!placed && !isReady}
+              onDragStart={!placed && !isReady ? (e) => handleDragStart(e, def.id) : undefined}
+              onClick={() => !isReady && onSelectShip(def.id)}
               role="button"
-              tabIndex={0}
+              tabIndex={isReady ? -1 : 0}
+              aria-disabled={isReady || undefined}
               aria-label={placed ? `${def.name} placed — activate to move` : `${def.name} — activate to place`}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') onSelectShip(def.id);
+                if (e.key === 'Enter' && !isReady) onSelectShip(def.id);
               }}
-              className={`w-full flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded transition-all cursor-pointer ${
-                placed
-                  ? 'metal-panel-light opacity-70 hover:opacity-100 hover:ring-1 hover:ring-amber-400/30'
-                  : selected
-                    ? 'metal-panel-light ring-1 ring-green-400/40 cursor-grab'
-                    : 'metal-panel-light hover:ring-1 hover:ring-green-500/20 cursor-grab'
+              className={`w-full flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded transition-all ${
+                isReady
+                  ? 'metal-panel-light opacity-70 cursor-not-allowed'
+                  : placed
+                    ? 'metal-panel-light opacity-70 hover:opacity-100 hover:ring-1 hover:ring-amber-400/30 cursor-pointer'
+                    : selected
+                      ? 'metal-panel-light ring-1 ring-green-400/40 cursor-grab'
+                      : 'metal-panel-light hover:ring-1 hover:ring-green-500/20 cursor-grab'
               }`}
               style={placed ? { borderColor: 'rgba(34, 197, 94, 0.3)' } : selected ? { borderColor: 'rgba(57, 255, 20, 0.4)' } : undefined}
             >
