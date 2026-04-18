@@ -25,7 +25,12 @@ export function ConfirmDialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
-      onClick={onCancel}
+      onClick={(e) => {
+        // Stop propagation so ConfirmDialog rendered inside another modal's
+        // backdrop (e.g. SettingsPanel) doesn't also close the parent modal.
+        e.stopPropagation();
+        onCancel();
+      }}
     >
       <div className="metal-panel rounded-xl p-6 max-w-sm w-full mx-4 text-center" onClick={(e) => e.stopPropagation()}>
         <div className="w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center metal-panel-light"

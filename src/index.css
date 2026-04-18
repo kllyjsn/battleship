@@ -309,10 +309,16 @@ button:focus-visible {
   outline: none;
 }
 
-/* ── Shared grid cell sizing (keeps touch targets at WCAG-minimum 34-44px) ── */
-.grid-cell-size {
-  width: clamp(34px, 8.8vw, 44px);
-  height: clamp(34px, 8.8vw, 44px);
+/* ── Shared grid cell sizing (keeps touch targets at WCAG-minimum 34-44px) ──
+   Must live inside @layer utilities so responsive Tailwind overrides like
+   `sm:w-9 md:w-10` still win on larger viewports. Tailwind v3 emits all
+   generated utilities inside this layer; unlayered rules would always beat
+   them per the CSS Cascade Layers spec. */
+@layer utilities {
+  .grid-cell-size {
+    width: clamp(34px, 8.8vw, 44px);
+    height: clamp(34px, 8.8vw, 44px);
+  }
 }
 
 /* ── Respect prefers-reduced-motion (WCAG 2.3.3) ── */
