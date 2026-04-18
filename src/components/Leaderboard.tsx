@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { X, Trophy, Globe, Monitor, Loader2, AlertTriangle } from 'lucide-react';
 import { getLeaderboard, getOnlineLeaderboard } from '../lib/leaderboard';
 import type { LeaderboardEntry, Period } from '../lib/leaderboard';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface LeaderboardProps {
   onClose: () => void;
@@ -97,6 +98,7 @@ function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
 }
 
 export function Leaderboard({ onClose }: LeaderboardProps) {
+  useEscapeKey(onClose);
   const [period, setPeriod] = useState<Period>('day');
   const [source, setSource] = useState<Source>('local');
   const [globalEntries, setGlobalEntries] = useState<LeaderboardEntry[]>([]);
@@ -126,16 +128,27 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
   const entries = source === 'local' ? localEntries : globalEntries;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-      <div className="metal-panel rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto animate-fadeIn relative">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.7)' }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="leaderboard-dialog-title"
+      onClick={onClose}
+    >
+      <div
+        className="metal-panel rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto animate-fadeIn relative"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
           onClick={onClose}
+          aria-label="Close leaderboard"
           className="absolute top-4 right-4 text-slate-500 hover:text-green-400 transition-colors"
         >
           <X size={20} />
         </button>
 
-        <h2 className="text-2xl font-bold text-center font-mono-crt text-glow-amber mb-4">
+        <h2 id="leaderboard-dialog-title" className="text-2xl font-bold text-center font-mono-crt text-glow-amber mb-4">
           <Trophy size={22} className="inline-block mr-2 -mt-1" />
           LEADERBOARD
         </h2>

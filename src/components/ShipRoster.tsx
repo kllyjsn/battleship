@@ -1,5 +1,5 @@
 import type { ShipDefinition, Ship, Orientation } from '../engine/types';
-import { RotateCw, Undo2 } from 'lucide-react';
+import { RotateCw, Undo2, Trash2 } from 'lucide-react';
 import { ShipSVG } from './ShipSVG';
 import React, { useCallback } from 'react';
 
@@ -15,6 +15,7 @@ interface ShipRosterProps {
   isReady: boolean;
   mode: 'placement' | 'battle';
   onUndoShip?: () => void;
+  onClearAll?: () => void;
 }
 
 export function ShipRoster({
@@ -29,6 +30,7 @@ export function ShipRoster({
   isReady,
   mode,
   onUndoShip,
+  onClearAll,
 }: ShipRosterProps) {
   const allPlaced = placedShips.length === shipDefs.length;
   const hasPlacedShips = placedShips.length > 0;
@@ -103,7 +105,7 @@ export function ShipRoster({
       <h3 className="text-sm font-semibold uppercase tracking-widest mb-2 sm:mb-3 font-mono-crt text-glow-green">
         Place Your Fleet
       </h3>
-      <p className="text-[11px] sm:text-xs text-slate-500 mb-2 sm:mb-3 font-mono-crt leading-relaxed">Tap to select, then tap board to place. Press <kbd className="px-1 py-0.5 metal-panel-light rounded text-green-400 text-[11px] sm:text-xs font-mono-crt">R</kbd> to rotate.</p>
+      <p className="text-[11px] sm:text-xs text-slate-500 mb-2 sm:mb-3 font-mono-crt leading-relaxed">Tap to select, then tap board to place. Tap a placed ship to move it. Press <kbd className="px-1 py-0.5 metal-panel-light rounded text-green-400 text-[11px] sm:text-xs font-mono-crt">R</kbd> to rotate.</p>
 
       <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4">
         {shipDefs.map((def) => {
@@ -112,20 +114,30 @@ export function ShipRoster({
           return (
             <div
               key={def.id}
-              draggable={!placed}
-              onDragStart={!placed ? (e) => handleDragStart(e, def.id) : undefined}
-              onClick={() => !placed && onSelectShip(def.id)}
+              draggable={!placed && !isReady}
+              onDragStart={!placed && !isReady ? (e) => handleDragStart(e, def.id) : undefined}
+              onClick={() => !isReady && onSelectShip(def.id)}
               role="button"
-              tabIndex={placed ? -1 : 0}
+              tabIndex={isReady ? -1 : 0}
+              aria-disabled={isReady || undefined}
+              aria-label={placed ? `${def.name} placed — activate to move` : `${def.name} — activate to place`}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !placed) onSelectShip(def.id);
+                if (e.key === 'Enter' && !isReady) {
+                  // Stop propagation so the page-level window keydown listener
+                  // (which handles Enter-to-fire / Enter-to-place) doesn't also
+                  // act on this event and operate on stale selectedShipId.
+                  e.stopPropagation();
+                  onSelectShip(def.id);
+                }
               }}
               className={`w-full flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded transition-all ${
-                placed
-                  ? 'metal-panel-light opacity-70'
-                  : selected
-                    ? 'metal-panel-light ring-1 ring-green-400/40 cursor-grab'
-                    : 'metal-panel-light hover:ring-1 hover:ring-green-500/20 cursor-grab'
+                isReady
+                  ? 'metal-panel-light opacity-70 cursor-not-allowed'
+                  : placed
+                    ? 'metal-panel-light opacity-70 hover:opacity-100 hover:ring-1 hover:ring-amber-400/30 cursor-pointer'
+                    : selected
+                      ? 'metal-panel-light ring-1 ring-green-400/40 cursor-grab'
+                      : 'metal-panel-light hover:ring-1 hover:ring-green-500/20 cursor-grab'
               }`}
               style={placed ? { borderColor: 'rgba(34, 197, 94, 0.3)' } : selected ? { borderColor: 'rgba(57, 255, 20, 0.4)' } : undefined}
             >
@@ -169,19 +181,38 @@ export function ShipRoster({
         </button>
       </div>
 
-      {onUndoShip && (
-        <button
-          onClick={onUndoShip}
-          disabled={!hasPlacedShips || isReady}
-          className={`w-full flex items-center justify-center gap-2 px-3 py-2 mb-2 sm:mb-3 metal-panel-light rounded text-xs sm:text-sm transition-all font-mono-crt ${
-            hasPlacedShips && !isReady
-              ? 'text-amber-400/80 hover:text-amber-300 hover:ring-1 hover:ring-amber-400/30'
-              : 'text-slate-600 cursor-not-allowed'
-          }`}
-        >
-          <Undo2 size={14} />
-          Undo Last Ship
-        </button>
+      {(onUndoShip || onClearAll) && (
+        <div className="flex gap-2 mb-2 sm:mb-3">
+          {onUndoShip && (
+            <button
+              onClick={onUndoShip}
+              disabled={!hasPlacedShips || isReady}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 metal-panel-light rounded text-xs sm:text-sm transition-all font-mono-crt ${
+                hasPlacedShips && !isReady
+                  ? 'text-amber-400/80 hover:text-amber-300 hover:ring-1 hover:ring-amber-400/30'
+                  : 'text-slate-600 cursor-not-allowed'
+              }`}
+            >
+              <Undo2 size={14} />
+              Undo
+            </button>
+          )}
+          {onClearAll && (
+            <button
+              onClick={onClearAll}
+              disabled={!hasPlacedShips || isReady}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 metal-panel-light rounded text-xs sm:text-sm transition-all font-mono-crt ${
+                hasPlacedShips && !isReady
+                  ? 'text-red-400/80 hover:text-red-300 hover:ring-1 hover:ring-red-400/30'
+                  : 'text-slate-600 cursor-not-allowed'
+              }`}
+              title="Remove all placed ships"
+            >
+              <Trash2 size={14} />
+              Clear All
+            </button>
+          )}
+        </div>
       )}
 
       <button

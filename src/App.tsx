@@ -98,7 +98,9 @@ function App() {
   }
 
   return (
-    <main id="main-content">
+    <>
+      <a href="#main-content" className="skip-link">Skip to main content</a>
+      <main id="main-content" tabIndex={-1}>
       {content}
       <div className="crt-overlay" />
       {showResumePrompt && (
@@ -111,7 +113,8 @@ function App() {
           onCancel={handleDeclineResume}
         />
       )}
-    </main>
+      </main>
+    </>
   );
 }
 

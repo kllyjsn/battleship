@@ -5,7 +5,6 @@ interface AIState {
   mode: 'hunt' | 'target';
   hitStack: Position[];
   triedPositions: Set<string>;
-  lastHit: Position | null;
   firstHit: Position | null;
   orientation: 'unknown' | 'horizontal' | 'vertical';
 }
@@ -19,7 +18,6 @@ export function createAIState(): AIState {
     mode: 'hunt',
     hitStack: [],
     triedPositions: new Set(),
-    lastHit: null,
     firstHit: null,
     orientation: 'unknown',
   };
