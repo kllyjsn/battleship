@@ -612,6 +612,31 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
     play('click');
   }, [playerShips, playerBoard, play]);
 
+  // Remove all placed ships and start fresh
+  const handleClearAllShips = useCallback(() => {
+    if (playerShips.length === 0) return;
+    setPlayerBoard(createEmptyBoard());
+    setPlayerShips([]);
+    setSelectedShipId(SHIPS[0].id);
+    play('click');
+  }, [playerShips, play]);
+
+  // Pick up an already-placed ship so the user can re-position it. Also
+  // removes it from the board so the placement preview reports validity
+  // correctly rather than seeing the old position as occupied.
+  const handleRepickShip = useCallback((shipId: string) => {
+    const existing = playerShips.find((s) => s.id === shipId);
+    if (!existing) {
+      setSelectedShipId(shipId);
+      return;
+    }
+    const newBoard = removeShipFromBoard(playerBoard, shipId);
+    setPlayerBoard(newBoard);
+    setPlayerShips(playerShips.filter((s) => s.id !== shipId));
+    setSelectedShipId(shipId);
+    play('click');
+  }, [playerShips, playerBoard, play]);
+
   // Keyboard handling: R to rotate during placement, arrow keys + Enter during battle
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -878,13 +903,14 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
               placedShips={playerShips}
               selectedShipId={selectedShipId}
               orientation={orientation}
-              onSelectShip={setSelectedShipId}
+              onSelectShip={handleRepickShip}
               onRotate={() => setOrientation((o) => (o === 'horizontal' ? 'vertical' : 'horizontal'))}
               onRandomize={handleRandomize}
               onReady={handleReady}
               isReady={mp.isPlayerReady}
               mode="placement"
               onUndoShip={handleUndoShip}
+              onClearAll={handleClearAllShips}
             />
           </div>
         ) : (
