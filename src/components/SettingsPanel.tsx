@@ -4,6 +4,7 @@ import { STORAGE_KEYS, getSessionName, setSessionName, getApiBase, isSoundEnable
 import { clearStats } from '../lib/stats';
 import { getAllThemes, getTheme, saveTheme, applyTheme } from '../lib/themes';
 import { ConfirmDialog } from './ConfirmDialog';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface SettingsPanelProps {
   currentTheme: string;
@@ -16,6 +17,8 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
   const [soundEnabled, setSoundEnabled] = useState(isSoundEnabled);
   const [confirmAction, setConfirmAction] = useState<'stats' | 'achievements' | 'all' | null>(null);
   const themes = getAllThemes();
+  // Disable Escape-to-close while a confirmation dialog is open so Escape dismisses the dialog first.
+  useEscapeKey(onClose, confirmAction === null);
 
   const handleCallsignChange = (value: string) => {
     setCallsign(value);
@@ -88,16 +91,26 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn">
-      <div className="metal-panel rounded-lg p-6 w-full max-w-lg mx-4 relative max-h-[85vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-dialog-title"
+      onClick={onClose}
+    >
+      <div
+        className="metal-panel rounded-lg p-6 w-full max-w-lg mx-4 relative max-h-[85vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
           onClick={onClose}
+          aria-label="Close settings"
           className="absolute top-3 right-3 text-slate-400 hover:text-white transition-colors"
         >
           <X size={20} />
         </button>
 
-        <h2 className="text-xl font-bold font-mono-crt text-glow-green mb-1 text-center">
+        <h2 id="settings-dialog-title" className="text-xl font-bold font-mono-crt text-glow-green mb-1 text-center">
           SETTINGS
         </h2>
         <p className="text-xs text-slate-500 font-mono-crt text-center mb-5">

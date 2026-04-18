@@ -65,7 +65,6 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
         mode: resumeState.aiState.mode,
         hitStack: resumeState.aiState.hitStack,
         triedPositions: new Set(resumeState.aiState.triedPositions),
-        lastHit: resumeState.aiState.lastHit,
         firstHit: resumeState.aiState.firstHit,
         orientation: resumeState.aiState.orientation,
       }
@@ -171,6 +170,33 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
     setSelectedShipId(lastShip.id);
     play('click');
   }, [playerShips, playerBoard, play]);
+
+  // Remove all placed ships and start fresh
+  const handleClearAllShips = useCallback(() => {
+    if (playerShips.length === 0) return;
+    setPlayerBoard(createEmptyBoard());
+    setPlayerShips([]);
+    setSelectedShipId(SHIPS[0].id);
+    play('click');
+  }, [playerShips, play]);
+
+  // Pick up a ship that has already been placed so the user can re-position it
+  const handleRepickShip = useCallback(
+    (shipId: string) => {
+      const existing = playerShips.find((s) => s.id === shipId);
+      if (!existing) {
+        // Not yet placed — just select it
+        setSelectedShipId(shipId);
+        return;
+      }
+      const newBoard = removeShipFromBoard(playerBoard, shipId);
+      setPlayerBoard(newBoard);
+      setPlayerShips(playerShips.filter((s) => s.id !== shipId));
+      setSelectedShipId(shipId);
+      play('click');
+    },
+    [playerShips, playerBoard, play]
+  );
 
   // Keyboard handling: arrow keys + Enter in both placement and battle phases
   useEffect(() => {
@@ -509,7 +535,9 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
         mode: ai.mode,
         hitStack: ai.hitStack,
         triedPositions: Array.from(ai.triedPositions),
-        lastHit: ai.lastHit,
+        // `lastHit` was removed from AIState but we persist null here so saved
+        // games written by older clients with `lastHit` populated still round-trip.
+        lastHit: null,
         firstHit: ai.firstHit,
         orientation: ai.orientation,
       },
@@ -604,13 +632,14 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
               placedShips={playerShips}
               selectedShipId={selectedShipId}
               orientation={orientation}
-              onSelectShip={setSelectedShipId}
+              onSelectShip={handleRepickShip}
               onRotate={() => setOrientation((o) => (o === 'horizontal' ? 'vertical' : 'horizontal'))}
               onRandomize={handleRandomize}
               onReady={handleReady}
               isReady={false}
               mode="placement"
               onUndoShip={handleUndoShip}
+              onClearAll={handleClearAllShips}
             />
           </div>
         ) : (

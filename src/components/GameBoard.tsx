@@ -197,6 +197,11 @@ export function GameBoard({
               const key = `${rowIdx},${colIdx}`;
               const isPreview = previewCells.has(key);
               const isValid = previewCells.get(key) ?? true;
+              // Roving tabindex: only one cell per grid is tabbable. The cursor
+              // cell when arrow-key nav is active, else the top-left cell.
+              const focusable = showCursor
+                ? cursorRow === rowIdx && cursorCol === colIdx
+                : rowIdx === 0 && colIdx === 0;
 
               return (
                 <div key={key} ref={rowIdx === 0 && colIdx === 0 ? cellRef : undefined} role="gridcell">
@@ -224,6 +229,7 @@ export function GameBoard({
                         : null
                     }
                     isCursor={showCursor && cursorRow === rowIdx && cursorCol === colIdx}
+                    focusable={focusable}
                   />
                 </div>
               );

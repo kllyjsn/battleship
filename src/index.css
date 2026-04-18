@@ -287,6 +287,54 @@ button:focus-visible {
   border-width: 0;
 }
 
+/* ── Skip-link: visible only on keyboard focus (WCAG 2.4.1) ── */
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 1rem;
+  z-index: 200;
+  padding: 0.5rem 1rem;
+  background: var(--hull-dark);
+  color: var(--crt-green);
+  border: 1px solid var(--crt-green);
+  border-radius: 4px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.875rem;
+  text-decoration: none;
+  box-shadow: 0 0 10px rgba(57, 255, 20, 0.4);
+  transition: top 0.15s ease-in;
+}
+.skip-link:focus {
+  top: 1rem;
+  outline: none;
+}
+
+/* ── Shared grid cell sizing (keeps touch targets at WCAG-minimum 34-44px) ── */
+.grid-cell-size {
+  width: clamp(34px, 8.8vw, 44px);
+  height: clamp(34px, 8.8vw, 44px);
+}
+
+/* ── Respect prefers-reduced-motion (WCAG 2.3.3) ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .sonar-sweep,
+  .sonar-pulse,
+  .glow-pulse,
+  .cell-ocean-shimmer,
+  .danger-zone-border,
+  .rank-up-glow,
+  .rank-up-shine {
+    animation: none !important;
+  }
+}
+
 /* ── Floating score popup ── */
 @keyframes scoreFloat {
   0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }

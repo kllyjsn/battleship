@@ -18,6 +18,12 @@ interface CellProps {
   hideShipFill?: boolean;
   animating?: 'hit' | 'miss' | 'sunk' | null;
   isCursor?: boolean;
+  /**
+   * Whether this cell participates in the tab sequence. Used to implement a
+   * roving tabindex on the grid so keyboard users tab INTO the grid once and
+   * then use arrow keys to move, rather than tabbing through 100 cells.
+   */
+  focusable?: boolean;
 }
 
 const PARTICLE_DIRECTIONS = [
@@ -47,6 +53,7 @@ export const Cell = memo(function Cell({
   hideShipFill = false,
   animating = null,
   isCursor = false,
+  focusable = true,
 }: CellProps) {
   const [activeAnim, setActiveAnim] = useState<'hit' | 'miss' | 'sunk' | null>(null);
   const prevStateRef = useRef<CellState>(state);
@@ -74,7 +81,7 @@ export const Cell = memo(function Cell({
     // Fluid cell sizing: clamp between 34px–44px on mobile for WCAG touch targets.
     // sm: 36px, md: 40px.  touch-manipulation avoids 300ms tap delay.
     const base =
-      'w-[clamp(34px,8.8vw,44px)] h-[clamp(34px,8.8vw,44px)] sm:w-9 sm:h-9 md:w-10 md:h-10 border relative transition-all duration-150 select-none overflow-hidden touch-manipulation';
+      'grid-cell-size sm:w-9 sm:h-9 md:w-10 md:h-10 border relative transition-all duration-150 select-none overflow-hidden touch-manipulation';
 
     if (isPreview) {
       return `${base} ${isInvalid ? 'bg-red-500/30 border-red-400/60' : 'bg-green-500/20 border-green-400/50'} cursor-pointer`;
@@ -113,7 +120,7 @@ export const Cell = memo(function Cell({
       onDragOver={onDragOver}
       onDrop={onDrop}
       role={!disabled && onClick ? 'button' : undefined}
-      tabIndex={!disabled && onClick ? 0 : undefined}
+      tabIndex={!disabled && onClick ? (focusable ? 0 : -1) : undefined}
       aria-label={cellLabel}
       onKeyDown={(e) => {
         if (e.key === 'Enter' && !disabled && onClick) onClick();
