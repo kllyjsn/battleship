@@ -14,6 +14,9 @@
   font-family: 'Rajdhani', 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Fluid grid cell size: WCAG-minded 34px floor, 44px cap, 8.8vw on mid-size viewports.
+     sm:/md: Tailwind breakpoints override to fixed widths in utility classes. */
+  --cell-size: clamp(34px, 8.8vw, 44px);
   --crt-green: #39ff14;
   --crt-green-dim: #1a7a0a;
   --crt-amber: #ffb000;

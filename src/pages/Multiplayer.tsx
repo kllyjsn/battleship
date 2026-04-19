@@ -839,6 +839,11 @@ export function MultiplayerPage({ onBack, initialRoomCode }: MultiplayerPageProp
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'radial-gradient(ellipse at center, #141c2b 0%, #0a0e1a 70%)' }}>
+      {/* Screen-reader live region for game status announcements */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {message}
+      </div>
+
       <GameHUD
         isPlayerTurn={isPlayerTurn}
         message={message}

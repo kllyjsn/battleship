@@ -487,10 +487,9 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
   // ── Persist game state to localStorage after each state change during battle ──
   // Only save when it is the player's turn so we never snapshot a mid-AI-turn
   // state that would leave the game stuck on resume (no code path re-triggers AI).
-  useEffect(() => {
-    if (phase !== 'battle' || winner || !isPlayerTurn) return;
+  const buildSnapshot = useCallback((): SavedGameState => {
     const ai = aiStateRef.current;
-    saveGameState({
+    return {
       version: 1,
       timestamp: Date.now(),
       difficulty,
@@ -513,8 +512,33 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
         firstHit: ai.firstHit,
         orientation: ai.orientation,
       },
-    });
-  }, [phase, winner, playerBoard, opponentBoard, playerShips, opponentShips, isPlayerTurn, playerScore, battleLog, difficulty]);
+    };
+  }, [phase, difficulty, playerBoard, opponentBoard, playerShips, opponentShips, isPlayerTurn, playerScore, battleLog]);
+
+  useEffect(() => {
+    if (phase !== 'battle' || winner || !isPlayerTurn) return;
+    saveGameState(buildSnapshot());
+  }, [phase, winner, isPlayerTurn, buildSnapshot]);
+
+  // ── Safety net: flush the latest snapshot if the tab is closed or hidden ──
+  // The normal save runs on every player-turn state change, but a user may
+  // close the tab after firing and before React commits the turn handoff.
+  // pagehide / visibilitychange are synchronous relative to the unload
+  // sequence and fire reliably on mobile Safari where beforeunload doesn't.
+  useEffect(() => {
+    if (phase !== 'battle' || winner) return;
+    const flush = () => {
+      if (!isPlayerTurn) return;
+      try { saveGameState(buildSnapshot()); } catch { /* storage unavailable */ }
+    };
+    const onVisibility = () => { if (document.visibilityState === 'hidden') flush(); };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [phase, winner, isPlayerTurn, buildSnapshot]);
 
   const handlePlayAgain = useCallback(() => {
     const { board: oppBoard, ships: oppShips } = randomPlacement(SHIPS);

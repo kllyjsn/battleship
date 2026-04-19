@@ -72,6 +72,11 @@ function getRandomUntried(board: Board, tried: Set<string>, checkerboard: boolea
   return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
+/** Weight multiplier per un-sunk hit cell a candidate placement crosses.
+ *  A placement that overlaps a known hit is almost certainly where the ship
+ *  sits, so cells on that line dominate the density score. */
+const HIT_OVERLAP_WEIGHT = 10;
+
 function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Position | null {
   const density: number[][] = Array.from({ length: BOARD_SIZE }, () =>
     Array(BOARD_SIZE).fill(0)
@@ -86,17 +91,20 @@ function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Po
     for (let r = 0; r < BOARD_SIZE; r++) {
       for (let c = 0; c <= BOARD_SIZE - size; c++) {
         let valid = true;
+        let hitsOnPlacement = 0;
         for (let i = 0; i < size; i++) {
           const state = board[r][c + i].state;
           if (state === 'miss' || state === 'sunk') {
             valid = false;
             break;
           }
+          if (state === 'hit') hitsOnPlacement++;
         }
         if (valid) {
+          const weight = 1 + HIT_OVERLAP_WEIGHT * hitsOnPlacement;
           for (let i = 0; i < size; i++) {
             if (!tried.has(posKey(r, c + i))) {
-              density[r][c + i]++;
+              density[r][c + i] += weight;
             }
           }
         }
@@ -106,17 +114,20 @@ function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Po
     for (let r = 0; r <= BOARD_SIZE - size; r++) {
       for (let c = 0; c < BOARD_SIZE; c++) {
         let valid = true;
+        let hitsOnPlacement = 0;
         for (let i = 0; i < size; i++) {
           const state = board[r + i][c].state;
           if (state === 'miss' || state === 'sunk') {
             valid = false;
             break;
           }
+          if (state === 'hit') hitsOnPlacement++;
         }
         if (valid) {
+          const weight = 1 + HIT_OVERLAP_WEIGHT * hitsOnPlacement;
           for (let i = 0; i < size; i++) {
             if (!tried.has(posKey(r + i, c))) {
-              density[r + i][c]++;
+              density[r + i][c] += weight;
             }
           }
         }
