@@ -7,6 +7,7 @@ import { loadTheme, applyTheme } from './lib/themes';
 import { loadSavedGame, clearSavedGame } from './lib/gamePersistence';
 import type { SavedGameState } from './lib/gamePersistence';
 import { ConfirmDialog } from './components/ConfirmDialog';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 type Screen = 'menu' | 'single' | 'multiplayer';
 
@@ -42,7 +43,7 @@ function App() {
       setPendingSave(saved);
       setShowResumePrompt(true);
     }
-  }, []);
+  }, [initialRoom]);
 
   const handleResume = () => {
     if (pendingSave) {
@@ -83,10 +84,26 @@ function App() {
   let content;
   switch (screen) {
     case 'single':
-      content = <SinglePlayer difficulty={difficulty} onBack={handleBack} resumeState={resumeState} />;
+      content = (
+        <ErrorBoundary
+          onReset={handleBack}
+          title="BATTLE DISRUPTED"
+          hint="A rendering fault aborted this match. Returning to base will preserve saved stats and progress."
+        >
+          <SinglePlayer difficulty={difficulty} onBack={handleBack} resumeState={resumeState} />
+        </ErrorBoundary>
+      );
       break;
     case 'multiplayer':
-      content = <MultiplayerPage onBack={handleBack} initialRoomCode={joinRoomCode} />;
+      content = (
+        <ErrorBoundary
+          onReset={handleBack}
+          title="COMMS DISRUPTED"
+          hint="A rendering fault dropped the multiplayer session. Return to base to reconnect."
+        >
+          <MultiplayerPage onBack={handleBack} initialRoomCode={joinRoomCode} />
+        </ErrorBoundary>
+      );
       break;
     default:
       content = (

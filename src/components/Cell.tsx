@@ -71,10 +71,10 @@ export const Cell = memo(function Cell({
   }, [state]);
 
   const getClassName = () => {
-    // Fluid cell sizing: clamp between 34px–44px on mobile for WCAG touch targets.
+    // Fluid cell sizing via --cell-size (defined in index.css).
     // sm: 36px, md: 40px.  touch-manipulation avoids 300ms tap delay.
     const base =
-      'w-[clamp(34px,8.8vw,44px)] h-[clamp(34px,8.8vw,44px)] sm:w-9 sm:h-9 md:w-10 md:h-10 border relative transition-all duration-150 select-none overflow-hidden touch-manipulation';
+      'w-[var(--cell-size)] h-[var(--cell-size)] sm:w-9 sm:h-9 md:w-10 md:h-10 border relative transition-all duration-150 select-none overflow-hidden touch-manipulation';
 
     if (isPreview) {
       return `${base} ${isInvalid ? 'bg-red-500/30 border-red-400/60' : 'bg-green-500/20 border-green-400/50'} cursor-pointer`;
