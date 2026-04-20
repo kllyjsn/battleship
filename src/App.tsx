@@ -42,7 +42,7 @@ function App() {
       setPendingSave(saved);
       setShowResumePrompt(true);
     }
-  }, []);
+  }, [initialRoom]);
 
   const handleResume = () => {
     if (pendingSave) {

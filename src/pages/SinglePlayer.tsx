@@ -28,7 +28,7 @@ import { ScorePopup } from '../components/ScorePopup';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ShipNotification } from '../components/ShipNotification';
 import type { ReplayMove, ReplayData } from '../lib/replay';
-import { saveGameState, clearSavedGame } from '../lib/gamePersistence';
+import { saveGameState, clearSavedGame, serializeAIState, deserializeAIState } from '../lib/gamePersistence';
 import type { SavedGameState } from '../lib/gamePersistence';
 
 interface SinglePlayerProps {
@@ -60,37 +60,37 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
   const [lastAttackResult, setLastAttackResult] = useState<'hit' | 'miss' | 'sunk' | null>(null);
   const [lastDefensePos, setLastDefensePos] = useState<{ row: number; col: number } | null>(null);
   const [lastDefenseResult, setLastDefenseResult] = useState<'hit' | 'miss' | 'sunk' | null>(null);
-  const aiStateRef = useRef(resumeState
-    ? {
-        mode: resumeState.aiState.mode,
-        hitStack: resumeState.aiState.hitStack,
-        triedPositions: new Set(resumeState.aiState.triedPositions),
-        lastHit: resumeState.aiState.lastHit,
-        firstHit: resumeState.aiState.firstHit,
-        orientation: resumeState.aiState.orientation,
-      }
-    : createAIState()
-  );
+  const aiStateRef = useRef(resumeState ? deserializeAIState(resumeState.aiState) : createAIState());
   const { play, toggle } = useSound();
   const music = useBackgroundMusic();
   const haptics = useHaptics();
   const isProcessingRef = useRef(false);
   const shotCountRef = useRef(resumeState ? resumeState.shotCount : 0);
   const hitCountRef = useRef(resumeState ? resumeState.hitCount : 0);
-  const gameStartTimeRef = useRef<number>(resumeState ? Date.now() : 0);
+  // Offset the start time by previously accumulated play time so resumed
+  // games report the true total duration at gameover, not just post-resume.
+  const gameStartTimeRef = useRef<number>(
+    resumeState ? Date.now() - (resumeState.elapsedSeconds ?? 0) * 1000 : 0
+  );
   const [battleLog, setBattleLog] = useState<BattleLogEntry[]>(resumeState ? resumeState.battleLog : []);
   const turnCountRef = useRef(resumeState ? resumeState.turnCount : 0);
-  const replayMovesRef = useRef<ReplayMove[]>([]);
+  const replayMovesRef = useRef<ReplayMove[]>(resumeState?.replayMoves ?? []);
   const [replayData, setReplayData] = useState<ReplayData | null>(null);
   const [showReplay, setShowReplay] = useState(false);
   const [scoreSubmitted, setScoreSubmitted] = useState(false);
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
   const [playerScore, setPlayerScore] = useState(resumeState ? resumeState.playerScore : 0);
+  // Prefer the original pristine placements saved alongside the game so the
+  // post-game replay shows ships at full health, not their current battle-damaged state.
   const playerShipsSnapshotRef = useRef<Ship[]>(
-    resumeState ? resumeState.playerShips.map(s => ({ ...s, positions: [...s.positions] })) : []
+    resumeState
+      ? (resumeState.playerShipPlacements ?? resumeState.playerShips).map(s => ({ ...s, positions: [...s.positions] }))
+      : []
   );
   const opponentShipsSnapshotRef = useRef<Ship[]>(
-    resumeState ? resumeState.opponentShips.map(s => ({ ...s, positions: [...s.positions] })) : []
+    resumeState
+      ? (resumeState.opponentShipPlacements ?? resumeState.opponentShips).map(s => ({ ...s, positions: [...s.positions] }))
+      : []
   );
   const gameDurationRef = useRef(0);
   const [cursorPos, setCursorPos] = useState({ row: 0, col: 0 });
@@ -489,7 +489,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
   // state that would leave the game stuck on resume (no code path re-triggers AI).
   useEffect(() => {
     if (phase !== 'battle' || winner || !isPlayerTurn) return;
-    const ai = aiStateRef.current;
+    const startedAt = gameStartTimeRef.current || Date.now();
     saveGameState({
       version: 1,
       timestamp: Date.now(),
@@ -505,14 +505,11 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
       hitCount: hitCountRef.current,
       turnCount: turnCountRef.current,
       battleLog,
-      aiState: {
-        mode: ai.mode,
-        hitStack: ai.hitStack,
-        triedPositions: Array.from(ai.triedPositions),
-        lastHit: ai.lastHit,
-        firstHit: ai.firstHit,
-        orientation: ai.orientation,
-      },
+      aiState: serializeAIState(aiStateRef.current),
+      elapsedSeconds: Math.floor((Date.now() - startedAt) / 1000),
+      replayMoves: [...replayMovesRef.current],
+      playerShipPlacements: playerShipsSnapshotRef.current,
+      opponentShipPlacements: opponentShipsSnapshotRef.current,
     });
   }, [phase, winner, playerBoard, opponentBoard, playerShips, opponentShips, isPlayerTurn, playerScore, battleLog, difficulty]);
 

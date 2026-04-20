@@ -420,3 +420,34 @@ button:focus-visible {
   animation: none;
 }
 
+/* ── Respect prefers-reduced-motion (WCAG 2.3.3) ──
+ * Users who request reduced motion get the gameplay experience without the
+ * ambient CRT scanlines, sonar pulses, screen shakes, shimmers and looping
+ * glows. Short, informational transitions (fades, hit/miss flashes, rank-up
+ * celebration) are preserved but significantly shortened.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .crt-overlay {
+    display: none;
+  }
+
+  .sonar-pulse,
+  .glow-pulse,
+  .screen-shake,
+  .cell-ocean-shimmer,
+  .cell-ocean-shimmer::before,
+  .rank-up-shine {
+    animation: none !important;
+    background-position: initial !important;
+  }
+}
+

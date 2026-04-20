@@ -1,7 +1,7 @@
 import type { Board, Position, Difficulty, Ship } from './types';
 import { BOARD_SIZE, SHIPS } from './constants';
 
-interface AIState {
+export interface AIState {
   mode: 'hunt' | 'target';
   hitStack: Position[];
   triedPositions: Set<string>;
@@ -45,19 +45,26 @@ function isValidTarget(board: Board, row: number, col: number, tried: Set<string
   return state === 'empty' || state === 'ship';
 }
 
-function getRandomUntried(board: Board, tried: Set<string>, checkerboard: boolean): Position | null {
+/**
+ * Pick a random untried cell. When `parity > 1`, only cells where
+ * `(row + col) % parity === 0` are considered — this covers the board with the
+ * fewest shots needed to guarantee a hit on any ship of `parity` length or
+ * greater (the classic Battleship "checkerboard" search heuristic, generalised).
+ * Falls back to any untried cell if the parity set is exhausted.
+ */
+function getRandomUntried(board: Board, tried: Set<string>, parity: number): Position | null {
   const candidates: Position[] = [];
   for (let r = 0; r < BOARD_SIZE; r++) {
     for (let c = 0; c < BOARD_SIZE; c++) {
       if (tried.has(posKey(r, c))) continue;
       const state = board[r][c].state;
       if (state !== 'empty' && state !== 'ship') continue;
-      if (checkerboard && (r + c) % 2 !== 0) continue;
+      if (parity > 1 && (r + c) % parity !== 0) continue;
       candidates.push({ row: r, col: c });
     }
   }
 
-  if (candidates.length === 0 && checkerboard) {
+  if (candidates.length === 0 && parity > 1) {
     for (let r = 0; r < BOARD_SIZE; r++) {
       for (let c = 0; c < BOARD_SIZE; c++) {
         if (tried.has(posKey(r, c))) continue;
@@ -72,6 +79,21 @@ function getRandomUntried(board: Board, tried: Set<string>, checkerboard: boolea
   return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
+/** Size of the smallest still-floating ship, or null if we have no roster data. */
+function smallestRemainingShipSize(ships: Ship[]): number | null {
+  const afloat = ships.filter(s => !s.sunk);
+  if (afloat.length === 0) return null;
+  return Math.min(...afloat.map(s => s.size));
+}
+
+/**
+ * Multiplier applied to density for each existing 'hit' cell that a candidate
+ * ship placement would cover. Ensures that if target mode ever drops an
+ * unsunk hit (e.g. after a defensive reset), the hunt phase still gravitates
+ * back toward finishing the wounded ship rather than searching blindly.
+ */
+const HIT_COVER_BONUS = 50;
+
 function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Position | null {
   const density: number[][] = Array.from({ length: BOARD_SIZE }, () =>
     Array(BOARD_SIZE).fill(0)
@@ -81,45 +103,45 @@ function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Po
     ? remainingShips.map(s => s.size)
     : SHIPS.map(s => s.size);
 
+  const addPlacementWeight = (cells: Position[], weight: number) => {
+    for (const p of cells) {
+      if (!tried.has(posKey(p.row, p.col))) {
+        density[p.row][p.col] += weight;
+      }
+    }
+  };
+
   for (const size of shipSizes) {
     // horizontal
     for (let r = 0; r < BOARD_SIZE; r++) {
       for (let c = 0; c <= BOARD_SIZE - size; c++) {
         let valid = true;
+        let hitCover = 0;
         for (let i = 0; i < size; i++) {
           const state = board[r][c + i].state;
-          if (state === 'miss' || state === 'sunk') {
-            valid = false;
-            break;
-          }
+          if (state === 'miss' || state === 'sunk') { valid = false; break; }
+          if (state === 'hit') hitCover++;
         }
-        if (valid) {
-          for (let i = 0; i < size; i++) {
-            if (!tried.has(posKey(r, c + i))) {
-              density[r][c + i]++;
-            }
-          }
-        }
+        if (!valid) continue;
+        const cells: Position[] = [];
+        for (let i = 0; i < size; i++) cells.push({ row: r, col: c + i });
+        addPlacementWeight(cells, 1 + hitCover * HIT_COVER_BONUS);
       }
     }
     // vertical
     for (let r = 0; r <= BOARD_SIZE - size; r++) {
       for (let c = 0; c < BOARD_SIZE; c++) {
         let valid = true;
+        let hitCover = 0;
         for (let i = 0; i < size; i++) {
           const state = board[r + i][c].state;
-          if (state === 'miss' || state === 'sunk') {
-            valid = false;
-            break;
-          }
+          if (state === 'miss' || state === 'sunk') { valid = false; break; }
+          if (state === 'hit') hitCover++;
         }
-        if (valid) {
-          for (let i = 0; i < size; i++) {
-            if (!tried.has(posKey(r + i, c))) {
-              density[r + i][c]++;
-            }
-          }
-        }
+        if (!valid) continue;
+        const cells: Position[] = [];
+        for (let i = 0; i < size; i++) cells.push({ row: r + i, col: c });
+        addPlacementWeight(cells, 1 + hitCover * HIT_COVER_BONUS);
       }
     }
   }
@@ -162,7 +184,7 @@ export function getAIMove(
 
   if (difficulty === 'easy') {
     // Easy mode still tracks tried positions to avoid re-attacking the same cell.
-    target = getRandomUntried(board, newState.triedPositions, false);
+    target = getRandomUntried(board, newState.triedPositions, 1);
   } else if (newState.mode === 'target' && newState.hitStack.length > 0) {
     // Target mode: try to sink a ship we've hit
     while (newState.hitStack.length > 0 && !target) {
@@ -227,13 +249,20 @@ export function getAIMove(
       target = probabilityDensity(board, newState.triedPositions, opponentShips);
     }
     if (!target) {
-      // Medium and hard use checkerboard pattern in hunt mode to cover more ground.
-      target = getRandomUntried(board, newState.triedPositions, difficulty === 'medium' || difficulty === 'hard');
+      // Medium/hard hunt: parity = smallest still-floating ship size.
+      // Shooting only on cells where (row + col) % parity === 0 covers the
+      // board with the fewest shots required to guarantee at least one hit
+      // on any ship of that size or larger (e.g. parity 2 for a destroyer,
+      // parity 3 once only 3+ cell ships remain).
+      const parity = difficulty === 'medium' || difficulty === 'hard'
+        ? smallestRemainingShipSize(opponentShips) ?? 2
+        : 1;
+      target = getRandomUntried(board, newState.triedPositions, parity);
     }
   }
 
   if (!target) {
-    target = getRandomUntried(board, newState.triedPositions, false);
+    target = getRandomUntried(board, newState.triedPositions, 1);
   }
 
   if (!target) {
