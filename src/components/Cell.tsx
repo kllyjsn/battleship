@@ -102,8 +102,30 @@ export const Cell = memo(function Cell({
     }
   };
 
-  // Build an accessible label: "Row A, Column 3 — hit"
-  const cellLabel = `Row ${ROW_LABELS[row]}, Column ${COL_LABELS[col]} — ${state}`;
+  // Build a context-aware label. When the cell is actionable (firing on the
+  // enemy grid, or placing a ship on your own), screen readers announce the
+  // intended action rather than only the static state.
+  const coord = `row ${ROW_LABELS[row]}, column ${COL_LABELS[col]}`;
+  const stateDescription =
+    state === 'empty'
+      ? 'unexplored water'
+      : state === 'ship'
+        ? isPlayerBoard ? 'your ship' : 'unexplored water'
+        : state;
+  let cellLabel: string;
+  if (isPreview) {
+    cellLabel = isInvalid
+      ? `Invalid placement at ${coord}`
+      : `Place ship at ${coord}`;
+  } else if (isPlacing && isPlayerBoard && !disabled && onClick) {
+    cellLabel = state === 'ship'
+      ? `Your ship at ${coord}`
+      : `Place ship at ${coord}`;
+  } else if (!isPlayerBoard && !isPlacing && !disabled && onClick && (state === 'empty' || state === 'ship')) {
+    cellLabel = `Fire at ${coord}`;
+  } else {
+    cellLabel = `${coord} — ${stateDescription}`;
+  }
 
   return (
     <div

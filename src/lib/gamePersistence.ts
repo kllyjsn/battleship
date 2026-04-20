@@ -1,5 +1,39 @@
 import type { Board, Ship, Difficulty, GamePhase, BattleLogEntry } from '../engine/types';
+import type { AIState } from '../engine/ai';
+import type { ReplayMove } from './replay';
 import { STORAGE_KEYS, getSessionName, getApiBase } from './storageKeys';
+
+/** Wire-format AI state with `Set` flattened to an array for JSON. */
+export interface SerializedAIState {
+  mode: 'hunt' | 'target';
+  hitStack: { row: number; col: number }[];
+  triedPositions: string[];
+  lastHit: { row: number; col: number } | null;
+  firstHit: { row: number; col: number } | null;
+  orientation: 'unknown' | 'horizontal' | 'vertical';
+}
+
+export function serializeAIState(ai: AIState): SerializedAIState {
+  return {
+    mode: ai.mode,
+    hitStack: ai.hitStack,
+    triedPositions: Array.from(ai.triedPositions),
+    lastHit: ai.lastHit,
+    firstHit: ai.firstHit,
+    orientation: ai.orientation,
+  };
+}
+
+export function deserializeAIState(s: SerializedAIState): AIState {
+  return {
+    mode: s.mode,
+    hitStack: s.hitStack,
+    triedPositions: new Set(s.triedPositions),
+    lastHit: s.lastHit,
+    firstHit: s.firstHit,
+    orientation: s.orientation,
+  };
+}
 
 /**
  * Serialisable snapshot of a single-player game in progress.
@@ -20,15 +54,14 @@ export interface SavedGameState {
   hitCount: number;
   turnCount: number;
   battleLog: BattleLogEntry[];
-  /** Serialised AI state — the hitStack, mode, etc. */
-  aiState: {
-    mode: 'hunt' | 'target';
-    hitStack: { row: number; col: number }[];
-    triedPositions: string[];
-    lastHit: { row: number; col: number } | null;
-    firstHit: { row: number; col: number } | null;
-    orientation: 'unknown' | 'horizontal' | 'vertical';
-  };
+  aiState: SerializedAIState;
+  /** Cumulative play time in seconds as of the snapshot — preserved across resume so post-game duration is accurate. */
+  elapsedSeconds?: number;
+  /** Full move history so resumed games still produce a complete replay. */
+  replayMoves?: ReplayMove[];
+  /** Original ship placements for replay playback. */
+  playerShipPlacements?: Ship[];
+  opponentShipPlacements?: Ship[];
 }
 
 /** Persist the current game state to localStorage cache and MongoDB. */
