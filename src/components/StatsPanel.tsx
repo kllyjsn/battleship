@@ -1,13 +1,17 @@
-import { useMemo } from 'react';
+import { useId, useMemo, useRef } from 'react';
 import { X } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { loadStats, getStatsOverview } from '../lib/stats';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface StatsPanelProps {
   onClose: () => void;
 }
 
 export function StatsPanel({ onClose }: StatsPanelProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  useModalA11y(dialogRef, onClose);
   const overview = useMemo(() => getStatsOverview(loadStats()), []);
 
   const totalGames = overview.totalGames;
@@ -26,15 +30,23 @@ export function StatsPanel({ onClose }: StatsPanelProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-      <div className="metal-panel rounded-xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto animate-fadeIn relative">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="metal-panel rounded-xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto animate-fadeIn relative outline-none"
+      >
         <button
           onClick={onClose}
+          aria-label="Close stats"
           className="absolute top-4 right-4 text-slate-500 hover:text-green-400 transition-colors"
         >
-          <X size={20} />
+          <X size={20} aria-hidden="true" />
         </button>
 
-        <h2 className="text-2xl font-bold text-center font-mono-crt text-glow-green mb-6">
+        <h2 id={titleId} className="text-2xl font-bold text-center font-mono-crt text-glow-green mb-6">
           COMBAT STATS
         </h2>
 

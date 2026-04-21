@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useId, useMemo, useRef } from 'react';
 import { X, Award } from 'lucide-react';
 import { ACHIEVEMENTS, getUnlockedAchievements } from '../lib/achievements';
 import type { AchievementDef } from '../lib/achievements';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface AchievementsPanelProps {
   onClose: () => void;
@@ -17,6 +18,10 @@ const CATEGORY_LABELS: Record<AchievementDef['category'], string> = {
 const CATEGORY_ORDER: AchievementDef['category'][] = ['combat', 'skill', 'social', 'milestone'];
 
 export function AchievementsPanel({ onClose }: AchievementsPanelProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  useModalA11y(dialogRef, onClose);
+
   const unlocked = useMemo(() => {
     const list = getUnlockedAchievements();
     return new Set(list.map(a => a.id));
@@ -36,16 +41,24 @@ export function AchievementsPanel({ onClose }: AchievementsPanelProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-      <div className="metal-panel rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto animate-fadeIn relative">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="metal-panel rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto animate-fadeIn relative outline-none"
+      >
         <button
           onClick={onClose}
+          aria-label="Close medals"
           className="absolute top-4 right-4 text-slate-500 hover:text-green-400 transition-colors"
         >
-          <X size={20} />
+          <X size={20} aria-hidden="true" />
         </button>
 
-        <h2 className="text-2xl font-bold text-center font-mono-crt text-glow-amber mb-2">
-          <Award size={22} className="inline-block mr-2 -mt-1" />
+        <h2 id={titleId} className="text-2xl font-bold text-center font-mono-crt text-glow-amber mb-2">
+          <Award size={22} className="inline-block mr-2 -mt-1" aria-hidden="true" />
           MEDALS
         </h2>
 

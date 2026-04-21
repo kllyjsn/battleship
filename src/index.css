@@ -287,6 +287,28 @@ button:focus-visible {
   border-width: 0;
 }
 
+/* Reveal the skip link when it receives keyboard focus (WCAG 2.4.1). */
+.sr-only:focus,
+.sr-only:focus-visible {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  width: auto;
+  height: auto;
+  padding: 0.5rem 0.75rem;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  z-index: 200;
+  background: var(--hull-dark);
+  color: var(--crt-green);
+  border: 1px solid var(--crt-green);
+  border-radius: 0.25rem;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  text-decoration: none;
+}
+
 /* ── Floating score popup ── */
 @keyframes scoreFloat {
   0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
@@ -418,5 +440,56 @@ button:focus-visible {
 .wave-animation,
 .wave-animation-slow {
   animation: none;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Reduced motion (WCAG 2.3.3 / 2.2.2)
+ *
+ * Users who opt in to `prefers-reduced-motion` find continuous or sweeping
+ * animations disorienting. We keep instant state-change feedback (hit / miss
+ * flash, short fade-ins) but strip ambient pulses, sweeps, shimmers, screen
+ * shake and the CRT scanline overlay.
+ * ────────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .crt-overlay {
+    display: none;
+  }
+
+  .sonar-sweep,
+  .sonar-pulse,
+  .glow-pulse,
+  .cell-cursor,
+  .cell-ocean-shimmer,
+  .danger-zone-border,
+  .rank-up-glow,
+  .rank-up-shine,
+  .ship-sunk-celebration,
+  .screen-shake,
+  .cell-hit > div,
+  .cell-miss > div,
+  .cell-sunk {
+    animation: none !important;
+  }
+
+  /* Keep the shimmer gradient visible but freeze it in place. */
+  .cell-ocean-shimmer {
+    background-position: 50% 50%;
+  }
+
+  /* Collapse the fadeIn to an instant appearance instead of a scale+fade. */
+  .animate-fadeIn {
+    animation: none;
+  }
+
+  /* Kill any explicit CSS transitions from Tailwind `transition-*` utilities
+   * when they're being used purely for decorative motion. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 

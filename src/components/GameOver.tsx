@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { Trophy, Skull, RotateCw, Home, Play, Crosshair, Clock, Target, Ship, Map, ChevronUp } from 'lucide-react';
 import { addLeaderboardEntry } from '../lib/leaderboard';
 import { loadStats } from '../lib/stats';
@@ -7,6 +7,7 @@ import { RankBadge } from './RankBadge';
 import { AttackHeatmap } from './AttackHeatmap';
 import { getSessionName, setSessionName } from '../lib/storageKeys';
 import type { Board } from '../engine/types';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface GameOverProps {
   winner: 'player' | 'opponent';
@@ -34,6 +35,11 @@ interface GameOverProps {
 
 export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', opponentName = 'Opponent', onWatchReplay, gameStats, alreadySubmitted = false, onScoreSubmitted, shipsLost = 0, totalShips = 5, opponentBoard, previousWins }: GameOverProps) {
   const isWin = winner === 'player';
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  // Escape on the end-game dialog closes by going home so users can't get
+  // stranded without visible close buttons.
+  useModalA11y(dialogRef, onGoHome);
   const [showNamePrompt, setShowNamePrompt] = useState(!!gameStats && !alreadySubmitted);
   const [sessionName, setSessionNameLocal] = useState(getSessionName());
   const [saved, setSaved] = useState(alreadySubmitted);
@@ -69,7 +75,15 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fadeIn">
-      <div className="metal-panel rounded-xl p-5 sm:p-8 max-w-md w-full mx-3 sm:mx-4 text-center" style={{ boxShadow: isWin ? '0 0 40px rgba(57, 255, 20, 0.1)' : '0 0 40px rgba(255, 60, 60, 0.1)' }}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="metal-panel rounded-xl p-5 sm:p-8 max-w-md w-full mx-3 sm:mx-4 text-center outline-none"
+        style={{ boxShadow: isWin ? '0 0 40px rgba(57, 255, 20, 0.1)' : '0 0 40px rgba(255, 60, 60, 0.1)' }}
+      >
         <div
           className={`w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 rounded-full flex items-center justify-center metal-panel-light`}
           style={{ boxShadow: isWin ? '0 0 20px rgba(57, 255, 20, 0.2)' : '0 0 20px rgba(255, 60, 60, 0.2)' }}
@@ -87,6 +101,7 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
         </div>
 
         <h2
+          id={titleId}
           className={`text-2xl sm:text-3xl font-bold mb-2 font-mono-crt ${
             isWin ? 'text-glow-green' : 'text-glow-red'
           }`}

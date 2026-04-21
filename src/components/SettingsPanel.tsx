@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { X, Volume2, VolumeX, Music, Trash2, User } from 'lucide-react';
 import { STORAGE_KEYS, getSessionName, setSessionName, getApiBase, isSoundEnabled } from '../lib/storageKeys';
 import { clearStats } from '../lib/stats';
 import { getAllThemes, getTheme, saveTheme, applyTheme } from '../lib/themes';
 import { ConfirmDialog } from './ConfirmDialog';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface SettingsPanelProps {
   currentTheme: string;
@@ -12,6 +13,10 @@ interface SettingsPanelProps {
 }
 
 export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: SettingsPanelProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  useModalA11y(dialogRef, onClose);
+
   const [callsign, setCallsign] = useState(getSessionName());
   const [soundEnabled, setSoundEnabled] = useState(isSoundEnabled);
   const [confirmAction, setConfirmAction] = useState<'stats' | 'achievements' | 'all' | null>(null);
@@ -89,15 +94,23 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn">
-      <div className="metal-panel rounded-lg p-6 w-full max-w-lg mx-4 relative max-h-[85vh] overflow-y-auto">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="metal-panel rounded-lg p-6 w-full max-w-lg mx-4 relative max-h-[85vh] overflow-y-auto outline-none"
+      >
         <button
           onClick={onClose}
+          aria-label="Close settings"
           className="absolute top-3 right-3 text-slate-400 hover:text-white transition-colors"
         >
-          <X size={20} />
+          <X size={20} aria-hidden="true" />
         </button>
 
-        <h2 className="text-xl font-bold font-mono-crt text-glow-green mb-1 text-center">
+        <h2 id={titleId} className="text-xl font-bold font-mono-crt text-glow-green mb-1 text-center">
           SETTINGS
         </h2>
         <p className="text-xs text-slate-500 font-mono-crt text-center mb-5">

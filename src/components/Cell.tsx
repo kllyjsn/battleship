@@ -2,6 +2,14 @@ import { useState, useEffect, useRef, memo } from 'react';
 import { type CellState } from '../engine/types';
 import { ROW_LABELS, COL_LABELS } from '../engine/constants';
 
+/**
+ * How long the per-cell feedback animation (hit/miss/sunk) runs before the
+ * static indicator takes over. Must stay in sync with the matching
+ * `@keyframes` durations in `src/index.css` (hitExplosion, missRipple,
+ * sunkFlash).
+ */
+const CELL_ANIM_MS = 600;
+
 interface CellProps {
   row: number;
   col: number;
@@ -18,6 +26,8 @@ interface CellProps {
   hideShipFill?: boolean;
   animating?: 'hit' | 'miss' | 'sunk' | null;
   isCursor?: boolean;
+  /** Name of the ship occupying this cell, when known to the caller. */
+  shipName?: string;
 }
 
 const PARTICLE_DIRECTIONS = [
@@ -47,6 +57,7 @@ export const Cell = memo(function Cell({
   hideShipFill = false,
   animating = null,
   isCursor = false,
+  shipName,
 }: CellProps) {
   const [activeAnim, setActiveAnim] = useState<'hit' | 'miss' | 'sunk' | null>(null);
   const prevStateRef = useRef<CellState>(state);
@@ -54,7 +65,7 @@ export const Cell = memo(function Cell({
   useEffect(() => {
     if (animating) {
       setActiveAnim(animating);
-      const timer = setTimeout(() => setActiveAnim(null), 600);
+      const timer = setTimeout(() => setActiveAnim(null), CELL_ANIM_MS);
       return () => clearTimeout(timer);
     }
   }, [animating]);
@@ -65,7 +76,7 @@ export const Cell = memo(function Cell({
     prevStateRef.current = state;
     if ((prev === 'empty' || prev === 'ship') && (state === 'hit' || state === 'miss' || state === 'sunk')) {
       setActiveAnim(state);
-      const timer = setTimeout(() => setActiveAnim(null), 600);
+      const timer = setTimeout(() => setActiveAnim(null), CELL_ANIM_MS);
       return () => clearTimeout(timer);
     }
   }, [state]);
@@ -102,8 +113,33 @@ export const Cell = memo(function Cell({
     }
   };
 
-  // Build an accessible label: "Row A, Column 3 — hit"
-  const cellLabel = `Row ${ROW_LABELS[row]}, Column ${COL_LABELS[col]} — ${state}`;
+  // Context-aware accessible label. Screen-reader users can't infer from the
+  // visuals whether an "empty" cell on the enemy board is unexplored water or
+  // their own open sea, so we describe the affordance explicitly.
+  const coord = `Row ${ROW_LABELS[row]}, Column ${COL_LABELS[col]}`;
+  let cellLabel: string;
+  if (isPreview) {
+    cellLabel = `${coord} — ${isInvalid ? 'cannot place ship here' : 'place ship here'}`;
+  } else if (state === 'hit') {
+    cellLabel = shipName ? `${coord} — hit on ${shipName}` : `${coord} — hit`;
+  } else if (state === 'sunk') {
+    cellLabel = shipName ? `${coord} — sunk ${shipName}` : `${coord} — sunk`;
+  } else if (state === 'miss') {
+    cellLabel = `${coord} — missed shot`;
+  } else if (state === 'ship') {
+    cellLabel = isPlayerBoard
+      ? (shipName ? `${coord} — your ${shipName}` : `${coord} — your ship`)
+      // On the enemy board, hidden ships are presented to the player as open
+      // water until fired upon.
+      : `${coord} — unexplored water, fire`;
+  } else {
+    // 'empty'
+    cellLabel = isPlayerBoard
+      ? `${coord} — open water`
+      : disabled
+        ? `${coord} — unexplored water`
+        : `${coord} — unexplored water, fire`;
+  }
 
   return (
     <div
@@ -116,7 +152,10 @@ export const Cell = memo(function Cell({
       tabIndex={!disabled && onClick ? 0 : undefined}
       aria-label={cellLabel}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' && !disabled && onClick) onClick();
+        if ((e.key === 'Enter' || e.key === ' ') && !disabled && onClick) {
+          e.preventDefault();
+          onClick();
+        }
       }}
     >
       {/* Hit explosion particles */}

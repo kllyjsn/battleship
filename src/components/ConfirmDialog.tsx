@@ -1,4 +1,6 @@
+import { useId, useRef } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface ConfirmDialogProps {
   title: string;
@@ -17,20 +19,33 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const descId = useId();
+  useModalA11y(dialogRef, onCancel);
+
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn">
-      <div className="metal-panel rounded-xl p-6 max-w-sm w-full mx-4 text-center">
+      <div
+        ref={dialogRef}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descId}
+        tabIndex={-1}
+        className="metal-panel rounded-xl p-6 max-w-sm w-full mx-4 text-center outline-none"
+      >
         <div className="w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center metal-panel-light"
           style={{ boxShadow: '0 0 15px rgba(255, 176, 0, 0.15)' }}
         >
-          <AlertTriangle size={28} className="text-glow-amber" />
+          <AlertTriangle size={28} className="text-glow-amber" aria-hidden="true" />
         </div>
 
-        <h2 className="text-xl font-bold mb-2 font-mono-crt text-glow-amber">
+        <h2 id={titleId} className="text-xl font-bold mb-2 font-mono-crt text-glow-amber">
           {title}
         </h2>
 
-        <p className="text-sm text-slate-400 mb-6 font-mono-crt">
+        <p id={descId} className="text-sm text-slate-400 mb-6 font-mono-crt">
           {message}
         </p>
 
