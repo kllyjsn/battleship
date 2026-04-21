@@ -45,19 +45,37 @@ function isValidTarget(board: Board, row: number, col: number, tried: Set<string
   return state === 'empty' || state === 'ship';
 }
 
-function getRandomUntried(board: Board, tried: Set<string>, checkerboard: boolean): Position | null {
+/**
+ * Hunt-mode random sampler.
+ *
+ * When `parityStride` is >= 2 we only sample cells on a parity lattice —
+ * `(r + c) % stride === 0`. Any ship of length >= stride must cross at least
+ * one such cell, so we can reach every surviving ship with ~1/stride as many
+ * shots. The stride should be the size of the smallest ship still afloat,
+ * which lets the pattern get coarser (more efficient) as the shortest ships
+ * sink. Stride <= 1 means "no parity filter" (easy mode / fallback).
+ *
+ * If the lattice is fully exhausted we fall back to any remaining cell so
+ * the AI never stalls.
+ */
+function getRandomUntried(
+  board: Board,
+  tried: Set<string>,
+  parityStride: number,
+): Position | null {
+  const useParity = parityStride >= 2;
   const candidates: Position[] = [];
   for (let r = 0; r < BOARD_SIZE; r++) {
     for (let c = 0; c < BOARD_SIZE; c++) {
       if (tried.has(posKey(r, c))) continue;
       const state = board[r][c].state;
       if (state !== 'empty' && state !== 'ship') continue;
-      if (checkerboard && (r + c) % 2 !== 0) continue;
+      if (useParity && (r + c) % parityStride !== 0) continue;
       candidates.push({ row: r, col: c });
     }
   }
 
-  if (candidates.length === 0 && checkerboard) {
+  if (candidates.length === 0 && useParity) {
     for (let r = 0; r < BOARD_SIZE; r++) {
       for (let c = 0; c < BOARD_SIZE; c++) {
         if (tried.has(posKey(r, c))) continue;
@@ -70,6 +88,14 @@ function getRandomUntried(board: Board, tried: Set<string>, checkerboard: boolea
 
   if (candidates.length === 0) return null;
   return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+/** Smallest surviving ship size, clamped to >= 1. Used to pick the parity
+ *  stride for hunt-mode sampling. */
+function smallestRemainingSize(ships: Ship[]): number {
+  const afloat = ships.filter(s => !s.sunk).map(s => s.size);
+  const pool = afloat.length > 0 ? afloat : SHIPS.map(s => s.size);
+  return Math.max(1, Math.min(...pool));
 }
 
 function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Position | null {
@@ -162,7 +188,7 @@ export function getAIMove(
 
   if (difficulty === 'easy') {
     // Easy mode still tracks tried positions to avoid re-attacking the same cell.
-    target = getRandomUntried(board, newState.triedPositions, false);
+    target = getRandomUntried(board, newState.triedPositions, 1);
   } else if (newState.mode === 'target' && newState.hitStack.length > 0) {
     // Target mode: try to sink a ship we've hit
     while (newState.hitStack.length > 0 && !target) {
@@ -227,13 +253,20 @@ export function getAIMove(
       target = probabilityDensity(board, newState.triedPositions, opponentShips);
     }
     if (!target) {
-      // Medium and hard use checkerboard pattern in hunt mode to cover more ground.
-      target = getRandomUntried(board, newState.triedPositions, difficulty === 'medium' || difficulty === 'hard');
+      // Medium and hard use an adaptive parity lattice in hunt mode. The
+      // stride equals the smallest surviving ship's length, so the pattern
+      // tightens when only the 2-deck destroyer is left but can relax to
+      // stride-3 or stride-5 when longer ships are afloat.
+      const stride =
+        difficulty === 'medium' || difficulty === 'hard'
+          ? smallestRemainingSize(opponentShips)
+          : 1;
+      target = getRandomUntried(board, newState.triedPositions, stride);
     }
   }
 
   if (!target) {
-    target = getRandomUntried(board, newState.triedPositions, false);
+    target = getRandomUntried(board, newState.triedPositions, 1);
   }
 
   if (!target) {

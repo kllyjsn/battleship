@@ -1,7 +1,8 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useId, useRef } from 'react';
 import { X, Trophy, Globe, Monitor, Loader2, AlertTriangle } from 'lucide-react';
 import { getLeaderboard, getOnlineLeaderboard } from '../lib/leaderboard';
 import type { LeaderboardEntry, Period } from '../lib/leaderboard';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface LeaderboardProps {
   onClose: () => void;
@@ -97,6 +98,10 @@ function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
 }
 
 export function Leaderboard({ onClose }: LeaderboardProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  useModalA11y(dialogRef, onClose);
+
   const [period, setPeriod] = useState<Period>('day');
   const [source, setSource] = useState<Source>('local');
   const [globalEntries, setGlobalEntries] = useState<LeaderboardEntry[]>([]);
@@ -127,16 +132,24 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-      <div className="metal-panel rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto animate-fadeIn relative">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="metal-panel rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto animate-fadeIn relative outline-none"
+      >
         <button
           onClick={onClose}
+          aria-label="Close leaderboard"
           className="absolute top-4 right-4 text-slate-500 hover:text-green-400 transition-colors"
         >
-          <X size={20} />
+          <X size={20} aria-hidden="true" />
         </button>
 
-        <h2 className="text-2xl font-bold text-center font-mono-crt text-glow-amber mb-4">
-          <Trophy size={22} className="inline-block mr-2 -mt-1" />
+        <h2 id={titleId} className="text-2xl font-bold text-center font-mono-crt text-glow-amber mb-4">
+          <Trophy size={22} className="inline-block mr-2 -mt-1" aria-hidden="true" />
           LEADERBOARD
         </h2>
 

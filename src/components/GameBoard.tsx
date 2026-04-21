@@ -197,6 +197,11 @@ export function GameBoard({
               const key = `${rowIdx},${colIdx}`;
               const isPreview = previewCells.has(key);
               const isValid = previewCells.get(key) ?? true;
+              // Resolve the friendly ship name so the Cell can produce a
+              // context-aware aria-label (e.g. "hit on Battleship").
+              const shipName = cell.shipId
+                ? ships.find(s => s.id === cell.shipId)?.name
+                : undefined;
 
               return (
                 <div key={key} ref={rowIdx === 0 && colIdx === 0 ? cellRef : undefined} role="gridcell">
@@ -208,6 +213,7 @@ export function GameBoard({
                     isPlacing={isPlacing}
                     isPreview={isPreview}
                     isInvalid={!isValid}
+                    shipName={shipName}
                     onClick={() => onCellClick?.(rowIdx, colIdx)}
                     onHover={() => {
                       if (isPlacing && placingShipSize) {
