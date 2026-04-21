@@ -130,8 +130,12 @@ export const Cell = memo(function Cell({
     cellLabel = isPlayerBoard
       ? (shipName ? `${coord} — your ${shipName}` : `${coord} — your ship`)
       // On the enemy board, hidden ships are presented to the player as open
-      // water until fired upon.
-      : `${coord} — unexplored water, fire`;
+      // water until fired upon. Only announce the "fire" affordance when the
+      // board is actually interactive (not during the opponent's turn or
+      // after game over).
+      : disabled
+        ? `${coord} — unexplored water`
+        : `${coord} — unexplored water, fire`;
   } else {
     // 'empty'
     cellLabel = isPlayerBoard
