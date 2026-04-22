@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { X, Award } from 'lucide-react';
 import { ACHIEVEMENTS, getUnlockedAchievements } from '../lib/achievements';
 import type { AchievementDef } from '../lib/achievements';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface AchievementsPanelProps {
   onClose: () => void;
@@ -17,6 +18,7 @@ const CATEGORY_LABELS: Record<AchievementDef['category'], string> = {
 const CATEGORY_ORDER: AchievementDef['category'][] = ['combat', 'skill', 'social', 'milestone'];
 
 export function AchievementsPanel({ onClose }: AchievementsPanelProps) {
+  useEscapeKey(onClose);
   const unlocked = useMemo(() => {
     const list = getUnlockedAchievements();
     return new Set(list.map(a => a.id));

@@ -2,12 +2,14 @@ import { useMemo } from 'react';
 import { X } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { loadStats, getStatsOverview } from '../lib/stats';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface StatsPanelProps {
   onClose: () => void;
 }
 
 export function StatsPanel({ onClose }: StatsPanelProps) {
+  useEscapeKey(onClose);
   const overview = useMemo(() => getStatsOverview(loadStats()), []);
 
   const totalGames = overview.totalGames;

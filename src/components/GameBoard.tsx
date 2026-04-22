@@ -1,5 +1,5 @@
 import { type Board, type Ship, type Orientation } from '../engine/types';
-import { ROW_LABELS, COL_LABELS, BOARD_SIZE, SHIPS } from '../engine/constants';
+import { ROW_LABELS, COL_LABELS, BOARD_SIZE, SHIPS, SHAKE_ANIMATION_MS } from '../engine/constants';
 import { canPlaceShip } from '../engine/board';
 import { Cell } from './Cell';
 import { ShipSVG } from './ShipSVG';
@@ -65,10 +65,25 @@ export function GameBoard({
   useEffect(() => {
     if (lastAttackResult === 'sunk') {
       setShaking(true);
-      const timer = setTimeout(() => setShaking(false), 400);
+      const timer = setTimeout(() => setShaking(false), SHAKE_ANIMATION_MS);
       return () => clearTimeout(timer);
     }
   }, [lastAttackResult, lastAttackPos]);
+
+  // Roving-tabindex focus management: when the player moves the keyboard
+  // cursor with arrow keys AND focus is already inside this grid, move DOM
+  // focus to the new cursor cell so screen readers announce the new
+  // selection.  If focus is elsewhere (mouse user, etc.) we leave it alone.
+  useEffect(() => {
+    if (!showCursor || cursorRow === undefined || cursorCol === undefined) return;
+    const grid = gridRef.current;
+    if (!grid) return;
+    if (!grid.contains(document.activeElement)) return;
+    const target = grid.querySelector<HTMLElement>(
+      `[data-cell-row="${cursorRow}"][data-cell-col="${cursorCol}"]`
+    );
+    target?.focus({ preventScroll: true });
+  }, [showCursor, cursorRow, cursorCol]);
 
   // Swipe to rotate ship during placement
   const swipeHandlers = useSwipe(() => {
@@ -198,6 +213,15 @@ export function GameBoard({
               const isPreview = previewCells.has(key);
               const isValid = previewCells.get(key) ?? true;
 
+              // Roving tabindex: by default only (0,0) is in the tab order.
+              // Once the player activates the keyboard cursor with arrow
+              // keys, the cursor cell becomes the single tab stop.  All
+              // other cells stay reachable via arrow keys / imperative focus.
+              const isCursorCell = cursorRow === rowIdx && cursorCol === colIdx;
+              const isFocusable = showCursor
+                ? isCursorCell
+                : rowIdx === 0 && colIdx === 0;
+
               return (
                 <div key={key} ref={rowIdx === 0 && colIdx === 0 ? cellRef : undefined} role="gridcell">
                   <Cell
@@ -223,7 +247,8 @@ export function GameBoard({
                         ? lastAttackResult
                         : null
                     }
-                    isCursor={showCursor && cursorRow === rowIdx && cursorCol === colIdx}
+                    isCursor={showCursor && isCursorCell}
+                    focusable={isFocusable}
                   />
                 </div>
               );

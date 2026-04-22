@@ -1,6 +1,7 @@
 import { X, Map } from 'lucide-react';
 import { BOARD_SIZE, ROW_LABELS, COL_LABELS } from '../engine/constants';
 import type { Board } from '../engine/types';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface AttackHeatmapProps {
   board: Board;
@@ -9,6 +10,7 @@ interface AttackHeatmapProps {
 }
 
 export function AttackHeatmap({ board, onClose, title = 'TACTICAL MAP' }: AttackHeatmapProps) {
+  useEscapeKey(onClose);
   let hits = 0;
   let misses = 0;
   let total = 0;

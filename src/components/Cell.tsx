@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, memo } from 'react';
 import { type CellState } from '../engine/types';
-import { ROW_LABELS, COL_LABELS } from '../engine/constants';
+import { ROW_LABELS, COL_LABELS, CELL_ANIMATION_MS } from '../engine/constants';
 
 interface CellProps {
   row: number;
@@ -18,6 +18,14 @@ interface CellProps {
   hideShipFill?: boolean;
   animating?: 'hit' | 'miss' | 'sunk' | null;
   isCursor?: boolean;
+  /**
+   * Whether this cell participates in the tab order (roving tabindex).
+   * When false, the cell is still focusable via arrow-key navigation /
+   * imperative focus, but `Tab` will skip it.  When undefined, falls back
+   * to the legacy behaviour of placing every interactive cell in the tab
+   * order (used by non-grid contexts).
+   */
+  focusable?: boolean;
 }
 
 const PARTICLE_DIRECTIONS = [
@@ -47,6 +55,7 @@ export const Cell = memo(function Cell({
   hideShipFill = false,
   animating = null,
   isCursor = false,
+  focusable,
 }: CellProps) {
   const [activeAnim, setActiveAnim] = useState<'hit' | 'miss' | 'sunk' | null>(null);
   const prevStateRef = useRef<CellState>(state);
@@ -54,7 +63,7 @@ export const Cell = memo(function Cell({
   useEffect(() => {
     if (animating) {
       setActiveAnim(animating);
-      const timer = setTimeout(() => setActiveAnim(null), 600);
+      const timer = setTimeout(() => setActiveAnim(null), CELL_ANIMATION_MS);
       return () => clearTimeout(timer);
     }
   }, [animating]);
@@ -65,7 +74,7 @@ export const Cell = memo(function Cell({
     prevStateRef.current = state;
     if ((prev === 'empty' || prev === 'ship') && (state === 'hit' || state === 'miss' || state === 'sunk')) {
       setActiveAnim(state);
-      const timer = setTimeout(() => setActiveAnim(null), 600);
+      const timer = setTimeout(() => setActiveAnim(null), CELL_ANIMATION_MS);
       return () => clearTimeout(timer);
     }
   }, [state]);
@@ -102,21 +111,49 @@ export const Cell = memo(function Cell({
     }
   };
 
-  // Build an accessible label: "Row A, Column 3 — hit"
-  const cellLabel = `Row ${ROW_LABELS[row]}, Column ${COL_LABELS[col]} — ${state}`;
+  // Accessible label — never leak enemy ship positions.
+  // On the opponent's board, a 'ship' cell is visually hidden as ocean, so it
+  // must read as water to screen readers too.  Otherwise a screen-reader user
+  // could locate every enemy ship by tabbing the grid.
+  const a11yState: CellState = !isPlayerBoard && state === 'ship' ? 'empty' : state;
+  const STATE_WORDS: Record<CellState, string> = {
+    empty: 'water',
+    ship: 'your ship',
+    hit: 'hit',
+    miss: 'miss',
+    sunk: 'sunk',
+  };
+  const cellLabel = `Row ${ROW_LABELS[row]}, Column ${COL_LABELS[col]}, ${STATE_WORDS[a11yState]}`;
+
+  const interactive = !disabled && !!onClick;
+  // Roving tabindex: when the parent grid manages focus, only the active cell
+  // is in the tab order (focusable=true).  All other cells use -1 so Tab
+  // doesn't step through 100 elements.  Legacy (focusable=undefined) callers
+  // keep the old "all cells tabbable" behaviour.
+  const resolvedTabIndex = interactive
+    ? (focusable === undefined ? 0 : focusable ? 0 : -1)
+    : undefined;
 
   return (
     <div
       className={`${getClassName()}${isCursor ? ' cell-cursor' : ''}`}
+      data-cell-row={row}
+      data-cell-col={col}
       onClick={!disabled ? onClick : undefined}
       onMouseEnter={onHover}
       onDragOver={onDragOver}
       onDrop={onDrop}
-      role={!disabled && onClick ? 'button' : undefined}
-      tabIndex={!disabled && onClick ? 0 : undefined}
+      role={interactive ? 'button' : undefined}
+      tabIndex={resolvedTabIndex}
       aria-label={cellLabel}
+      aria-disabled={disabled || undefined}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' && !disabled && onClick) onClick();
+        if (!interactive) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          // Prevent the page from scrolling when Space activates the cell.
+          e.preventDefault();
+          onClick?.();
+        }
       }}
     >
       {/* Hit explosion particles */}
