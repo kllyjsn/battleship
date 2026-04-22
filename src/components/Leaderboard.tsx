@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { X, Trophy, Globe, Monitor, Loader2, AlertTriangle } from 'lucide-react';
 import { getLeaderboard, getOnlineLeaderboard } from '../lib/leaderboard';
 import type { LeaderboardEntry, Period } from '../lib/leaderboard';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface LeaderboardProps {
   onClose: () => void;
@@ -97,6 +98,7 @@ function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
 }
 
 export function Leaderboard({ onClose }: LeaderboardProps) {
+  useEscapeKey(onClose);
   const [period, setPeriod] = useState<Period>('day');
   const [source, setSource] = useState<Source>('local');
   const [globalEntries, setGlobalEntries] = useState<LeaderboardEntry[]>([]);

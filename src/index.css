@@ -361,6 +361,41 @@ button:focus-visible {
   animation: rankUpShine 2s ease-in-out 0.5s;
 }
 
+/* ── Reduced-motion preferences (WCAG 2.3.3) ──
+   Users who set prefers-reduced-motion expect animations, parallax and
+   autoplay effects to be minimised.  Keep the CRT/ocean atmosphere present
+   but disable shakes, sweeps and long-running loops. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Keep the CRT scanline overlay static — no vertical sweep. */
+  .crt-overlay { background-size: auto; }
+
+  /* Cancel motion-heavy continuous loops entirely. */
+  .sonar-sweep,
+  .sonar-pulse,
+  .cell-ocean-shimmer,
+  .glow-pulse,
+  .danger-zone-border,
+  .rank-up-shine,
+  .cell-cursor,
+  .screen-shake {
+    animation: none !important;
+  }
+
+  .cell-ocean-shimmer {
+    background-image: none;
+    background-color: var(--cell-empty);
+  }
+}
+
 /* ── Ship hit/sunk notification animations ── */
 @keyframes shipNotifHitIn {
   0% { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.9); }

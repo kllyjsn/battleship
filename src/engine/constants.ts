@@ -53,3 +53,10 @@ export const DELAY_BEFORE_AI_LABEL_MS = 500;
 export const DELAY_BEFORE_AI_SHOT_MS = 600;
 /** Delay after AI shot before player regains control. */
 export const DELAY_AFTER_AI_SHOT_MS = 800;
+
+// ── Animation durations (ms) ──
+
+/** How long hit/miss/sunk particle effects play on a cell. */
+export const CELL_ANIMATION_MS = 600;
+/** How long the board-shake effect plays when a ship is sunk. */
+export const SHAKE_ANIMATION_MS = 400;

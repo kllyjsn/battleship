@@ -72,6 +72,13 @@ function getRandomUntried(board: Board, tried: Set<string>, checkerboard: boolea
   return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
+/** Placements that pass through a known unsunk hit are far more likely to
+ *  correspond to the real ship, so we weight them heavily.  This keeps the
+ *  hard AI focused on extending existing hits even after target-mode
+ *  exhausts its immediate adjacents (e.g. when a second ship clipped into
+ *  the first, or when the orientation-walker overshot). */
+const HIT_OVERLAP_WEIGHT = 50;
+
 function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Position | null {
   const density: number[][] = Array.from({ length: BOARD_SIZE }, () =>
     Array(BOARD_SIZE).fill(0)
@@ -86,17 +93,20 @@ function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Po
     for (let r = 0; r < BOARD_SIZE; r++) {
       for (let c = 0; c <= BOARD_SIZE - size; c++) {
         let valid = true;
+        let overlapsHit = false;
         for (let i = 0; i < size; i++) {
           const state = board[r][c + i].state;
           if (state === 'miss' || state === 'sunk') {
             valid = false;
             break;
           }
+          if (state === 'hit') overlapsHit = true;
         }
         if (valid) {
+          const weight = overlapsHit ? HIT_OVERLAP_WEIGHT : 1;
           for (let i = 0; i < size; i++) {
             if (!tried.has(posKey(r, c + i))) {
-              density[r][c + i]++;
+              density[r][c + i] += weight;
             }
           }
         }
@@ -106,17 +116,20 @@ function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Po
     for (let r = 0; r <= BOARD_SIZE - size; r++) {
       for (let c = 0; c < BOARD_SIZE; c++) {
         let valid = true;
+        let overlapsHit = false;
         for (let i = 0; i < size; i++) {
           const state = board[r + i][c].state;
           if (state === 'miss' || state === 'sunk') {
             valid = false;
             break;
           }
+          if (state === 'hit') overlapsHit = true;
         }
         if (valid) {
+          const weight = overlapsHit ? HIT_OVERLAP_WEIGHT : 1;
           for (let i = 0; i < size; i++) {
             if (!tried.has(posKey(r + i, c))) {
-              density[r + i][c]++;
+              density[r + i][c] += weight;
             }
           }
         }

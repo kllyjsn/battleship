@@ -117,8 +117,14 @@ export function ShipRoster({
               onClick={() => !placed && onSelectShip(def.id)}
               role="button"
               tabIndex={placed ? -1 : 0}
+              aria-pressed={selected}
+              aria-disabled={placed || undefined}
+              aria-label={`${def.name}, size ${def.size}${placed ? ', placed' : selected ? ', selected' : ''}`}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !placed) onSelectShip(def.id);
+                if ((e.key === 'Enter' || e.key === ' ') && !placed) {
+                  e.preventDefault();
+                  onSelectShip(def.id);
+                }
               }}
               className={`w-full flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded transition-all ${
                 placed

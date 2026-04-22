@@ -4,6 +4,7 @@ import { STORAGE_KEYS, getSessionName, setSessionName, getApiBase, isSoundEnable
 import { clearStats } from '../lib/stats';
 import { getAllThemes, getTheme, saveTheme, applyTheme } from '../lib/themes';
 import { ConfirmDialog } from './ConfirmDialog';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface SettingsPanelProps {
   currentTheme: string;
@@ -15,6 +16,9 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
   const [callsign, setCallsign] = useState(getSessionName());
   const [soundEnabled, setSoundEnabled] = useState(isSoundEnabled);
   const [confirmAction, setConfirmAction] = useState<'stats' | 'achievements' | 'all' | null>(null);
+  // Only allow Escape to close the panel when no inner confirm dialog is open
+  // (that dialog owns Escape while visible).
+  useEscapeKey(() => { if (!confirmAction) onClose(); });
   const themes = getAllThemes();
 
   const handleCallsignChange = (value: string) => {

@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { getAllThemes, getTheme, saveTheme, applyTheme } from '../lib/themes';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface ThemeSelectorProps {
   currentTheme: string;
@@ -8,6 +9,7 @@ interface ThemeSelectorProps {
 }
 
 export function ThemeSelector({ currentTheme, onSelectTheme, onClose }: ThemeSelectorProps) {
+  useEscapeKey(onClose);
   const themes = getAllThemes();
 
   const handleSelect = (themeId: string) => {
