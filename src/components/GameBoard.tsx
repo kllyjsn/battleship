@@ -61,6 +61,30 @@ export function GameBoard({
   const [cellSize, setCellSize] = useState({ w: 40, h: 40 });
   const [gridOffset, setGridOffset] = useState({ x: 0, y: 0 });
 
+  // ── Roving tabindex (WAI-ARIA grid pattern) ──
+  // With 100 cells per grid a naive tabIndex=0 on every cell creates a
+  // hostile keyboard experience — Tab cycles through 100+ stops. Instead we
+  // mark only the "cursor" cell as tabbable (tabIndex=0); the rest are -1.
+  // When the user arrows to a new cell and the grid already owns focus, we
+  // move DOM focus to the new cursor cell so arrow navigation feels native.
+  const useRovingTabindex = cursorRow !== undefined && cursorCol !== undefined;
+  const rovingRowStop = useRovingTabindex ? (cursorRow as number) : 0;
+  const rovingColStop = useRovingTabindex ? (cursorCol as number) : 0;
+  const cellRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+  const setCellRef = useCallback((row: number, col: number) => (el: HTMLDivElement | null) => {
+    cellRefs.current.set(`${row},${col}`, el);
+  }, []);
+
+  useEffect(() => {
+    if (!useRovingTabindex) return;
+    const active = document.activeElement;
+    if (!active || !gridRef.current?.contains(active)) return;
+    // Focus is already inside the grid (user is navigating with arrows) —
+    // move focus to the new cursor cell so screen readers announce it.
+    const el = cellRefs.current.get(`${rovingRowStop},${rovingColStop}`);
+    el?.focus({ preventScroll: true });
+  }, [useRovingTabindex, rovingRowStop, rovingColStop]);
+
   // Screen shake on sunk
   useEffect(() => {
     if (lastAttackResult === 'sunk') {
@@ -198,9 +222,18 @@ export function GameBoard({
               const isPreview = previewCells.has(key);
               const isValid = previewCells.get(key) ?? true;
 
+              const interactive = !disabled && !!onCellClick;
+              // Roving tabindex: exactly one cell per grid is the tab stop.
+              // Non-interactive grids fall back to the legacy "all cells" behavior.
+              const cellTabIndex = useRovingTabindex
+                ? (interactive
+                    ? (rowIdx === rovingRowStop && colIdx === rovingColStop ? 0 : -1)
+                    : -1)
+                : undefined;
               return (
                 <div key={key} ref={rowIdx === 0 && colIdx === 0 ? cellRef : undefined} role="gridcell">
                   <Cell
+                    ref={setCellRef(rowIdx, colIdx)}
                     row={rowIdx}
                     col={colIdx}
                     state={hideEnemyShots && isPlayerBoard && !isPlacing && cell.state === 'miss' ? 'empty' : cell.state}
@@ -224,6 +257,7 @@ export function GameBoard({
                         : null
                     }
                     isCursor={showCursor && cursorRow === rowIdx && cursorCol === colIdx}
+                    tabIndex={cellTabIndex}
                   />
                 </div>
               );

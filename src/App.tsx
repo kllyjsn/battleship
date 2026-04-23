@@ -20,7 +20,12 @@ function getRoomCodeFromURL(): string | null {
 }
 
 function App() {
-  const initialRoom = getRoomCodeFromURL();
+  // Snapshot the room code from the URL exactly once at mount. Using a
+  // lazy-initialized state cell (instead of a plain `const`) guarantees the
+  // value is stable across re-renders — `handleBack` rewrites the URL which
+  // would otherwise cause `getRoomCodeFromURL()` to flip values between
+  // renders and surprise the effects that depend on it.
+  const [initialRoom] = useState<string | null>(getRoomCodeFromURL);
   const [screen, setScreen] = useState<Screen>(initialRoom ? 'multiplayer' : 'menu');
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [joinRoomCode, setJoinRoomCode] = useState<string | null>(initialRoom);
@@ -34,7 +39,9 @@ function App() {
     applyTheme(themeId);
   }, []);
 
-  // On mount, check for a saved game and prompt the user
+  // On mount, check for a saved game and prompt the user. `initialRoom` is
+  // lazy-initialized state (see above) so it is stable across re-renders and
+  // the effect really does run exactly once.
   useEffect(() => {
     if (initialRoom) return; // Don't interrupt multiplayer join flow
     const saved = loadSavedGame();
@@ -42,7 +49,7 @@ function App() {
       setPendingSave(saved);
       setShowResumePrompt(true);
     }
-  }, []);
+  }, [initialRoom]);
 
   const handleResume = () => {
     if (pendingSave) {

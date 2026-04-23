@@ -3,6 +3,7 @@ import { X, Play, Pause, SkipForward, SkipBack, Gauge } from 'lucide-react';
 import type { Board, Ship, Cell } from '../engine/types';
 import type { ReplayData } from '../lib/replay';
 import { BOARD_SIZE } from '../engine/constants';
+import { useEscapeToClose } from '../hooks/useEscapeToClose';
 
 interface GameReplayProps {
   replayData: ReplayData;
@@ -40,6 +41,7 @@ function coordLabel(row: number, col: number): string {
 }
 
 export function GameReplay({ replayData, onClose }: GameReplayProps) {
+  useEscapeToClose(onClose);
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);

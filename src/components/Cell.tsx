@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, memo } from 'react';
+import { useState, useEffect, useRef, memo, forwardRef } from 'react';
 import { type CellState } from '../engine/types';
 import { ROW_LABELS, COL_LABELS } from '../engine/constants';
 
@@ -18,6 +18,13 @@ interface CellProps {
   hideShipFill?: boolean;
   animating?: 'hit' | 'miss' | 'sunk' | null;
   isCursor?: boolean;
+  /**
+   * Explicit tab-stop for WAI-ARIA grid roving tabindex. When a grid is
+   * keyboard-active, only the "cursor" cell should be tabbable; arrow
+   * keys move the cursor between cells. Leave undefined to fall back to
+   * "any interactive cell is tabbable" (legacy behavior).
+   */
+  tabIndex?: number;
 }
 
 const PARTICLE_DIRECTIONS = [
@@ -31,7 +38,7 @@ const PARTICLE_DIRECTIONS = [
   { dx: '0px', dy: '18px' },
 ];
 
-export const Cell = memo(function Cell({
+export const Cell = memo(forwardRef<HTMLDivElement, CellProps>(function Cell({
   row,
   col,
   state,
@@ -47,7 +54,8 @@ export const Cell = memo(function Cell({
   hideShipFill = false,
   animating = null,
   isCursor = false,
-}: CellProps) {
+  tabIndex,
+}: CellProps, ref) {
   const [activeAnim, setActiveAnim] = useState<'hit' | 'miss' | 'sunk' | null>(null);
   const prevStateRef = useRef<CellState>(state);
 
@@ -104,19 +112,30 @@ export const Cell = memo(function Cell({
 
   // Build an accessible label: "Row A, Column 3 — hit"
   const cellLabel = `Row ${ROW_LABELS[row]}, Column ${COL_LABELS[col]} — ${state}`;
+  const interactive = !disabled && !!onClick;
+  // Prefer the explicit roving-tabindex prop when provided; otherwise fall
+  // back to "any interactive cell is tabbable" so callers that don't opt
+  // into the roving pattern still get keyboard focusability.
+  const resolvedTabIndex = tabIndex !== undefined ? tabIndex : (interactive ? 0 : undefined);
 
   return (
     <div
+      ref={ref}
       className={`${getClassName()}${isCursor ? ' cell-cursor' : ''}`}
       onClick={!disabled ? onClick : undefined}
       onMouseEnter={onHover}
       onDragOver={onDragOver}
       onDrop={onDrop}
-      role={!disabled && onClick ? 'button' : undefined}
-      tabIndex={!disabled && onClick ? 0 : undefined}
+      role={interactive ? 'button' : undefined}
+      tabIndex={resolvedTabIndex}
       aria-label={cellLabel}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' && !disabled && onClick) onClick();
+        if (!interactive || !onClick) return;
+        // Enter and Space both activate per WAI-ARIA button semantics.
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
       }}
     >
       {/* Hit explosion particles */}
@@ -196,4 +215,4 @@ export const Cell = memo(function Cell({
       )}
     </div>
   );
-});
+}));
