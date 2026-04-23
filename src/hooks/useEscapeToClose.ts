@@ -16,7 +16,11 @@ export function useEscapeToClose(onClose: () => void, active: boolean = true): v
     if (!active) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        e.stopPropagation();
+        // stopImmediatePropagation (not stopPropagation) prevents other
+        // window-level Escape handlers mounted by sibling modals from
+        // firing — stopPropagation would be a no-op since `window` is
+        // already the top of the propagation chain.
+        e.stopImmediatePropagation();
         onClose();
       }
     };
