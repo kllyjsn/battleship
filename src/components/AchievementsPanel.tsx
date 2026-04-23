@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { X, Award } from 'lucide-react';
 import { ACHIEVEMENTS, getUnlockedAchievements } from '../lib/achievements';
 import type { AchievementDef } from '../lib/achievements';
+import { useEscapeToClose } from '../hooks/useEscapeToClose';
 
 interface AchievementsPanelProps {
   onClose: () => void;
@@ -17,6 +18,7 @@ const CATEGORY_LABELS: Record<AchievementDef['category'], string> = {
 const CATEGORY_ORDER: AchievementDef['category'][] = ['combat', 'skill', 'social', 'milestone'];
 
 export function AchievementsPanel({ onClose }: AchievementsPanelProps) {
+  useEscapeToClose(onClose);
   const unlocked = useMemo(() => {
     const list = getUnlockedAchievements();
     return new Set(list.map(a => a.id));
@@ -35,11 +37,18 @@ export function AchievementsPanel({ onClose }: AchievementsPanelProps) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.7)' }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Achievements"
+    >
       <div className="metal-panel rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto animate-fadeIn relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-500 hover:text-green-400 transition-colors"
+          aria-label="Close achievements (Esc)"
         >
           <X size={20} />
         </button>

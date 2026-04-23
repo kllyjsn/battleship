@@ -34,7 +34,9 @@ function App() {
     applyTheme(themeId);
   }, []);
 
-  // On mount, check for a saved game and prompt the user
+  // On mount, check for a saved game and prompt the user. Runs once; the
+  // `initialRoom` value is snapshotted from URL at construct time so the
+  // exhaustive-deps lint is safely satisfied by including it.
   useEffect(() => {
     if (initialRoom) return; // Don't interrupt multiplayer join flow
     const saved = loadSavedGame();
@@ -42,7 +44,7 @@ function App() {
       setPendingSave(saved);
       setShowResumePrompt(true);
     }
-  }, []);
+  }, [initialRoom]);
 
   const handleResume = () => {
     if (pendingSave) {

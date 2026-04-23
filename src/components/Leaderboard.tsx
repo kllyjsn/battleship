@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { X, Trophy, Globe, Monitor, Loader2, AlertTriangle } from 'lucide-react';
 import { getLeaderboard, getOnlineLeaderboard } from '../lib/leaderboard';
 import type { LeaderboardEntry, Period } from '../lib/leaderboard';
+import { useEscapeToClose } from '../hooks/useEscapeToClose';
 
 interface LeaderboardProps {
   onClose: () => void;
@@ -97,6 +98,7 @@ function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
 }
 
 export function Leaderboard({ onClose }: LeaderboardProps) {
+  useEscapeToClose(onClose);
   const [period, setPeriod] = useState<Period>('day');
   const [source, setSource] = useState<Source>('local');
   const [globalEntries, setGlobalEntries] = useState<LeaderboardEntry[]>([]);
@@ -126,11 +128,18 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
   const entries = source === 'local' ? localEntries : globalEntries;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.7)' }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Leaderboard"
+    >
       <div className="metal-panel rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto animate-fadeIn relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-500 hover:text-green-400 transition-colors"
+          aria-label="Close leaderboard (Esc)"
         >
           <X size={20} />
         </button>
