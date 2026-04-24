@@ -218,6 +218,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === '?') {
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
         setShowShortcuts(prev => !prev);
         return;
       }
