@@ -379,10 +379,10 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
       }
 
       setIsPlayerTurn(false);
-      setMobileBoard('player');
 
       // AI turn after delay — constants from engine/constants.ts
       setTimeout(() => {
+        setMobileBoard('player');
         setMessage("Opponent's turn...");
 
         setTimeout(() => {
@@ -446,8 +446,8 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
           }
 
           setIsPlayerTurn(true);
-          setMobileBoard('opponent');
           setTimeout(() => {
+            setMobileBoard('opponent');
             setMessage('Your turn — fire at the enemy grid!');
             play('turnStart');
             isProcessingRef.current = false;
