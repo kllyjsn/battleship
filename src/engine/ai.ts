@@ -72,7 +72,15 @@ function getRandomUntried(board: Board, tried: Set<string>, checkerboard: boolea
   return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
-function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Position | null {
+/** Weight multiplier applied to cells adjacent to unsunk hits in hard mode. */
+const HIT_ADJACENCY_BOOST = 3;
+
+function probabilityDensity(
+  board: Board,
+  tried: Set<string>,
+  ships: Ship[],
+  boostNearHits: boolean = false,
+): Position | null {
   const density: number[][] = Array.from({ length: BOARD_SIZE }, () =>
     Array(BOARD_SIZE).fill(0)
   );
@@ -82,41 +90,41 @@ function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Po
     : SHIPS.map(s => s.size);
 
   for (const size of shipSizes) {
-    // horizontal
+    // horizontal placements
     for (let r = 0; r < BOARD_SIZE; r++) {
       for (let c = 0; c <= BOARD_SIZE - size; c++) {
         let valid = true;
+        let touchesHit = false;
         for (let i = 0; i < size; i++) {
           const state = board[r][c + i].state;
-          if (state === 'miss' || state === 'sunk') {
-            valid = false;
-            break;
-          }
+          if (state === 'miss' || state === 'sunk') { valid = false; break; }
+          if (state === 'hit') touchesHit = true;
         }
         if (valid) {
+          const weight = boostNearHits && touchesHit ? HIT_ADJACENCY_BOOST : 1;
           for (let i = 0; i < size; i++) {
             if (!tried.has(posKey(r, c + i))) {
-              density[r][c + i]++;
+              density[r][c + i] += weight;
             }
           }
         }
       }
     }
-    // vertical
+    // vertical placements
     for (let r = 0; r <= BOARD_SIZE - size; r++) {
       for (let c = 0; c < BOARD_SIZE; c++) {
         let valid = true;
+        let touchesHit = false;
         for (let i = 0; i < size; i++) {
           const state = board[r + i][c].state;
-          if (state === 'miss' || state === 'sunk') {
-            valid = false;
-            break;
-          }
+          if (state === 'miss' || state === 'sunk') { valid = false; break; }
+          if (state === 'hit') touchesHit = true;
         }
         if (valid) {
+          const weight = boostNearHits && touchesHit ? HIT_ADJACENCY_BOOST : 1;
           for (let i = 0; i < size; i++) {
             if (!tried.has(posKey(r + i, c))) {
-              density[r + i][c]++;
+              density[r + i][c] += weight;
             }
           }
         }
@@ -224,10 +232,11 @@ export function getAIMove(
 
   if (!target) {
     if (difficulty === 'hard') {
-      target = probabilityDensity(board, newState.triedPositions, opponentShips);
+      target = probabilityDensity(board, newState.triedPositions, opponentShips, true);
+    } else if (difficulty === 'medium') {
+      target = probabilityDensity(board, newState.triedPositions, opponentShips, false);
     }
     if (!target) {
-      // Medium and hard use checkerboard pattern in hunt mode to cover more ground.
       target = getRandomUntried(board, newState.triedPositions, difficulty === 'medium' || difficulty === 'hard');
     }
   }
