@@ -164,13 +164,15 @@ export function GameBoard({
   const handleTouchEnd = useCallback(() => {
     if (!touchDragActive.current || !hoverPos) { touchDragActive.current = false; return; }
     touchDragActive.current = false;
+    // Skip placement if the touch was consumed as a swipe-to-rotate gesture.
+    if (swipeHandlers.didSwipe.current) { setHoverPos(null); return; }
     if (onDropShip) {
       onDropShip(hoverPos.row, hoverPos.col);
     } else if (onCellClick) {
       onCellClick(hoverPos.row, hoverPos.col);
     }
     setHoverPos(null);
-  }, [hoverPos, onDropShip, onCellClick]);
+  }, [hoverPos, onDropShip, onCellClick, swipeHandlers.didSwipe]);
 
   // Determine which cells have ship images (for hiding default ship fill)
   const hasShipImages = isPlayerBoard && ships.length > 0;

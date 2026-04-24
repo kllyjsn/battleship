@@ -3,6 +3,8 @@ import { useRef, useCallback } from 'react';
 interface SwipeHandlers {
   onTouchStart: (e: React.TouchEvent) => void;
   onTouchEnd: (e: React.TouchEvent) => void;
+  /** True if the last completed touch was consumed as a swipe gesture. */
+  didSwipe: React.RefObject<boolean>;
 }
 
 /**
@@ -12,6 +14,7 @@ interface SwipeHandlers {
 export function useSwipe(onSwipe: (direction: 'left' | 'right') => void, threshold = 50): SwipeHandlers {
   const startX = useRef(0);
   const startY = useRef(0);
+  const didSwipe = useRef(false);
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0];
@@ -26,9 +29,12 @@ export function useSwipe(onSwipe: (direction: 'left' | 'right') => void, thresho
 
     // Only trigger if horizontal movement exceeds threshold and is greater than vertical
     if (Math.abs(dx) > threshold && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      didSwipe.current = true;
       onSwipe(dx > 0 ? 'right' : 'left');
+    } else {
+      didSwipe.current = false;
     }
   }, [onSwipe, threshold]);
 
-  return { onTouchStart, onTouchEnd };
+  return { onTouchStart, onTouchEnd, didSwipe };
 }
