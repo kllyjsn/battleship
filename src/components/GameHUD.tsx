@@ -94,6 +94,17 @@ export function GameHUD({
               />
             )}
             {message}
+            {phase === 'battle' && !isPlayerTurn && (
+              <span className="inline-flex gap-0.5 ml-1" aria-hidden="true">
+                {[0, 1, 2].map(i => (
+                  <span
+                    key={i}
+                    className="w-1 h-1 rounded-full bg-amber-400"
+                    style={{ animation: `glowPulse 1s ease-in-out ${i * 0.2}s infinite` }}
+                  />
+                ))}
+              </span>
+            )}
           </span>
         </div>
 

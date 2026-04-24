@@ -1,7 +1,7 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { STORAGE_KEYS, getSessionName, getApiBase } from '../lib/storageKeys';
 
-type SoundType = 'hit' | 'miss' | 'sunk' | 'place' | 'click' | 'win' | 'lose' | 'splash' | 'sonarPing';
+type SoundType = 'hit' | 'miss' | 'sunk' | 'place' | 'click' | 'win' | 'lose' | 'splash' | 'sonarPing' | 'turnStart';
 
 const audioContext = typeof window !== 'undefined' ? new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)() : null;
 
@@ -284,6 +284,11 @@ const SOUNDS: Record<SoundType, () => void> = {
     playFilteredNoise(0.4, 0.05, 500, 'lowpass', 2);
     playTone(250, 0.2, 'sine', 0.03, 0.02);
     setTimeout(() => playHydrophoneStatic(0.03), 150);
+  },
+
+  turnStart: () => {
+    playTone(1200, 0.08, 'sine', 0.06);
+    setTimeout(() => playTone(1600, 0.06, 'sine', 0.05), 60);
   },
 };
 

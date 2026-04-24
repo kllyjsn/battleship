@@ -132,6 +132,50 @@ export function GameBoard({
     }, 0);
   }, [onDropShip, onCellClick, onDragSelectShip]);
 
+  // Touch-drag placement: track touch moves over the grid and update hover position.
+  const touchDragActive = useRef(false);
+  const hoverPosRef = useRef<{ row: number; col: number } | null>(null);
+
+  const touchCellFromEvent = useCallback((e: React.TouchEvent): { row: number; col: number } | null => {
+    const touch = e.touches[0] ?? e.changedTouches[0];
+    const grid = gridRef.current;
+    if (!grid || !touch) return null;
+    const rect = grid.getBoundingClientRect();
+    const col = Math.floor((touch.clientX - rect.left - gridOffset.x) / cellSize.w);
+    const row = Math.floor((touch.clientY - rect.top - gridOffset.y) / cellSize.h);
+    if (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE) return { row, col };
+    return null;
+  }, [gridOffset, cellSize]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!isPlacing || !placingShipSize) return;
+    touchDragActive.current = true;
+    const pos = touchCellFromEvent(e);
+    if (pos) { hoverPosRef.current = pos; setHoverPos(pos); }
+  }, [isPlacing, placingShipSize, touchCellFromEvent]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchDragActive.current) return;
+    const pos = touchCellFromEvent(e);
+    if (pos) { hoverPosRef.current = pos; setHoverPos(pos); }
+  }, [touchCellFromEvent]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchDragActive.current) return;
+    touchDragActive.current = false;
+    e.preventDefault(); // prevent synthetic click that would double-place
+    const pos = hoverPosRef.current;
+    hoverPosRef.current = null;
+    // Skip placement if the touch was consumed as a swipe-to-rotate gesture.
+    if (swipeHandlers.didSwipe.current || !pos) { setHoverPos(null); return; }
+    if (onDropShip) {
+      onDropShip(pos.row, pos.col);
+    } else if (onCellClick) {
+      onCellClick(pos.row, pos.col);
+    }
+    setHoverPos(null);
+  }, [onDropShip, onCellClick, swipeHandlers.didSwipe]);
+
   // Determine which cells have ship images (for hiding default ship fill)
   const hasShipImages = isPlayerBoard && ships.length > 0;
 
@@ -164,8 +208,9 @@ export function GameBoard({
         role="grid"
         aria-label={`${title} grid`}
         onMouseLeave={() => setHoverPos(null)}
-        onTouchStart={isPlacing ? swipeHandlers.onTouchStart : undefined}
-        onTouchEnd={isPlacing ? swipeHandlers.onTouchEnd : undefined}
+        onTouchStart={isPlacing ? (e) => { swipeHandlers.onTouchStart(e); handleTouchStart(e); } : undefined}
+        onTouchMove={isPlacing ? handleTouchMove : undefined}
+        onTouchEnd={isPlacing ? (e) => { swipeHandlers.onTouchEnd(e); handleTouchEnd(e); } : undefined}
         onDragLeave={(e) => {
           if (!gridRef.current?.contains(e.relatedTarget as Node)) {
             setHoverPos(null);
