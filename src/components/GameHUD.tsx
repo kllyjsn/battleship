@@ -1,4 +1,4 @@
-import { Volume2, VolumeX, ArrowLeft, Crosshair, Flame, AlertTriangle } from 'lucide-react';
+import { Volume2, VolumeX, ArrowLeft, Crosshair, Flame, AlertTriangle, Target, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { MusicVisualizer } from './MusicVisualizer';
 import { loadStats } from '../lib/stats';
@@ -22,6 +22,10 @@ interface GameHUDProps {
   showStreak?: boolean;
   playerShipsRemaining?: number;
   opponentShipsRemaining?: number;
+  shotCount?: number;
+  hitCount?: number;
+  fastMode?: boolean;
+  onToggleFastMode?: () => void;
 }
 
 export function GameHUD({
@@ -40,9 +44,14 @@ export function GameHUD({
   showStreak = false,
   playerShipsRemaining,
   opponentShipsRemaining,
+  shotCount,
+  hitCount,
+  fastMode,
+  onToggleFastMode,
 }: GameHUDProps) {
   const [soundOn, setSoundOn] = useState(isSoundEnabled);
   const displayScore = score ?? 0;
+  const accuracy = shotCount && shotCount > 0 ? ((hitCount ?? 0) / shotCount * 100) : 0;
   const streak = showStreak ? loadStats().currentWinStreak : 0;
   const { rank } = getPlayerRank();
   const dangerZone = phase === 'battle' && (
@@ -112,6 +121,24 @@ export function GameHUD({
                 </div>
               )}
               <div className="w-px h-4 bg-slate-700/50" />
+            </>
+          )}
+          {onToggleFastMode && (
+            <button
+              onClick={onToggleFastMode}
+              className={`p-1 transition-colors ${fastMode ? 'text-amber-400' : 'text-slate-500 hover:text-green-400'}`}
+              title={fastMode ? 'Normal speed' : 'Fast AI turns'}
+            >
+              <Zap size={15} />
+            </button>
+          )}
+          {phase === 'battle' && shotCount !== undefined && shotCount > 0 && (
+            <>
+              <div className="w-px h-4 bg-slate-700/50" />
+              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded metal-panel-light" style={{ border: '1px solid var(--steel-border)' }}>
+                <Target size={13} className="text-green-500/60" />
+                <span className="text-xs font-bold font-mono-crt text-green-400/80">{accuracy.toFixed(0)}%</span>
+              </div>
             </>
           )}
           <MusicVisualizer

@@ -1,5 +1,5 @@
 import type { ShipDefinition, Ship, Orientation } from '../engine/types';
-import { RotateCw, Undo2 } from 'lucide-react';
+import { RotateCw, Undo2, Trash2 } from 'lucide-react';
 import { ShipSVG } from './ShipSVG';
 import React, { useCallback } from 'react';
 
@@ -15,6 +15,7 @@ interface ShipRosterProps {
   isReady: boolean;
   mode: 'placement' | 'battle';
   onUndoShip?: () => void;
+  onClearAll?: () => void;
 }
 
 export function ShipRoster({
@@ -29,6 +30,7 @@ export function ShipRoster({
   isReady,
   mode,
   onUndoShip,
+  onClearAll,
 }: ShipRosterProps) {
   const allPlaced = placedShips.length === shipDefs.length;
   const hasPlacedShips = placedShips.length > 0;
@@ -169,20 +171,36 @@ export function ShipRoster({
         </button>
       </div>
 
-      {onUndoShip && (
-        <button
-          onClick={onUndoShip}
-          disabled={!hasPlacedShips || isReady}
-          className={`w-full flex items-center justify-center gap-2 px-3 py-2 mb-2 sm:mb-3 metal-panel-light rounded text-xs sm:text-sm transition-all font-mono-crt ${
-            hasPlacedShips && !isReady
-              ? 'text-amber-400/80 hover:text-amber-300 hover:ring-1 hover:ring-amber-400/30'
-              : 'text-slate-600 cursor-not-allowed'
-          }`}
-        >
-          <Undo2 size={14} />
-          Undo Last Ship
-        </button>
-      )}
+      <div className="flex gap-2 mb-2 sm:mb-3">
+        {onUndoShip && (
+          <button
+            onClick={onUndoShip}
+            disabled={!hasPlacedShips || isReady}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 metal-panel-light rounded text-xs sm:text-sm transition-all font-mono-crt ${
+              hasPlacedShips && !isReady
+                ? 'text-amber-400/80 hover:text-amber-300 hover:ring-1 hover:ring-amber-400/30'
+                : 'text-slate-600 cursor-not-allowed'
+            }`}
+          >
+            <Undo2 size={14} />
+            Undo
+          </button>
+        )}
+        {onClearAll && (
+          <button
+            onClick={onClearAll}
+            disabled={!hasPlacedShips || isReady}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 metal-panel-light rounded text-xs sm:text-sm transition-all font-mono-crt ${
+              hasPlacedShips && !isReady
+                ? 'text-red-400/80 hover:text-red-300 hover:ring-1 hover:ring-red-400/30'
+                : 'text-slate-600 cursor-not-allowed'
+            }`}
+          >
+            <Trash2 size={14} />
+            Clear All
+          </button>
+        )}
+      </div>
 
       <button
         onClick={onReady}

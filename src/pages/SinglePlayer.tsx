@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { Board, Ship, Difficulty, Orientation, GamePhase, AttackResult, BattleLogEntry } from '../engine/types';
-import { SHIPS, TOTAL_SHIP_CELLS, BOARD_MAX_INDEX, ROW_LABELS, scoreForResult, getAIName, DELAY_BEFORE_AI_LABEL_MS, DELAY_BEFORE_AI_SHOT_MS, DELAY_AFTER_AI_SHOT_MS } from '../engine/constants';
+import { SHIPS, TOTAL_SHIP_CELLS, BOARD_MAX_INDEX, ROW_LABELS, scoreForResult, getAIName, DELAY_BEFORE_AI_LABEL_MS, DELAY_BEFORE_AI_SHOT_MS, DELAY_AFTER_AI_SHOT_MS, FAST_DELAY_BEFORE_AI_LABEL_MS, FAST_DELAY_BEFORE_AI_SHOT_MS, FAST_DELAY_AFTER_AI_SHOT_MS } from '../engine/constants';
 import {
   createEmptyBoard,
   placeShip,
@@ -27,6 +27,7 @@ import { GameReplay } from '../components/GameReplay';
 import { ScorePopup } from '../components/ScorePopup';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ShipNotification } from '../components/ShipNotification';
+import { KeyboardShortcuts } from '../components/KeyboardShortcuts';
 import type { ReplayMove, ReplayData } from '../lib/replay';
 import { saveGameState, clearSavedGame } from '../lib/gamePersistence';
 import type { SavedGameState } from '../lib/gamePersistence';
@@ -96,6 +97,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
   const [cursorPos, setCursorPos] = useState({ row: 0, col: 0 });
   const [showCursor, setShowCursor] = useState(false);
   const [mobileBoard, setMobileBoard] = useState<'player' | 'opponent'>('opponent');
+  const [fastMode, setFastMode] = useState(false);
   const handlePlayerAttackRef = useRef<(row: number, col: number) => void>(() => {});
   const [scorePopup, setScorePopup] = useState({ points: 0, label: '', trigger: 0 });
   const [showConfirmLeave, setShowConfirmLeave] = useState(false);
@@ -171,6 +173,15 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
     setSelectedShipId(lastShip.id);
     play('click');
   }, [playerShips, playerBoard, play]);
+
+  // Clear all placed ships
+  const handleClearAll = useCallback(() => {
+    if (playerShips.length === 0) return;
+    setPlayerBoard(createEmptyBoard());
+    setPlayerShips([]);
+    setSelectedShipId(SHIPS[0].id);
+    play('click');
+  }, [playerShips.length, play]);
 
   // Keyboard handling: arrow keys + Enter in both placement and battle phases
   useEffect(() => {
@@ -270,6 +281,45 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
     play('click');
   }, [playerShips, opponentShips, play]);
 
+  const finishGame = useCallback((result: 'win' | 'loss', shipsLostCount: number) => {
+    setPhase('gameover');
+    setWinner(result === 'win' ? 'player' : 'opponent');
+    setMessage(result === 'win' ? 'You win!' : 'You lose!');
+    play(result === 'win' ? 'win' : 'lose');
+    if (result === 'win') haptics.win(); else haptics.lose();
+    gameDurationRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
+    saveGameResult({
+      mode: 'single',
+      difficulty,
+      result,
+      playerShots: shotCountRef.current,
+      playerHits: hitCountRef.current,
+      opponentName: aiName,
+      durationSeconds: gameDurationRef.current,
+    });
+    clearSavedGame();
+    const unlocked = checkAchievements({
+      result,
+      mode: 'single',
+      difficulty,
+      playerShots: shotCountRef.current,
+      playerHits: hitCountRef.current,
+      durationSeconds: gameDurationRef.current,
+      playerShipsLost: shipsLostCount,
+      totalPlayerShips: SHIPS.length,
+    });
+    if (unlocked.length > 0) setNewAchievements(unlocked);
+    setReplayData({
+      playerShipPlacements: playerShipsSnapshotRef.current,
+      opponentShipPlacements: opponentShipsSnapshotRef.current,
+      moves: [...replayMovesRef.current],
+      winner: result === 'win' ? 'player' : 'opponent',
+      difficulty,
+      date: new Date().toISOString(),
+    });
+    isProcessingRef.current = false;
+  }, [play, haptics, difficulty, aiName]);
+
   const handlePlayerAttack = useCallback(
     (row: number, col: number) => {
       if (phase !== 'battle' || !isPlayerTurn || isProcessingRef.current) return;
@@ -328,51 +378,19 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
       }
 
       if (allShipsSunk(ships)) {
-        setPhase('gameover');
-        setWinner('player');
-        setMessage('You win!');
-        play('win');
-        haptics.win();
-        gameDurationRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
-        saveGameResult({
-          mode: 'single',
-          difficulty,
-          result: 'win',
-          playerShots: shotCountRef.current,
-          playerHits: hitCountRef.current,
-          opponentName: aiName,
-          durationSeconds: gameDurationRef.current,
-        });
-        clearSavedGame();
-        const playerShipsLost = playerShips.filter(s => s.sunk).length;
-        const unlocked = checkAchievements({
-          result: 'win',
-          mode: 'single',
-          difficulty,
-          playerShots: shotCountRef.current,
-          playerHits: hitCountRef.current,
-          durationSeconds: gameDurationRef.current,
-          playerShipsLost,
-          totalPlayerShips: SHIPS.length,
-        });
-        if (unlocked.length > 0) setNewAchievements(unlocked);
-        setReplayData({
-          playerShipPlacements: playerShipsSnapshotRef.current,
-          opponentShipPlacements: opponentShipsSnapshotRef.current,
-          moves: [...replayMovesRef.current],
-          winner: 'player',
-          difficulty,
-          date: new Date().toISOString(),
-        });
-        isProcessingRef.current = false;
+        finishGame('win', playerShips.filter(s => s.sunk).length);
         return;
       }
 
       setIsPlayerTurn(false);
 
       // AI turn after delay — constants from engine/constants.ts
+      const labelDelay = fastMode ? FAST_DELAY_BEFORE_AI_LABEL_MS : DELAY_BEFORE_AI_LABEL_MS;
+      const shotDelay = fastMode ? FAST_DELAY_BEFORE_AI_SHOT_MS : DELAY_BEFORE_AI_SHOT_MS;
       setTimeout(() => {
         setMessage("Opponent's turn...");
+        // Auto-switch mobile view so the player sees where the AI fires
+        setMobileBoard('player');
 
         setTimeout(() => {
           const { position, newState } = getAIMove(
@@ -430,53 +448,21 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
           }
 
           if (allShipsSunk(aiResult.ships)) {
-            setPhase('gameover');
-            setWinner('opponent');
-            setMessage('You lose!');
-            play('lose');
-            haptics.lose();
-            gameDurationRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
-            saveGameResult({
-              mode: 'single',
-              difficulty,
-              result: 'loss',
-              playerShots: shotCountRef.current,
-              playerHits: hitCountRef.current,
-              opponentName: aiName,
-              durationSeconds: gameDurationRef.current,
-            });
-            clearSavedGame();
-            checkAchievements({
-              result: 'loss',
-              mode: 'single',
-              difficulty,
-              playerShots: shotCountRef.current,
-              playerHits: hitCountRef.current,
-              durationSeconds: gameDurationRef.current,
-              playerShipsLost: SHIPS.length,
-              totalPlayerShips: SHIPS.length,
-            });
-            setReplayData({
-              playerShipPlacements: playerShipsSnapshotRef.current,
-              opponentShipPlacements: opponentShipsSnapshotRef.current,
-              moves: [...replayMovesRef.current],
-              winner: 'opponent',
-              difficulty,
-              date: new Date().toISOString(),
-            });
-            isProcessingRef.current = false;
+            finishGame('loss', SHIPS.length);
             return;
           }
 
           setIsPlayerTurn(true);
+          const afterDelay = fastMode ? FAST_DELAY_AFTER_AI_SHOT_MS : DELAY_AFTER_AI_SHOT_MS;
           setTimeout(() => {
             setMessage('Your turn — fire at the enemy grid!');
+            setMobileBoard('opponent');
             isProcessingRef.current = false;
-          }, DELAY_AFTER_AI_SHOT_MS);
-        }, DELAY_BEFORE_AI_SHOT_MS);
-      }, DELAY_BEFORE_AI_LABEL_MS);
+          }, afterDelay);
+        }, shotDelay);
+      }, labelDelay);
     },
-    [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play, haptics, aiName]
+    [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play, haptics, fastMode, finishGame]
   );
 
   // Keep ref in sync for keyboard handler
@@ -578,6 +564,10 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
         showStreak={true}
         playerShipsRemaining={playerShips.filter(s => !s.sunk).length}
         opponentShipsRemaining={opponentShips.filter(s => !s.sunk).length}
+        shotCount={shotCountRef.current}
+        hitCount={hitCountRef.current}
+        fastMode={fastMode}
+        onToggleFastMode={() => setFastMode(f => !f)}
       />
 
       <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-3 sm:gap-4 lg:gap-8 p-2 sm:p-4">
@@ -611,6 +601,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
               isReady={false}
               mode="placement"
               onUndoShip={handleUndoShip}
+              onClearAll={handleClearAll}
             />
           </div>
         ) : (
@@ -722,6 +713,8 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
           onCancel={() => setShowConfirmLeave(false)}
         />
       )}
+
+      <KeyboardShortcuts phase={phase} />
     </div>
   );
 }
