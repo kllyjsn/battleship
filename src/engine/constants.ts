@@ -53,3 +53,8 @@ export const DELAY_BEFORE_AI_LABEL_MS = 500;
 export const DELAY_BEFORE_AI_SHOT_MS = 600;
 /** Delay after AI shot before player regains control. */
 export const DELAY_AFTER_AI_SHOT_MS = 800;
+
+// ── Fast-mode timing (roughly 3× faster) ──
+export const FAST_DELAY_BEFORE_AI_LABEL_MS = 150;
+export const FAST_DELAY_BEFORE_AI_SHOT_MS = 200;
+export const FAST_DELAY_AFTER_AI_SHOT_MS = 250;
