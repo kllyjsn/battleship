@@ -260,6 +260,18 @@ body {
   z-index: 20;
 }
 
+/* ── Mobile shot targeting indicator ── */
+@keyframes targetPulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(255, 60, 60, 0.5), inset 0 0 4px rgba(255, 60, 60, 0.2); }
+  50% { box-shadow: 0 0 12px rgba(255, 60, 60, 0.8), inset 0 0 8px rgba(255, 60, 60, 0.3); }
+}
+
+.cell-targeted {
+  border: 2px solid rgba(255, 60, 60, 0.8) !important;
+  animation: targetPulse 0.8s ease-in-out infinite;
+  z-index: 20;
+}
+
 /* ── Visible focus indicator for keyboard navigation (WCAG 2.4.7) ── */
 [role="button"]:focus-visible {
   outline: 2px solid var(--crt-green);

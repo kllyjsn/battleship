@@ -1,5 +1,5 @@
-import { Volume2, VolumeX, ArrowLeft, Crosshair, Flame, AlertTriangle } from 'lucide-react';
-import { useState } from 'react';
+import { Volume2, VolumeX, ArrowLeft, Crosshair, Flame, AlertTriangle, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { MusicVisualizer } from './MusicVisualizer';
 import { loadStats } from '../lib/stats';
 import { getPlayerRank } from '../lib/ranks';
@@ -22,6 +22,7 @@ interface GameHUDProps {
   showStreak?: boolean;
   playerShipsRemaining?: number;
   opponentShipsRemaining?: number;
+  gameStartTime?: number;
 }
 
 export function GameHUD({
@@ -40,9 +41,19 @@ export function GameHUD({
   showStreak = false,
   playerShipsRemaining,
   opponentShipsRemaining,
+  gameStartTime,
 }: GameHUDProps) {
   const [soundOn, setSoundOn] = useState(isSoundEnabled);
   const displayScore = score ?? 0;
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (phase !== 'battle' || !gameStartTime) { setElapsed(0); return; }
+    const tick = () => setElapsed(Math.floor((Date.now() - gameStartTime) / 1000));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [phase, gameStartTime]);
   const streak = showStreak ? loadStats().currentWinStreak : 0;
   const { rank } = getPlayerRank();
   const dangerZone = phase === 'battle' && (
@@ -101,6 +112,14 @@ export function GameHUD({
         <div className="flex-shrink-0 flex items-center gap-1.5">
           {phase !== 'placement' && (
             <>
+              {phase === 'battle' && elapsed > 0 && (
+                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded metal-panel-light" style={{ border: '1px solid var(--steel-border)' }}>
+                  <Clock size={11} className="text-slate-500" />
+                  <span className="text-[10px] sm:text-xs font-mono-crt text-slate-400 tabular-nums">
+                    {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')}
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-1 px-2 py-0.5 rounded metal-panel-light" style={{ border: '1px solid var(--steel-border)' }}>
                 <Crosshair size={13} className="text-amber-400" />
                 <span className="text-xs sm:text-sm font-bold font-mono-crt text-glow-amber">{displayScore}</span>

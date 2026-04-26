@@ -2,12 +2,16 @@ import { useMemo } from 'react';
 import { X } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { loadStats, getStatsOverview } from '../lib/stats';
+import { useEscapeKey } from '../hooks/useEscapeKey';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface StatsPanelProps {
   onClose: () => void;
 }
 
 export function StatsPanel({ onClose }: StatsPanelProps) {
+  useEscapeKey(onClose);
+  const trapRef = useFocusTrap<HTMLDivElement>();
   const overview = useMemo(() => getStatsOverview(loadStats()), []);
 
   const totalGames = overview.totalGames;
@@ -25,8 +29,8 @@ export function StatsPanel({ onClose }: StatsPanelProps) {
   const barColors = ['#39ff14', '#ffb000', '#ff3c3c'];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-      <div className="metal-panel rounded-xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto animate-fadeIn relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }} role="dialog" aria-modal="true" aria-label="Combat Stats">
+      <div ref={trapRef} className="metal-panel rounded-xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto animate-fadeIn relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-500 hover:text-green-400 transition-colors"

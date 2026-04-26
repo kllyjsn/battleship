@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Trophy, Skull, RotateCw, Home, Play, Crosshair, Clock, Target, Ship, Map, ChevronUp } from 'lucide-react';
+import { useEscapeKey } from '../hooks/useEscapeKey';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { addLeaderboardEntry } from '../lib/leaderboard';
 import { loadStats } from '../lib/stats';
 import { getPlayerRank, getRankForWins } from '../lib/ranks';
@@ -38,6 +40,11 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
   const [sessionName, setSessionNameLocal] = useState(getSessionName());
   const [saved, setSaved] = useState(alreadySubmitted);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const handleEscape = useCallback(() => {
+    if (showHeatmap) { setShowHeatmap(false); } else { onGoHome(); }
+  }, [showHeatmap, onGoHome]);
+  useEscapeKey(handleEscape);
+  const trapRef = useFocusTrap<HTMLDivElement>();
 
   // Rank-up detection
   const { rank: currentRank } = getPlayerRank();
@@ -68,8 +75,8 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fadeIn">
-      <div className="metal-panel rounded-xl p-5 sm:p-8 max-w-md w-full mx-3 sm:mx-4 text-center" style={{ boxShadow: isWin ? '0 0 40px rgba(57, 255, 20, 0.1)' : '0 0 40px rgba(255, 60, 60, 0.1)' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fadeIn" role="dialog" aria-modal="true" aria-label={isWin ? 'Victory' : 'Defeat'}>
+      <div ref={trapRef} className="metal-panel rounded-xl p-5 sm:p-8 max-w-md w-full mx-3 sm:mx-4 text-center" style={{ boxShadow: isWin ? '0 0 40px rgba(57, 255, 20, 0.1)' : '0 0 40px rgba(255, 60, 60, 0.1)' }}>
         <div
           className={`w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 rounded-full flex items-center justify-center metal-panel-light`}
           style={{ boxShadow: isWin ? '0 0 20px rgba(57, 255, 20, 0.2)' : '0 0 20px rgba(255, 60, 60, 0.2)' }}
