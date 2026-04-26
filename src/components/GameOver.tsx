@@ -40,7 +40,9 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
   const [sessionName, setSessionNameLocal] = useState(getSessionName());
   const [saved, setSaved] = useState(alreadySubmitted);
   const [showHeatmap, setShowHeatmap] = useState(false);
-  const handleEscape = useCallback(() => onGoHome(), [onGoHome]);
+  const handleEscape = useCallback(() => {
+    if (showHeatmap) { setShowHeatmap(false); } else { onGoHome(); }
+  }, [showHeatmap, onGoHome]);
   useEscapeKey(handleEscape);
   const trapRef = useFocusTrap<HTMLDivElement>();
 
