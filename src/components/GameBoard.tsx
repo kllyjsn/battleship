@@ -4,7 +4,7 @@ import { canPlaceShip } from '../engine/board';
 import { Cell } from './Cell';
 import { ShipSVG } from './ShipSVG';
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Crosshair } from 'lucide-react';
 import { useSwipe } from '../hooks/useSwipe';
 
 interface GameBoardProps {
@@ -29,6 +29,8 @@ interface GameBoardProps {
   hideEnemyShots?: boolean;
   onToggleHideEnemyShots?: () => void;
   onSwipeRotate?: () => void;
+  targetedCell?: { row: number; col: number } | null;
+  onConfirmFire?: () => void;
 }
 
 export function GameBoard({
@@ -53,6 +55,8 @@ export function GameBoard({
   hideEnemyShots = false,
   onToggleHideEnemyShots,
   onSwipeRotate,
+  targetedCell = null,
+  onConfirmFire,
 }: GameBoardProps) {
   const [hoverPos, setHoverPos] = useState<{ row: number; col: number } | null>(null);
   const [shaking, setShaking] = useState(false);
@@ -224,6 +228,7 @@ export function GameBoard({
                         : null
                     }
                     isCursor={showCursor && cursorRow === rowIdx && cursorCol === colIdx}
+                    isTargeted={targetedCell !== null && targetedCell.row === rowIdx && targetedCell.col === colIdx}
                   />
                 </div>
               );
@@ -332,6 +337,18 @@ export function GameBoard({
           );
         })()}
       </div>
+
+      {/* Confirm-to-fire button for touch devices */}
+      {targetedCell && onConfirmFire && (
+        <button
+          onClick={onConfirmFire}
+          className="mt-2 w-full py-2.5 rounded metal-panel-light text-glow-red font-semibold font-mono-crt text-sm flex items-center justify-center gap-2 hover:ring-1 hover:ring-red-400/40 transition-all animate-fadeIn touch-manipulation"
+          style={{ borderColor: 'rgba(255, 60, 60, 0.4)' }}
+        >
+          <Crosshair size={16} />
+          FIRE AT {ROW_LABELS[targetedCell.row]}{COL_LABELS[targetedCell.col]}
+        </button>
+      )}
     </div>
   );
 }

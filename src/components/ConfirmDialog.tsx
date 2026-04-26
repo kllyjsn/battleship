@@ -1,4 +1,6 @@
 import { AlertTriangle } from 'lucide-react';
+import { useEscapeKey } from '../hooks/useEscapeKey';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface ConfirmDialogProps {
   title: string;
@@ -17,9 +19,12 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  useEscapeKey(onCancel);
+  const trapRef = useFocusTrap<HTMLDivElement>();
+
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn">
-      <div className="metal-panel rounded-xl p-6 max-w-sm w-full mx-4 text-center">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn" role="dialog" aria-modal="true" aria-label={title}>
+      <div ref={trapRef} className="metal-panel rounded-xl p-6 max-w-sm w-full mx-4 text-center">
         <div className="w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center metal-panel-light"
           style={{ boxShadow: '0 0 15px rgba(255, 176, 0, 0.15)' }}
         >

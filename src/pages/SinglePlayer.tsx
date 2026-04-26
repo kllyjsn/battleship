@@ -27,6 +27,7 @@ import { GameReplay } from '../components/GameReplay';
 import { ScorePopup } from '../components/ScorePopup';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ShipNotification } from '../components/ShipNotification';
+import { EnemyFleetTracker } from '../components/EnemyFleetTracker';
 import type { ReplayMove, ReplayData } from '../lib/replay';
 import { saveGameState, clearSavedGame } from '../lib/gamePersistence';
 import type { SavedGameState } from '../lib/gamePersistence';
@@ -100,6 +101,8 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
   const [scorePopup, setScorePopup] = useState({ points: 0, label: '', trigger: 0 });
   const [showConfirmLeave, setShowConfirmLeave] = useState(false);
   const [shipNotif, setShipNotif] = useState({ type: 'hit' as 'hit' | 'sunk', shipName: '', actor: 'player' as 'player' | 'opponent', trigger: 0 });
+  const [targetedCell, setTargetedCell] = useState<{ row: number; col: number } | null>(null);
+  const isTouchDevice = useRef(typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
   const previousWinsRef = useRef(loadStats().games.filter(g => g.result === 'win').length);
 
   const aiName = getAIName(difficulty);
@@ -479,6 +482,41 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
     [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play, haptics, aiName]
   );
 
+  // Touch-device confirm-to-fire: first tap targets, second tap fires
+  const handleOpponentCellClick = useCallback(
+    (row: number, col: number) => {
+      if (phase !== 'battle' || !isPlayerTurn || isProcessingRef.current) return;
+      const cell = opponentBoard[row][col];
+      if (cell.state === 'hit' || cell.state === 'miss' || cell.state === 'sunk') return;
+
+      if (!isTouchDevice.current) {
+        handlePlayerAttack(row, col);
+        return;
+      }
+
+      if (targetedCell && targetedCell.row === row && targetedCell.col === col) {
+        setTargetedCell(null);
+        handlePlayerAttack(row, col);
+      } else {
+        setTargetedCell({ row, col });
+        play('click');
+      }
+    },
+    [phase, isPlayerTurn, opponentBoard, targetedCell, handlePlayerAttack, play]
+  );
+
+  const handleConfirmFire = useCallback(() => {
+    if (!targetedCell) return;
+    const { row, col } = targetedCell;
+    setTargetedCell(null);
+    handlePlayerAttack(row, col);
+  }, [targetedCell, handlePlayerAttack]);
+
+  // Clear targeting when turn changes or phase changes
+  useEffect(() => {
+    setTargetedCell(null);
+  }, [isPlayerTurn, phase]);
+
   // Keep ref in sync for keyboard handler
   useEffect(() => {
     handlePlayerAttackRef.current = handlePlayerAttack;
@@ -578,6 +616,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
         showStreak={true}
         playerShipsRemaining={playerShips.filter(s => !s.sunk).length}
         opponentShipsRemaining={opponentShips.filter(s => !s.sunk).length}
+        gameStartTime={gameStartTimeRef.current || undefined}
       />
 
       <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-3 sm:gap-4 lg:gap-8 p-2 sm:p-4">
@@ -643,12 +682,12 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
                   mode="battle"
                 />
               </div>
-              <div className={`${mobileBoard === 'player' ? 'hidden lg:block' : 'block'}`}>
+              <div className={`flex flex-col items-center gap-4 ${mobileBoard === 'player' ? 'hidden lg:flex' : 'flex'}`}>
                 <GameBoard
                   board={opponentBoard}
                   isPlayerBoard={false}
                   isPlacing={false}
-                  onCellClick={handlePlayerAttack}
+                  onCellClick={handleOpponentCellClick}
                   title="Enemy Waters"
                   disabled={!isPlayerTurn || phase === 'gameover'}
                   highlight={isPlayerTurn && phase === 'battle'}
@@ -657,6 +696,12 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
                   cursorRow={cursorPos.row}
                   cursorCol={cursorPos.col}
                   showCursor={showCursor && isPlayerTurn && phase === 'battle'}
+                  targetedCell={targetedCell}
+                  onConfirmFire={handleConfirmFire}
+                />
+                <EnemyFleetTracker
+                  shipDefs={SHIPS}
+                  opponentShips={opponentShips}
                 />
               </div>
             </div>
