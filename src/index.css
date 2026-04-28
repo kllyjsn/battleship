@@ -275,10 +275,14 @@ button:focus-visible {
 }
 
 /* ── Active/pressed state for touch feedback (< 100ms) ── */
-button:active:not(:disabled),
-[role="button"]:active:not([aria-disabled="true"]) {
-  transform: scale(0.97);
-  transition: transform 50ms ease-out;
+@layer base {
+  button:active:not(:disabled),
+  [role="button"]:active:not([aria-disabled="true"]) {
+    transform: scale(0.97);
+    transition-property: transform;
+    transition-duration: 50ms;
+    transition-timing-function: ease-out;
+  }
 }
 
 /* ── Screen-reader only utility ── */
