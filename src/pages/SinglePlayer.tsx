@@ -27,6 +27,7 @@ import { GameReplay } from '../components/GameReplay';
 import { ScorePopup } from '../components/ScorePopup';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ShipNotification } from '../components/ShipNotification';
+import { QuickFireInput } from '../components/QuickFireInput';
 import type { ReplayMove, ReplayData } from '../lib/replay';
 import { saveGameState, clearSavedGame } from '../lib/gamePersistence';
 import type { SavedGameState } from '../lib/gamePersistence';
@@ -171,6 +172,14 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
     setSelectedShipId(lastShip.id);
     play('click');
   }, [playerShips, playerBoard, play]);
+
+  const handleClearAll = useCallback(() => {
+    if (playerShips.length === 0) return;
+    setPlayerBoard(createEmptyBoard());
+    setPlayerShips([]);
+    setSelectedShipId(SHIPS[0].id);
+    play('click');
+  }, [playerShips, play]);
 
   // Keyboard handling: arrow keys + Enter in both placement and battle phases
   useEffect(() => {
@@ -373,6 +382,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
       // AI turn after delay — constants from engine/constants.ts
       setTimeout(() => {
         setMessage("Opponent's turn...");
+        setMobileBoard('player'); // Auto-switch so user sees incoming fire
 
         setTimeout(() => {
           const { position, newState } = getAIMove(
@@ -471,6 +481,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
           setIsPlayerTurn(true);
           setTimeout(() => {
             setMessage('Your turn — fire at the enemy grid!');
+            setMobileBoard('opponent'); // Switch back to attack board
             isProcessingRef.current = false;
           }, DELAY_AFTER_AI_SHOT_MS);
         }, DELAY_BEFORE_AI_SHOT_MS);
@@ -578,6 +589,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
         showStreak={true}
         playerShipsRemaining={playerShips.filter(s => !s.sunk).length}
         opponentShipsRemaining={opponentShips.filter(s => !s.sunk).length}
+        turnCount={turnCountRef.current}
       />
 
       <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-3 sm:gap-4 lg:gap-8 p-2 sm:p-4">
@@ -611,11 +623,18 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
               isReady={false}
               mode="placement"
               onUndoShip={handleUndoShip}
+              onClearAll={handleClearAll}
             />
           </div>
         ) : (
           <>
-            <BoardToggle activeBoard={mobileBoard} onToggle={setMobileBoard} />
+            <div className="flex flex-wrap items-center justify-center gap-2 mb-1">
+              <BoardToggle activeBoard={mobileBoard} onToggle={setMobileBoard} />
+              <QuickFireInput
+                onFire={handlePlayerAttack}
+                disabled={!isPlayerTurn || phase === 'gameover'}
+              />
+            </div>
             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 sm:gap-4 lg:gap-8">
               <div className={`flex flex-col items-center gap-4 ${mobileBoard === 'opponent' ? 'hidden lg:flex' : 'flex'}`}>
                 <GameBoard
@@ -652,6 +671,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
                   title="Enemy Waters"
                   disabled={!isPlayerTurn || phase === 'gameover'}
                   highlight={isPlayerTurn && phase === 'battle'}
+                  ships={opponentShips}
                   lastAttackResult={lastAttackResult}
                   lastAttackPos={lastAttackPos}
                   cursorRow={cursorPos.row}

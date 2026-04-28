@@ -18,6 +18,7 @@ interface CellProps {
   hideShipFill?: boolean;
   animating?: 'hit' | 'miss' | 'sunk' | null;
   isCursor?: boolean;
+  isLastMove?: boolean;
 }
 
 const PARTICLE_DIRECTIONS = [
@@ -47,6 +48,7 @@ export const Cell = memo(function Cell({
   hideShipFill = false,
   animating = null,
   isCursor = false,
+  isLastMove = false,
 }: CellProps) {
   const [activeAnim, setActiveAnim] = useState<'hit' | 'miss' | 'sunk' | null>(null);
   const prevStateRef = useRef<CellState>(state);
@@ -193,6 +195,9 @@ export const Cell = memo(function Cell({
       )}
       {state === 'ship' && isPlayerBoard && !hideShipFill && (
         <div className="absolute inset-1 rounded-sm bg-[#3a4a5a]/50" />
+      )}
+      {isLastMove && !activeAnim && (
+        <div className="absolute inset-0 rounded-sm border-2 border-amber-400/70 pointer-events-none z-20 cell-last-move" />
       )}
     </div>
   );
