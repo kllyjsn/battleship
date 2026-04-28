@@ -51,6 +51,7 @@ export function QuickFireInput({ onFire, disabled }: QuickFireInputProps) {
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
+              e.stopPropagation();
               handleSubmit();
             }
           }}
