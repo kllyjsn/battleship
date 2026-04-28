@@ -260,6 +260,16 @@ body {
   z-index: 20;
 }
 
+/* ── Last-move indicator pulse ── */
+@keyframes lastMovePulse {
+  0%, 100% { border-color: rgba(251, 191, 36, 0.7); box-shadow: 0 0 4px rgba(251, 191, 36, 0.3); }
+  50% { border-color: rgba(251, 191, 36, 0.3); box-shadow: none; }
+}
+
+.cell-last-move {
+  animation: lastMovePulse 2s ease-in-out infinite;
+}
+
 /* ── Visible focus indicator for keyboard navigation (WCAG 2.4.7) ── */
 [role="button"]:focus-visible {
   outline: 2px solid var(--crt-green);

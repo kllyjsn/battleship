@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trophy, Skull, RotateCw, Home, Play, Crosshair, Clock, Target, Ship, Map, ChevronUp } from 'lucide-react';
+import { Trophy, Skull, RotateCw, Home, Play, Crosshair, Clock, Target, Ship, Map, ChevronUp, Flame } from 'lucide-react';
 import { addLeaderboardEntry } from '../lib/leaderboard';
 import { loadStats } from '../lib/stats';
 import { getPlayerRank, getRankForWins } from '../lib/ranks';
@@ -166,12 +166,25 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
         {/* Win streak display */}
         {(() => {
           const stats = loadStats();
-          return stats.currentWinStreak >= 2 ? (
-            <div className="flex items-center justify-center gap-2 mb-4 px-3 py-1.5 rounded metal-panel-light">
-              <span className="text-xs font-mono-crt text-amber-400">WIN STREAK</span>
-              <span className="text-lg font-bold font-mono-crt text-glow-amber">{stats.currentWinStreak}</span>
+          if (stats.currentWinStreak < 2 && stats.bestWinStreak < 2) return null;
+          return (
+            <div className="flex items-center justify-center gap-4 mb-4 px-3 py-1.5 rounded metal-panel-light">
+              {stats.currentWinStreak >= 2 && (
+                <div className="flex items-center gap-1.5">
+                  <Flame size={16} className="text-orange-400" />
+                  <span className="text-xs font-mono-crt text-amber-400">STREAK</span>
+                  <span className="text-lg font-bold font-mono-crt text-glow-amber">{stats.currentWinStreak}</span>
+                </div>
+              )}
+              {stats.bestWinStreak >= 2 && (
+                <div className="flex items-center gap-1.5">
+                  <Trophy size={14} className="text-amber-500/60" />
+                  <span className="text-[10px] font-mono-crt text-slate-500">BEST</span>
+                  <span className="text-sm font-bold font-mono-crt text-amber-500/80">{stats.bestWinStreak}</span>
+                </div>
+              )}
             </div>
-          ) : null;
+          );
         })()}
 
         {/* Session name prompt for winners */}

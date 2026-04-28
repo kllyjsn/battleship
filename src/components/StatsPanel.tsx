@@ -1,14 +1,33 @@
 import { useMemo } from 'react';
-import { X } from 'lucide-react';
+import { X, Trophy, Skull, Target, Clock } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { loadStats, getStatsOverview } from '../lib/stats';
+import type { GameRecord } from '../lib/stats';
 
 interface StatsPanelProps {
   onClose: () => void;
 }
 
+function formatDuration(seconds: number | undefined): string {
+  if (seconds == null) return '--';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function formatDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+}
+
 export function StatsPanel({ onClose }: StatsPanelProps) {
-  const overview = useMemo(() => getStatsOverview(loadStats()), []);
+  const stats = useMemo(() => loadStats(), []);
+  const overview = useMemo(() => getStatsOverview(stats), [stats]);
+  const recentGames: GameRecord[] = useMemo(() => [...stats.games].reverse().slice(0, 10), [stats]);
 
   const totalGames = overview.totalGames;
   const wins = overview.wins;
@@ -116,6 +135,54 @@ export function StatsPanel({ onClose }: StatsPanelProps) {
                 </div>
               ))}
             </div>
+
+            {/* Recent match history */}
+            {recentGames.length > 0 && (
+              <div>
+                <h3 className="text-sm text-green-500/60 font-mono-crt mb-2 text-center">RECENT MATCHES</h3>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {recentGames.map((game, i) => {
+                    const isWin = game.result === 'win';
+                    const acc = game.playerShots > 0 ? Math.round((game.playerHits / game.playerShots) * 100) : 0;
+                    return (
+                      <div key={i} className="flex items-center gap-2 metal-panel-light rounded px-2.5 py-1.5">
+                        {isWin ? (
+                          <Trophy size={13} className="text-green-400 flex-shrink-0" />
+                        ) : (
+                          <Skull size={13} className="text-red-400 flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-xs font-mono-crt font-bold ${isWin ? 'text-green-400' : 'text-red-400'}`}>
+                              {isWin ? 'W' : 'L'}
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-mono-crt truncate">
+                              {game.opponentName || (game.mode === 'multiplayer' ? 'Player' : 'AI')}
+                            </span>
+                            {game.difficulty && (
+                              <span className="text-[9px] text-slate-600 font-mono-crt uppercase">{game.difficulty}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="flex items-center gap-0.5 text-[10px] text-slate-500 font-mono-crt" title="Accuracy">
+                            <Target size={10} />
+                            {acc}%
+                          </span>
+                          <span className="flex items-center gap-0.5 text-[10px] text-slate-500 font-mono-crt" title="Duration">
+                            <Clock size={10} />
+                            {formatDuration(game.duration)}
+                          </span>
+                          <span className="text-[10px] text-slate-600 font-mono-crt">
+                            {formatDate(game.date)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

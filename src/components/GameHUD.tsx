@@ -22,6 +22,7 @@ interface GameHUDProps {
   showStreak?: boolean;
   playerShipsRemaining?: number;
   opponentShipsRemaining?: number;
+  turnCount?: number;
 }
 
 export function GameHUD({
@@ -40,6 +41,7 @@ export function GameHUD({
   showStreak = false,
   playerShipsRemaining,
   opponentShipsRemaining,
+  turnCount,
 }: GameHUDProps) {
   const [soundOn, setSoundOn] = useState(isSoundEnabled);
   const displayScore = score ?? 0;
@@ -156,7 +158,15 @@ export function GameHUD({
               />
             </div>
           </div>
-          <span className="text-[10px] sm:text-xs text-slate-500 font-mono-crt">—</span>
+          {turnCount !== undefined && turnCount > 0 && (
+            <div className="flex flex-col items-center px-1">
+              <span className="text-[8px] sm:text-[10px] text-slate-600 font-mono-crt leading-none">TURN</span>
+              <span className="text-xs sm:text-sm font-bold font-mono-crt text-slate-400">{turnCount}</span>
+            </div>
+          )}
+          {(turnCount === undefined || turnCount === 0) && (
+            <span className="text-[10px] sm:text-xs text-slate-500 font-mono-crt">—</span>
+          )}
           <div className="flex items-center gap-1.5 sm:gap-2">
             <div className="w-12 sm:w-20 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--hull-dark)' }}>
               <div

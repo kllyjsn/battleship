@@ -224,6 +224,7 @@ export function GameBoard({
                         : null
                     }
                     isCursor={showCursor && cursorRow === rowIdx && cursorCol === colIdx}
+                    isLastMove={!isPlacing && !!lastAttackPos && lastAttackPos.row === rowIdx && lastAttackPos.col === colIdx}
                   />
                 </div>
               );
@@ -231,8 +232,8 @@ export function GameBoard({
           </div>
         ))}
 
-        {/* Ship image overlays for placed ships */}
-        {isPlayerBoard && ships.map((ship) => {
+        {/* Ship image overlays: all ships on player board, sunk ships on opponent board */}
+        {(isPlayerBoard ? ships : ships.filter(s => s.sunk)).map((ship) => {
           if (!ship.positions || ship.positions.length === 0) return null;
           const isHoriz = ship.orientation === 'horizontal';
           const minRow = Math.min(...ship.positions.map(p => p.row));
