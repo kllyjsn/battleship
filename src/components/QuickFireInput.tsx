@@ -53,6 +53,8 @@ export function QuickFireInput({ onFire, disabled }: QuickFireInputProps) {
               e.preventDefault();
               e.stopPropagation();
               handleSubmit();
+            } else if (e.key === ' ' || e.key.startsWith('Arrow')) {
+              e.stopPropagation();
             }
           }}
           disabled={disabled}
