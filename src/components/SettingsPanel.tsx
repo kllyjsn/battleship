@@ -19,11 +19,11 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && confirmAction === null) onClose();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, confirmAction]);
 
   const handleCallsignChange = (value: string) => {
     setCallsign(value);
