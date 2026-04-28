@@ -25,7 +25,7 @@ export function RankBadge({ rank, size = 'sm', showTitle = true }: RankBadgeProp
       <Icon size={iconSize} className={rank.color} />
       {showTitle && (
         <span className={`font-mono-crt font-bold ${rank.color} ${rank.glowClass} ${
-          size === 'lg' ? 'text-sm' : size === 'md' ? 'text-xs' : 'text-[11px]'
+          size === 'lg' ? 'text-sm' : size === 'md' ? 'text-xs' : 'text-xs'
         }`}>
           {rank.title.toUpperCase()}
         </span>

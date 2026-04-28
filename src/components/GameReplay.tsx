@@ -89,6 +89,33 @@ export function GameReplay({ replayData, onClose }: GameReplayProps) {
 
   const { playerBoard, opponentBoard } = buildBoards(currentStep);
 
+  // Keyboard shortcuts: Escape to close, Space for play/pause, Arrow keys for stepping
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        if (currentStep >= totalMoves) setCurrentStep(0);
+        setIsPlaying(prev => !prev);
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setCurrentStep(prev => Math.min(totalMoves, prev + 1));
+        setIsPlaying(false);
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setCurrentStep(prev => Math.max(0, prev - 1));
+        setIsPlaying(false);
+        return;
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, currentStep, totalMoves]);
+
   // Auto-play
   useEffect(() => {
     if (isPlaying && currentStep < totalMoves) {

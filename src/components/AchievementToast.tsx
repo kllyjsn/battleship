@@ -49,7 +49,7 @@ export function AchievementToast({ achievementIds, onDone }: AchievementToastPro
       >
         <span className="text-2xl flex-shrink-0">{def.icon}</span>
         <div>
-          <p className="text-[10px] text-amber-400/70 font-mono-crt tracking-widest uppercase">Achievement Unlocked</p>
+          <p className="text-[11px] text-amber-400/70 font-mono-crt tracking-widest uppercase">Achievement Unlocked</p>
           <p className="text-sm font-semibold text-glow-amber font-mono-crt">{def.name}</p>
           <p className="text-xs text-slate-400 font-mono-crt">{def.description}</p>
         </div>

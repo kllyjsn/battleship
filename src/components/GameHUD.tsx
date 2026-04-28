@@ -73,7 +73,7 @@ export function GameHUD({
         </div>
 
         <div
-          className={`text-[11px] sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded font-mono-crt truncate max-w-[55%] sm:max-w-none text-center ${
+          className={`text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded font-mono-crt truncate max-w-[55%] sm:max-w-none text-center ${
             phase === 'gameover'
               ? 'text-glow-amber metal-panel-light'
               : isPlayerTurn
@@ -122,7 +122,7 @@ export function GameHUD({
           <div className="w-px h-4 bg-slate-700/50" />
           <button
             onClick={handleToggle}
-            className="text-slate-500 hover:text-green-400 transition-colors p-1"
+            className="text-slate-500 hover:text-green-400 transition-colors p-2 min-w-[36px] min-h-[36px] sm:min-w-[24px] sm:min-h-[24px] flex items-center justify-center"
             title={soundOn ? 'Mute Sonar' : 'Enable Sonar'}
           >
             {soundOn ? <Volume2 size={15} /> : <VolumeX size={15} />}
@@ -134,7 +134,7 @@ export function GameHUD({
       {dangerZone && (
         <div className="flex items-center justify-center gap-2 px-3 py-1" style={{ animation: 'dangerTextPulse 1.5s ease-in-out infinite' }}>
           <AlertTriangle size={13} className="text-red-400" />
-          <span className="text-[10px] sm:text-xs font-bold font-mono-crt text-red-400 tracking-widest">
+          <span className="text-[11px] sm:text-xs font-bold font-mono-crt text-red-400 tracking-widest">
             {playerShipsRemaining !== undefined && playerShipsRemaining <= 1 ? 'HULL CRITICAL' : 'ENEMY FINAL SHIP'}
           </span>
           <AlertTriangle size={13} className="text-red-400" />
@@ -145,7 +145,7 @@ export function GameHUD({
       {phase === 'battle' && (
         <div className="flex items-center justify-center gap-2 sm:gap-4 px-2 sm:px-4 pb-1.5 sm:pb-2">
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <span className="text-[10px] sm:text-xs text-green-500/70 font-mono-crt">ALLY</span>
+            <span className="text-[11px] sm:text-xs text-green-500/70 font-mono-crt">ALLY</span>
             <span className="text-xs sm:text-sm font-bold font-mono-crt text-green-400" style={{ textShadow: '0 0 6px rgba(57,255,20,0.5)' }}>
               {opponentHits}
             </span>
@@ -156,7 +156,7 @@ export function GameHUD({
               />
             </div>
           </div>
-          <span className="text-[10px] sm:text-xs text-slate-500 font-mono-crt">—</span>
+          <span className="text-[11px] sm:text-xs text-slate-500 font-mono-crt">—</span>
           <div className="flex items-center gap-1.5 sm:gap-2">
             <div className="w-12 sm:w-20 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--hull-dark)' }}>
               <div
@@ -167,7 +167,7 @@ export function GameHUD({
             <span className="text-xs sm:text-sm font-bold font-mono-crt text-red-400" style={{ textShadow: '0 0 6px rgba(255,60,60,0.5)' }}>
               {playerHits}
             </span>
-            <span className="text-[10px] sm:text-xs text-red-500/70 font-mono-crt">ENEMY</span>
+            <span className="text-[11px] sm:text-xs text-red-500/70 font-mono-crt">ENEMY</span>
           </div>
         </div>
       )}
