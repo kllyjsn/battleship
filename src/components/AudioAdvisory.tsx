@@ -100,11 +100,11 @@ export function AudioAdvisory() {
                   animation: 'glowPulse 1.5s ease-in-out infinite',
                 }}
               />
-              <span className="text-[10px] tracking-[0.15em] text-green-400/80 font-mono-crt font-semibold uppercase truncate">
+              <span className="text-[11px] tracking-[0.15em] text-green-400/80 font-mono-crt font-semibold uppercase truncate">
                 Comms Advisory
               </span>
             </div>
-            <p className="text-[10px] sm:text-[11px] text-slate-400 font-mono-crt leading-snug mt-0.5">
+            <p className="text-[11px] sm:text-xs text-slate-400 font-mono-crt leading-snug mt-0.5">
               Speakers up for sonar pings &amp; combat audio
             </p>
           </div>

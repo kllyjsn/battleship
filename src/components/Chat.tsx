@@ -120,7 +120,7 @@ export function Chat({ messages, onSend, onReaction, playerName }: ChatProps) {
         <span className="text-sm font-semibold text-green-400 font-mono-crt">COMMS</span>
         <div className="flex items-center gap-2">
           {messages.length > 0 && (
-            <span className="text-[10px] text-slate-500 font-mono-crt">{messages.length} MSG</span>
+            <span className="text-[11px] text-slate-500 font-mono-crt">{messages.length} MSG</span>
           )}
           <button
             onClick={(e) => {
@@ -150,7 +150,7 @@ export function Chat({ messages, onSend, onReaction, playerName }: ChatProps) {
               key={msg.id}
               className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} group`}
             >
-              <span className="text-[10px] sm:text-xs text-slate-600 mb-0.5 font-mono-crt">{msg.sender}</span>
+              <span className="text-[11px] sm:text-xs text-slate-600 mb-0.5 font-mono-crt">{msg.sender}</span>
               <div className="relative max-w-[85%] sm:max-w-[80%]">
                 <div
                   className={`px-2.5 sm:px-3 py-1.5 rounded text-sm font-mono-crt break-words ${
@@ -169,7 +169,7 @@ export function Chat({ messages, onSend, onReaction, playerName }: ChatProps) {
                     e.stopPropagation();
                     setReactionPickerMsgId(reactionPickerMsgId === msg.id ? null : msg.id);
                   }}
-                  className={`absolute -bottom-1 ${isOwn ? '-left-6' : '-right-6'} w-5 h-5 rounded-full flex items-center justify-center text-slate-600 hover:text-green-400 transition-all opacity-0 group-hover:opacity-100 hover:scale-110`}
+                  className={`absolute -bottom-1 ${isOwn ? '-left-7' : '-right-7'} w-6 h-6 rounded-full flex items-center justify-center text-slate-600 hover:text-green-400 transition-all sm:opacity-0 sm:group-hover:opacity-100 hover:scale-110`}
                   title="React"
                 >
                   <SmilePlus size={12} />
@@ -213,7 +213,7 @@ export function Chat({ messages, onSend, onReaction, playerName }: ChatProps) {
                       >
                         <span>{emoji}</span>
                         {senders.length > 1 && (
-                          <span className={`font-mono-crt text-[10px] ${iReacted ? 'text-green-400' : 'text-slate-500'}`}>
+                          <span className={`font-mono-crt text-[11px] ${iReacted ? 'text-green-400' : 'text-slate-500'}`}>
                             {senders.length}
                           </span>
                         )}

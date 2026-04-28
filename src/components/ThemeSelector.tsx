@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { getAllThemes, getTheme, saveTheme, applyTheme } from '../lib/themes';
 
@@ -8,6 +9,14 @@ interface ThemeSelectorProps {
 }
 
 export function ThemeSelector({ currentTheme, onSelectTheme, onClose }: ThemeSelectorProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const themes = getAllThemes();
 
   const handleSelect = (themeId: string) => {
@@ -74,14 +83,14 @@ export function ThemeSelector({ currentTheme, onSelectTheme, onClose }: ThemeSel
                   >
                     {theme.name}
                   </div>
-                  <div className="text-[10px] text-slate-500 font-mono-crt">
+                  <div className="text-[11px] text-slate-500 font-mono-crt">
                     {theme.description}
                   </div>
                 </div>
 
                 {isSelected && (
                   <div className="text-center mt-1">
-                    <span className="text-[9px] font-mono-crt text-glow-green uppercase tracking-widest">
+                    <span className="text-[11px] font-mono-crt text-glow-green uppercase tracking-widest">
                       Active
                     </span>
                   </div>

@@ -274,6 +274,17 @@ button:focus-visible {
   box-shadow: 0 0 0 4px rgba(57, 255, 20, 0.2);
 }
 
+/* ── Active/pressed state for touch feedback (< 100ms) ── */
+@layer base {
+  button:active:not(:disabled),
+  [role="button"]:active:not([aria-disabled="true"]) {
+    transform: scale(0.97);
+    transition-property: transform;
+    transition-duration: 50ms;
+    transition-timing-function: ease-out;
+  }
+}
+
 /* ── Screen-reader only utility ── */
 .sr-only {
   position: absolute;

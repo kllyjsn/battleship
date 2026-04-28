@@ -12,7 +12,7 @@ export function MusicVisualizer({ isPlaying, freqData, onToggle }: MusicVisualiz
   return (
     <button
       onClick={onToggle}
-      className={`flex items-center gap-1 px-1.5 py-1 rounded transition-all ${
+      className={`flex items-center gap-1 px-2 py-1.5 rounded transition-all min-w-[36px] min-h-[36px] sm:min-w-[24px] sm:min-h-[24px] ${
         isPlaying
           ? 'text-green-400 hover:text-green-300'
           : 'text-slate-600 hover:text-slate-400'

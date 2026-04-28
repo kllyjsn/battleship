@@ -151,7 +151,7 @@ export function GameBoard({
         {onToggleHideEnemyShots && (
           <button
             onClick={onToggleHideEnemyShots}
-            className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] metal-panel-light transition-all font-mono-crt text-slate-400 hover:text-green-400"
+            className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] metal-panel-light transition-all font-mono-crt text-slate-400 hover:text-green-400"
             title={hideEnemyShots ? 'Show enemy shots' : 'Hide enemy shots'}
           >
             {hideEnemyShots ? <EyeOff size={12} /> : <Eye size={12} />}
@@ -178,7 +178,7 @@ export function GameBoard({
           {COL_LABELS.map((label) => (
             <div
               key={label}
-              className="w-[clamp(34px,8.8vw,44px)] h-6 sm:w-9 sm:h-7 md:w-10 md:h-8 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt"
+              className="w-[clamp(38px,8.8vw,44px)] h-6 sm:w-9 sm:h-7 md:w-10 md:h-8 flex items-center justify-center text-[11px] sm:text-xs font-mono-crt"
               role="columnheader"
               style={{ color: 'var(--text-secondary)' }}
             >
@@ -190,7 +190,7 @@ export function GameBoard({
         {/* Rows */}
         {board.map((row, rowIdx) => (
           <div key={rowIdx} className="flex" role="row">
-            <div className="w-5 h-[clamp(34px,8.8vw,44px)] sm:w-7 sm:h-9 md:w-8 md:h-10 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt" role="rowheader" style={{ color: 'var(--text-secondary)' }}>
+            <div className="w-5 h-[clamp(38px,8.8vw,44px)] sm:w-7 sm:h-9 md:w-8 md:h-10 flex items-center justify-center text-[11px] sm:text-xs font-mono-crt" role="rowheader" style={{ color: 'var(--text-secondary)' }}>
               {ROW_LABELS[rowIdx]}
             </div>
             {row.map((cell, colIdx) => {

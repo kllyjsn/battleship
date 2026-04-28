@@ -10,7 +10,7 @@ export function BoardToggle({ activeBoard, onToggle }: BoardToggleProps) {
     <div className="flex lg:hidden justify-center gap-2 mb-3">
       <button
         onClick={() => onToggle('player')}
-        className={`flex items-center gap-1.5 px-4 py-2 rounded text-xs font-mono-crt transition-all touch-manipulation ${
+        className={`flex items-center gap-1.5 px-4 py-2.5 rounded text-xs font-mono-crt transition-all touch-manipulation min-h-[44px] ${
           activeBoard === 'player'
             ? 'metal-panel text-glow-green border-green-500/40'
             : 'metal-panel-light text-slate-500 hover:text-slate-300'
@@ -21,7 +21,7 @@ export function BoardToggle({ activeBoard, onToggle }: BoardToggleProps) {
       </button>
       <button
         onClick={() => onToggle('opponent')}
-        className={`flex items-center gap-1.5 px-4 py-2 rounded text-xs font-mono-crt transition-all touch-manipulation ${
+        className={`flex items-center gap-1.5 px-4 py-2.5 rounded text-xs font-mono-crt transition-all touch-manipulation min-h-[44px] ${
           activeBoard === 'opponent'
             ? 'metal-panel text-glow-amber border-amber-500/40'
             : 'metal-panel-light text-slate-500 hover:text-slate-300'

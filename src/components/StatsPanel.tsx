@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { loadStats, getStatsOverview } from '../lib/stats';
@@ -8,6 +8,14 @@ interface StatsPanelProps {
 }
 
 export function StatsPanel({ onClose }: StatsPanelProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const overview = useMemo(() => getStatsOverview(loadStats()), []);
 
   const totalGames = overview.totalGames;

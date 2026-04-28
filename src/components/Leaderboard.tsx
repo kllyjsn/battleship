@@ -97,6 +97,14 @@ function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
 }
 
 export function Leaderboard({ onClose }: LeaderboardProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const [period, setPeriod] = useState<Period>('day');
   const [source, setSource] = useState<Source>('local');
   const [globalEntries, setGlobalEntries] = useState<LeaderboardEntry[]>([]);

@@ -63,7 +63,7 @@ export function BattleLog({ entries }: BattleLogProps) {
         <span className="text-sm font-semibold text-amber-400 font-mono-crt">BATTLE LOG</span>
         <div className="flex items-center gap-2">
           {entries.length > 0 && (
-            <span className="text-[10px] text-slate-500 font-mono-crt">{entries.length} MOVES</span>
+            <span className="text-[11px] text-slate-500 font-mono-crt">{entries.length} MOVES</span>
           )}
           <button
             onClick={(e) => {
