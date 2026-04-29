@@ -369,11 +369,11 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
       }
 
       setIsPlayerTurn(false);
-      // On mobile, auto-switch to player board so the user sees the AI's attack
-      setMobileBoard('player');
 
       // AI turn after delay — constants from engine/constants.ts
       setTimeout(() => {
+        // Switch to player board after the attack animation has played
+        setMobileBoard('player');
         setMessage("Opponent's turn...");
 
         setTimeout(() => {
