@@ -136,7 +136,7 @@ export function GameHUD({
         <div className="flex items-center justify-center gap-2 px-3 py-1" style={{ animation: 'dangerTextPulse 1.5s ease-in-out infinite' }}>
           <AlertTriangle size={13} className="text-red-400" />
           <span className="text-[10px] sm:text-xs font-bold font-mono-crt text-red-400 tracking-widest">
-            {playerShipsRemaining !== undefined && playerShipsRemaining <= 1 ? 'HULL CRITICAL' : 'ENEMY FINAL SHIP'}
+            {playerShipsRemaining !== undefined && playerShipsRemaining <= DANGER_THRESHOLD ? 'HULL CRITICAL' : 'ENEMY FINAL SHIP'}
           </span>
           <AlertTriangle size={13} className="text-red-400" />
         </div>
