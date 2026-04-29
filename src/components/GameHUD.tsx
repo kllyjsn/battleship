@@ -1,5 +1,5 @@
 import { Volume2, VolumeX, ArrowLeft, Crosshair, Flame, AlertTriangle } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { MusicVisualizer } from './MusicVisualizer';
 import { loadStats } from '../lib/stats';
 import { getPlayerRank } from '../lib/ranks';
@@ -43,7 +43,7 @@ export function GameHUD({
 }: GameHUDProps) {
   const [soundOn, setSoundOn] = useState(isSoundEnabled);
   const displayScore = score ?? 0;
-  const streak = useMemo(() => showStreak ? loadStats().currentWinStreak : 0, [showStreak]);
+  const streak = showStreak ? loadStats().currentWinStreak : 0;
   const { rank } = getPlayerRank();
   const DANGER_THRESHOLD = 1;
   const dangerZone = phase === 'battle' && (
