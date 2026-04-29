@@ -72,6 +72,63 @@ function getRandomUntried(board: Board, tried: Set<string>, checkerboard: boolea
   return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
+/**
+ * Weighted random selection for medium difficulty hunt mode.
+ * Scores each candidate by the number of possible ship placements passing
+ * through it (using the smallest unsunk ship), then picks randomly biased
+ * toward higher-scoring cells.
+ */
+function weightedRandomUntried(
+  board: Board,
+  tried: Set<string>,
+  minShipSize: number,
+): Position | null {
+  const candidates: { pos: Position; weight: number }[] = [];
+
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (tried.has(posKey(r, c))) continue;
+      const state = board[r][c].state;
+      if (state !== 'empty' && state !== 'ship') continue;
+      if ((r + c) % 2 !== 0) continue; // checkerboard
+
+      let placements = 0;
+      // horizontal spans through (r,c)
+      for (let start = Math.max(0, c - minShipSize + 1); start <= c && start + minShipSize <= BOARD_SIZE; start++) {
+        let valid = true;
+        for (let i = 0; i < minShipSize; i++) {
+          const st = board[r][start + i].state;
+          if (st === 'miss' || st === 'sunk') { valid = false; break; }
+        }
+        if (valid) placements++;
+      }
+      // vertical spans through (r,c)
+      for (let start = Math.max(0, r - minShipSize + 1); start <= r && start + minShipSize <= BOARD_SIZE; start++) {
+        let valid = true;
+        for (let i = 0; i < minShipSize; i++) {
+          const st = board[start + i][c].state;
+          if (st === 'miss' || st === 'sunk') { valid = false; break; }
+        }
+        if (valid) placements++;
+      }
+
+      if (placements > 0) {
+        candidates.push({ pos: { row: r, col: c }, weight: placements });
+      }
+    }
+  }
+
+  if (candidates.length === 0) return null;
+
+  const totalWeight = candidates.reduce((s, c) => s + c.weight, 0);
+  let pick = Math.random() * totalWeight;
+  for (const c of candidates) {
+    pick -= c.weight;
+    if (pick <= 0) return c.pos;
+  }
+  return candidates[candidates.length - 1].pos;
+}
+
 function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Position | null {
   const density: number[][] = Array.from({ length: BOARD_SIZE }, () =>
     Array(BOARD_SIZE).fill(0)
@@ -225,9 +282,17 @@ export function getAIMove(
   if (!target) {
     if (difficulty === 'hard') {
       target = probabilityDensity(board, newState.triedPositions, opponentShips);
+    } else if (difficulty === 'medium') {
+      // Medium uses a weighted random that biases toward cells with more
+      // possible ship placements — smarter than pure random but less
+      // deterministic than Admiral's full probability density map.
+      const remaining = opponentShips.filter(s => !s.sunk);
+      const minSize = remaining.length > 0
+        ? Math.min(...remaining.map(s => s.size))
+        : 2;
+      target = weightedRandomUntried(board, newState.triedPositions, minSize);
     }
     if (!target) {
-      // Medium and hard use checkerboard pattern in hunt mode to cover more ground.
       target = getRandomUntried(board, newState.triedPositions, difficulty === 'medium' || difficulty === 'hard');
     }
   }

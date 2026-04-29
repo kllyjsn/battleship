@@ -414,6 +414,22 @@ button:focus-visible {
   100% { background-position: 0% 0%; }
 }
 
+/* ── Crosshair coordinate label highlight ── */
+.crosshair-label-active {
+  text-shadow: 0 0 6px rgba(57, 255, 20, 0.5);
+  font-weight: 700;
+}
+
+/* ── Last-move marker ring ── */
+@keyframes lastMovePulse {
+  0%, 100% { box-shadow: inset 0 0 0 2px rgba(255, 176, 0, 0.6); }
+  50% { box-shadow: inset 0 0 0 2px rgba(255, 176, 0, 0.25); }
+}
+
+.cell-last-move {
+  animation: lastMovePulse 2s ease-in-out infinite;
+}
+
 /* ── Remove old wave animations (replaced by sonar) ── */
 .wave-animation,
 .wave-animation-slow {

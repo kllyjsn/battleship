@@ -45,9 +45,10 @@ export function GameHUD({
   const displayScore = score ?? 0;
   const streak = showStreak ? loadStats().currentWinStreak : 0;
   const { rank } = getPlayerRank();
+  const DANGER_THRESHOLD = 1;
   const dangerZone = phase === 'battle' && (
-    (playerShipsRemaining !== undefined && playerShipsRemaining <= 1) ||
-    (opponentShipsRemaining !== undefined && opponentShipsRemaining <= 1)
+    (playerShipsRemaining !== undefined && playerShipsRemaining <= DANGER_THRESHOLD) ||
+    (opponentShipsRemaining !== undefined && opponentShipsRemaining <= DANGER_THRESHOLD)
   );
 
   const handleToggle = () => {
@@ -135,7 +136,7 @@ export function GameHUD({
         <div className="flex items-center justify-center gap-2 px-3 py-1" style={{ animation: 'dangerTextPulse 1.5s ease-in-out infinite' }}>
           <AlertTriangle size={13} className="text-red-400" />
           <span className="text-[10px] sm:text-xs font-bold font-mono-crt text-red-400 tracking-widest">
-            {playerShipsRemaining !== undefined && playerShipsRemaining <= 1 ? 'HULL CRITICAL' : 'ENEMY FINAL SHIP'}
+            {playerShipsRemaining !== undefined && playerShipsRemaining <= DANGER_THRESHOLD ? 'HULL CRITICAL' : 'ENEMY FINAL SHIP'}
           </span>
           <AlertTriangle size={13} className="text-red-400" />
         </div>

@@ -29,6 +29,11 @@ interface GameBoardProps {
   hideEnemyShots?: boolean;
   onToggleHideEnemyShots?: () => void;
   onSwipeRotate?: () => void;
+  /** Row/col to highlight in the axis labels (crosshair guide) */
+  crosshairRow?: number | null;
+  crosshairCol?: number | null;
+  /** Persistent last-move marker position */
+  lastMovePos?: { row: number; col: number } | null;
 }
 
 export function GameBoard({
@@ -53,8 +58,15 @@ export function GameBoard({
   hideEnemyShots = false,
   onToggleHideEnemyShots,
   onSwipeRotate,
+  crosshairRow: crosshairRowProp = null,
+  crosshairCol: crosshairColProp = null,
+  lastMovePos = null,
 }: GameBoardProps) {
   const [hoverPos, setHoverPos] = useState<{ row: number; col: number } | null>(null);
+
+  // Derive active crosshair: explicit prop > hover > keyboard cursor
+  const activeRow = crosshairRowProp ?? hoverPos?.row ?? (showCursor ? cursorRow : null) ?? null;
+  const activeCol = crosshairColProp ?? hoverPos?.col ?? (showCursor ? cursorCol : null) ?? null;
   const [shaking, setShaking] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
   const cellRef = useRef<HTMLDivElement>(null);
@@ -175,12 +187,12 @@ export function GameBoard({
         {/* Column headers */}
         <div className="flex" role="row" aria-hidden="true">
           <div className="w-5 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-          {COL_LABELS.map((label) => (
+          {COL_LABELS.map((label, colIdx) => (
             <div
               key={label}
-              className="w-[clamp(34px,8.8vw,44px)] h-6 sm:w-9 sm:h-7 md:w-10 md:h-8 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt"
+              className={`w-[clamp(34px,9vw,44px)] h-6 sm:w-9 sm:h-7 md:w-10 md:h-8 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt transition-colors duration-150 ${activeCol === colIdx ? 'crosshair-label-active' : ''}`}
               role="columnheader"
-              style={{ color: 'var(--text-secondary)' }}
+              style={{ color: activeCol === colIdx ? 'var(--text-primary)' : 'var(--text-secondary)' }}
             >
               {label}
             </div>
@@ -190,7 +202,11 @@ export function GameBoard({
         {/* Rows */}
         {board.map((row, rowIdx) => (
           <div key={rowIdx} className="flex" role="row">
-            <div className="w-5 h-[clamp(34px,8.8vw,44px)] sm:w-7 sm:h-9 md:w-8 md:h-10 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt" role="rowheader" style={{ color: 'var(--text-secondary)' }}>
+            <div
+              className={`w-5 h-[clamp(34px,9vw,44px)] sm:w-7 sm:h-9 md:w-8 md:h-10 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt transition-colors duration-150 ${activeRow === rowIdx ? 'crosshair-label-active' : ''}`}
+              role="rowheader"
+              style={{ color: activeRow === rowIdx ? 'var(--text-primary)' : 'var(--text-secondary)' }}
+            >
               {ROW_LABELS[rowIdx]}
             </div>
             {row.map((cell, colIdx) => {
@@ -210,9 +226,7 @@ export function GameBoard({
                     isInvalid={!isValid}
                     onClick={() => onCellClick?.(rowIdx, colIdx)}
                     onHover={() => {
-                      if (isPlacing && placingShipSize) {
-                        setHoverPos({ row: rowIdx, col: colIdx });
-                      }
+                      setHoverPos({ row: rowIdx, col: colIdx });
                     }}
                     onDragOver={isPlacing ? (e) => handleDragOver(e, rowIdx, colIdx) : undefined}
                     onDrop={isPlacing ? (e) => handleDrop(e, rowIdx, colIdx) : undefined}
@@ -224,6 +238,7 @@ export function GameBoard({
                         : null
                     }
                     isCursor={showCursor && cursorRow === rowIdx && cursorCol === colIdx}
+                    isLastMove={!!lastMovePos && lastMovePos.row === rowIdx && lastMovePos.col === colIdx}
                   />
                 </div>
               );
