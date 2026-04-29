@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { Board, Ship, Difficulty, Orientation, GamePhase, AttackResult, BattleLogEntry } from '../engine/types';
-import { SHIPS, TOTAL_SHIP_CELLS, BOARD_MAX_INDEX, ROW_LABELS, scoreForResult, getAIName, DELAY_BEFORE_AI_LABEL_MS, DELAY_BEFORE_AI_SHOT_MS, DELAY_AFTER_AI_SHOT_MS } from '../engine/constants';
+import { SHIPS, TOTAL_SHIP_CELLS, BOARD_MAX_INDEX, ROW_LABELS, COL_LABELS, scoreForResult, getAIName, DELAY_BEFORE_AI_LABEL_MS, DELAY_BEFORE_AI_SHOT_MS, DELAY_AFTER_AI_SHOT_MS } from '../engine/constants';
 import {
   createEmptyBoard,
   placeShip,
@@ -369,6 +369,8 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
       }
 
       setIsPlayerTurn(false);
+      // On mobile, auto-switch to player board so the user sees the AI's attack
+      setMobileBoard('player');
 
       // AI turn after delay — constants from engine/constants.ts
       setTimeout(() => {
@@ -469,6 +471,8 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
           }
 
           setIsPlayerTurn(true);
+          // Switch mobile view back to opponent board for the player's attack
+          setMobileBoard('opponent');
           setTimeout(() => {
             setMessage('Your turn — fire at the enemy grid!');
             isProcessingRef.current = false;
@@ -555,11 +559,22 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
   const playerHitsOnOpponent = opponentShips.reduce((sum, s) => sum + s.hits, 0);
   const opponentHitsOnPlayer = playerShips.reduce((sum, s) => sum + s.hits, 0);
 
+  // Screen reader announcement for keyboard cursor position
+  const cursorAnnouncement = useMemo(() => {
+    if (!showCursor || phase !== 'battle' || !isPlayerTurn) return '';
+    const cellState = opponentBoard[cursorPos.row]?.[cursorPos.col]?.state ?? 'empty';
+    return `Row ${ROW_LABELS[cursorPos.row]}, Column ${COL_LABELS[cursorPos.col]} — ${cellState}`;
+  }, [showCursor, phase, isPlayerTurn, cursorPos.row, cursorPos.col, opponentBoard]);
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'radial-gradient(ellipse at center, #141c2b 0%, #0a0e1a 70%)' }}>
       {/* Screen-reader live region for game status announcements */}
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {message}
+      </div>
+      {/* Screen-reader live region for keyboard cursor position */}
+      <div aria-live="assertive" aria-atomic="true" className="sr-only">
+        {cursorAnnouncement}
       </div>
 
       <GameHUD
@@ -629,6 +644,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
                   lastAttackPos={lastDefensePos}
                   hideEnemyShots={hideEnemyShots}
                   onToggleHideEnemyShots={() => setHideEnemyShots(h => !h)}
+                  lastMovePos={lastDefensePos}
                 />
                 <ShipRoster
                   shipDefs={SHIPS}
@@ -657,6 +673,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
                   cursorRow={cursorPos.row}
                   cursorCol={cursorPos.col}
                   showCursor={showCursor && isPlayerTurn && phase === 'battle'}
+                  lastMovePos={lastAttackPos}
                 />
               </div>
             </div>
