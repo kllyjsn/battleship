@@ -471,9 +471,9 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
           }
 
           setIsPlayerTurn(true);
-          // Switch mobile view back to opponent board for the player's attack
-          setMobileBoard('opponent');
           setTimeout(() => {
+            // Switch back after the AI attack animation has played
+            setMobileBoard('opponent');
             setMessage('Your turn — fire at the enemy grid!');
             isProcessingRef.current = false;
           }, DELAY_AFTER_AI_SHOT_MS);
