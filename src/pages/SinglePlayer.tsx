@@ -27,6 +27,7 @@ import { GameReplay } from '../components/GameReplay';
 import { ScorePopup } from '../components/ScorePopup';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ShipNotification } from '../components/ShipNotification';
+import { TurnBanner } from '../components/TurnBanner';
 import type { ReplayMove, ReplayData } from '../lib/replay';
 import { saveGameState, clearSavedGame } from '../lib/gamePersistence';
 import type { SavedGameState } from '../lib/gamePersistence';
@@ -258,6 +259,47 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
 
   const placingShipDef = useMemo(() => SHIPS.find(s => s.id === selectedShipId), [selectedShipId]);
 
+  // Shared game-over handler — used by both player-win and opponent-win paths.
+  const finaliseGame = useCallback((result: 'win' | 'loss', shipsLost: number) => {
+    const winnerValue = result === 'win' ? 'player' as const : 'opponent' as const;
+    setPhase('gameover');
+    setWinner(winnerValue);
+    setMessage(result === 'win' ? 'You win!' : 'You lose!');
+    play(result === 'win' ? 'win' : 'lose');
+    if (result === 'win') haptics.win(); else haptics.lose();
+    gameDurationRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
+    saveGameResult({
+      mode: 'single',
+      difficulty,
+      result,
+      playerShots: shotCountRef.current,
+      playerHits: hitCountRef.current,
+      opponentName: aiName,
+      durationSeconds: gameDurationRef.current,
+    });
+    clearSavedGame();
+    const unlocked = checkAchievements({
+      result,
+      mode: 'single',
+      difficulty,
+      playerShots: shotCountRef.current,
+      playerHits: hitCountRef.current,
+      durationSeconds: gameDurationRef.current,
+      playerShipsLost: shipsLost,
+      totalPlayerShips: SHIPS.length,
+    });
+    if (unlocked.length > 0) setNewAchievements(unlocked);
+    setReplayData({
+      playerShipPlacements: playerShipsSnapshotRef.current,
+      opponentShipPlacements: opponentShipsSnapshotRef.current,
+      moves: [...replayMovesRef.current],
+      winner: winnerValue,
+      difficulty,
+      date: new Date().toISOString(),
+    });
+    isProcessingRef.current = false;
+  }, [difficulty, play, haptics, aiName]);
+
   const handleReady = useCallback(() => {
     if (playerShips.length !== SHIPS.length) return;
     setPhase('battle');
@@ -328,43 +370,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
       }
 
       if (allShipsSunk(ships)) {
-        setPhase('gameover');
-        setWinner('player');
-        setMessage('You win!');
-        play('win');
-        haptics.win();
-        gameDurationRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
-        saveGameResult({
-          mode: 'single',
-          difficulty,
-          result: 'win',
-          playerShots: shotCountRef.current,
-          playerHits: hitCountRef.current,
-          opponentName: aiName,
-          durationSeconds: gameDurationRef.current,
-        });
-        clearSavedGame();
-        const playerShipsLost = playerShips.filter(s => s.sunk).length;
-        const unlocked = checkAchievements({
-          result: 'win',
-          mode: 'single',
-          difficulty,
-          playerShots: shotCountRef.current,
-          playerHits: hitCountRef.current,
-          durationSeconds: gameDurationRef.current,
-          playerShipsLost,
-          totalPlayerShips: SHIPS.length,
-        });
-        if (unlocked.length > 0) setNewAchievements(unlocked);
-        setReplayData({
-          playerShipPlacements: playerShipsSnapshotRef.current,
-          opponentShipPlacements: opponentShipsSnapshotRef.current,
-          moves: [...replayMovesRef.current],
-          winner: 'player',
-          difficulty,
-          date: new Date().toISOString(),
-        });
-        isProcessingRef.current = false;
+        finaliseGame('win', playerShips.filter(s => s.sunk).length);
         return;
       }
 
@@ -430,41 +436,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
           }
 
           if (allShipsSunk(aiResult.ships)) {
-            setPhase('gameover');
-            setWinner('opponent');
-            setMessage('You lose!');
-            play('lose');
-            haptics.lose();
-            gameDurationRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
-            saveGameResult({
-              mode: 'single',
-              difficulty,
-              result: 'loss',
-              playerShots: shotCountRef.current,
-              playerHits: hitCountRef.current,
-              opponentName: aiName,
-              durationSeconds: gameDurationRef.current,
-            });
-            clearSavedGame();
-            checkAchievements({
-              result: 'loss',
-              mode: 'single',
-              difficulty,
-              playerShots: shotCountRef.current,
-              playerHits: hitCountRef.current,
-              durationSeconds: gameDurationRef.current,
-              playerShipsLost: SHIPS.length,
-              totalPlayerShips: SHIPS.length,
-            });
-            setReplayData({
-              playerShipPlacements: playerShipsSnapshotRef.current,
-              opponentShipPlacements: opponentShipsSnapshotRef.current,
-              moves: [...replayMovesRef.current],
-              winner: 'opponent',
-              difficulty,
-              date: new Date().toISOString(),
-            });
-            isProcessingRef.current = false;
+            finaliseGame('loss', SHIPS.length);
             return;
           }
 
@@ -476,7 +448,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
         }, DELAY_BEFORE_AI_SHOT_MS);
       }, DELAY_BEFORE_AI_LABEL_MS);
     },
-    [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play, haptics, aiName]
+    [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play, haptics, aiName, finaliseGame]
   );
 
   // Keep ref in sync for keyboard handler
@@ -579,6 +551,8 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
         playerShipsRemaining={playerShips.filter(s => !s.sunk).length}
         opponentShipsRemaining={opponentShips.filter(s => !s.sunk).length}
       />
+
+      <TurnBanner isPlayerTurn={isPlayerTurn} phase={phase} />
 
       <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-3 sm:gap-4 lg:gap-8 p-2 sm:p-4">
         {phase === 'placement' ? (
