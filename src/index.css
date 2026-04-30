@@ -420,3 +420,39 @@ button:focus-visible {
   animation: none;
 }
 
+/* ── Turn banner transition ── */
+@keyframes turnBannerFade {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ── Reduced motion: honour user preference (WCAG 2.3.3) ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .crt-overlay {
+    display: none;
+  }
+
+  .cell-ocean-shimmer {
+    animation: none;
+    background-image: none;
+  }
+
+  .sonar-pulse,
+  .sonar-sweep,
+  .glow-pulse,
+  .screen-shake,
+  .cell-cursor {
+    animation: none;
+  }
+}
+

@@ -140,7 +140,7 @@ export function GameBoard({
 
   return (
     <div
-      className={`flex flex-col items-center max-w-full overflow-x-auto ${highlight ? 'ring-2 ring-green-400/30 rounded-lg p-2' : 'p-2'}`}
+      className={`flex flex-col items-center max-w-full overflow-x-hidden ${highlight ? 'ring-2 ring-green-400/30 rounded-lg p-2' : 'p-2'}`}
       role="region"
       aria-label={title}
     >
@@ -148,6 +148,12 @@ export function GameBoard({
         <h3 className="text-sm font-semibold uppercase tracking-widest font-mono-crt text-glow-green">
           {title}
         </h3>
+        {/* Live targeting coordinate — shown on opponent board when hovering or using keyboard */}
+        {!isPlayerBoard && !isPlacing && !disabled && (hoverPos || (showCursor && cursorRow !== undefined && cursorCol !== undefined)) && (
+          <span className="text-[10px] sm:text-xs font-mono-crt text-glow-amber px-1.5 py-0.5 rounded metal-panel-light" aria-live="polite">
+            {ROW_LABELS[hoverPos?.row ?? cursorRow ?? 0]}{COL_LABELS[hoverPos?.col ?? cursorCol ?? 0]}
+          </span>
+        )}
         {onToggleHideEnemyShots && (
           <button
             onClick={onToggleHideEnemyShots}
@@ -211,6 +217,8 @@ export function GameBoard({
                     onClick={() => onCellClick?.(rowIdx, colIdx)}
                     onHover={() => {
                       if (isPlacing && placingShipSize) {
+                        setHoverPos({ row: rowIdx, col: colIdx });
+                      } else if (!isPlayerBoard && !disabled) {
                         setHoverPos({ row: rowIdx, col: colIdx });
                       }
                     }}

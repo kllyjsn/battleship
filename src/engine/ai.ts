@@ -225,9 +225,14 @@ export function getAIMove(
   if (!target) {
     if (difficulty === 'hard') {
       target = probabilityDensity(board, newState.triedPositions, opponentShips);
+    } else if (difficulty === 'medium') {
+      // Medium uses probability density 40% of the time in hunt mode for a
+      // smoother difficulty curve between easy and hard.
+      if (Math.random() < 0.4) {
+        target = probabilityDensity(board, newState.triedPositions, opponentShips);
+      }
     }
     if (!target) {
-      // Medium and hard use checkerboard pattern in hunt mode to cover more ground.
       target = getRandomUntried(board, newState.triedPositions, difficulty === 'medium' || difficulty === 'hard');
     }
   }
