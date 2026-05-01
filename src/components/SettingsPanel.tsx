@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Volume2, VolumeX, Music, Trash2, User } from 'lucide-react';
 import { STORAGE_KEYS, getSessionName, setSessionName, getApiBase, isSoundEnabled } from '../lib/storageKeys';
 import { clearStats } from '../lib/stats';
@@ -16,6 +16,15 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
   const [soundEnabled, setSoundEnabled] = useState(isSoundEnabled);
   const [confirmAction, setConfirmAction] = useState<'stats' | 'achievements' | 'all' | null>(null);
   const themes = getAllThemes();
+
+  useEffect(() => {
+    if (confirmAction !== null) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, confirmAction]);
 
   const handleCallsignChange = (value: string) => {
     setCallsign(value);
@@ -116,10 +125,11 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
             onChange={(e) => handleCallsignChange(e.target.value)}
             placeholder="Enter callsign"
             maxLength={20}
+            enterKeyHint="done"
             className="w-full px-4 py-2.5 rounded font-mono-crt text-green-300 placeholder-slate-600 focus:ring-1 focus:ring-green-500/30 focus:outline-none transition-all"
             style={{ background: 'var(--hull-dark)', border: '1px solid var(--steel-border)' }}
           />
-          <p className="text-[10px] text-slate-600 font-mono-crt mt-1">
+          <p className="text-[11px] text-slate-600 font-mono-crt mt-1">
             Displayed on leaderboards and in multiplayer
           </p>
         </div>
@@ -186,14 +196,14 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
                     <div className="text-sm font-bold font-mono-crt" style={{ color: t.vars['--text-primary'] }}>
                       {theme.name}
                     </div>
-                    <div className="text-[10px] text-slate-500 font-mono-crt">
+                    <div className="text-[11px] text-slate-500 font-mono-crt">
                       {theme.description}
                     </div>
                   </div>
 
                   {isSelected && (
                     <div className="text-center mt-1">
-                      <span className="text-[9px] font-mono-crt text-glow-green uppercase tracking-widest">
+                      <span className="text-[11px] font-mono-crt text-glow-green uppercase tracking-widest">
                         Active
                       </span>
                     </div>

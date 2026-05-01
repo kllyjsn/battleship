@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { X, Award } from 'lucide-react';
 import { ACHIEVEMENTS, getUnlockedAchievements } from '../lib/achievements';
 import type { AchievementDef } from '../lib/achievements';
@@ -17,6 +17,14 @@ const CATEGORY_LABELS: Record<AchievementDef['category'], string> = {
 const CATEGORY_ORDER: AchievementDef['category'][] = ['combat', 'skill', 'social', 'milestone'];
 
 export function AchievementsPanel({ onClose }: AchievementsPanelProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const unlocked = useMemo(() => {
     const list = getUnlockedAchievements();
     return new Set(list.map(a => a.id));
@@ -103,7 +111,7 @@ export function AchievementsPanel({ onClose }: AchievementsPanelProps) {
                           </p>
                         </div>
                         {isUnlocked && (
-                          <span className="text-[10px] font-mono-crt text-green-500/60 flex-shrink-0">
+                          <span className="text-[11px] font-mono-crt text-green-500/60 flex-shrink-0">
                             EARNED
                           </span>
                         )}

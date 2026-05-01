@@ -145,7 +145,7 @@ export function ShipRoster({
               <span className={`text-xs sm:text-sm font-medium font-mono-crt flex-1 truncate ${placed ? 'text-green-500/70' : 'text-green-300/80'}`}>
                 {def.name}
               </span>
-              <span className="text-[10px] sm:text-xs text-slate-500 font-mono-crt flex-shrink-0">{def.size}</span>
+              <span className="text-[11px] sm:text-xs text-slate-500 font-mono-crt flex-shrink-0">{def.size}</span>
             </div>
           );
         })}
@@ -159,7 +159,7 @@ export function ShipRoster({
         >
           <RotateCw size={14} />
           {orientation === 'horizontal' ? 'Horiz' : 'Vert'}
-          <kbd className="ml-0.5 sm:ml-1 px-1 py-0.5 metal-panel rounded text-[10px] text-green-400/70 font-mono-crt">R</kbd>
+          <kbd className="ml-0.5 sm:ml-1 px-1 py-0.5 metal-panel rounded text-[11px] text-green-400/70 font-mono-crt">R</kbd>
         </button>
         <button
           onClick={onRandomize}

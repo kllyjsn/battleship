@@ -106,6 +106,14 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
   const localEntries: LeaderboardEntry[] = useMemo(() => getLeaderboard(period), [period]);
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  useEffect(() => {
     if (source !== 'global') {
       setLoading(false);
       return;

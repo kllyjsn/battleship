@@ -71,7 +71,7 @@ export function TurnTimer({ seconds, maxSeconds, isActive, onTimeout }: TurnTime
           </span>
         </div>
       </div>
-      <span className="text-[10px] font-mono-crt text-slate-500 uppercase tracking-wider">
+      <span className="text-[11px] font-mono-crt text-slate-500 uppercase tracking-wider">
         Timer
       </span>
     </div>
