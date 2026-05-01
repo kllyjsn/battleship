@@ -1,4 +1,4 @@
-import { Volume2, VolumeX, ArrowLeft, Crosshair, Flame, AlertTriangle } from 'lucide-react';
+import { Volume2, VolumeX, ArrowLeft, Crosshair, Flame, AlertTriangle, Target } from 'lucide-react';
 import { useState } from 'react';
 import { MusicVisualizer } from './MusicVisualizer';
 import { loadStats } from '../lib/stats';
@@ -22,6 +22,7 @@ interface GameHUDProps {
   showStreak?: boolean;
   playerShipsRemaining?: number;
   opponentShipsRemaining?: number;
+  accuracy?: number;
 }
 
 export function GameHUD({
@@ -40,6 +41,7 @@ export function GameHUD({
   showStreak = false,
   playerShipsRemaining,
   opponentShipsRemaining,
+  accuracy,
 }: GameHUDProps) {
   const [soundOn, setSoundOn] = useState(isSoundEnabled);
   const displayScore = score ?? 0;
@@ -105,6 +107,12 @@ export function GameHUD({
                 <Crosshair size={13} className="text-amber-400" />
                 <span className="text-xs sm:text-sm font-bold font-mono-crt text-glow-amber">{displayScore}</span>
               </div>
+              {accuracy !== undefined && (
+                <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded metal-panel-light" style={{ border: '1px solid var(--steel-border)' }}>
+                  <Target size={13} className="text-green-400/70" />
+                  <span className="text-xs font-bold font-mono-crt text-green-300">{accuracy}%</span>
+                </div>
+              )}
               {streak >= 2 && (
                 <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded metal-panel-light" style={{ border: '1px solid var(--steel-border)' }}>
                   <Flame size={13} className="text-orange-400" />

@@ -81,22 +81,26 @@ function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Po
     ? remainingShips.map(s => s.size)
     : SHIPS.map(s => s.size);
 
+  // Placements that overlap an unsunk hit are much more likely to contain the
+  // ship responsible for that hit — give them a large weight multiplier.
+  const HIT_OVERLAP_WEIGHT = 20;
+
   for (const size of shipSizes) {
     // horizontal
     for (let r = 0; r < BOARD_SIZE; r++) {
       for (let c = 0; c <= BOARD_SIZE - size; c++) {
         let valid = true;
+        let overlapsHit = false;
         for (let i = 0; i < size; i++) {
           const state = board[r][c + i].state;
-          if (state === 'miss' || state === 'sunk') {
-            valid = false;
-            break;
-          }
+          if (state === 'miss' || state === 'sunk') { valid = false; break; }
+          if (state === 'hit') overlapsHit = true;
         }
         if (valid) {
+          const weight = overlapsHit ? HIT_OVERLAP_WEIGHT : 1;
           for (let i = 0; i < size; i++) {
             if (!tried.has(posKey(r, c + i))) {
-              density[r][c + i]++;
+              density[r][c + i] += weight;
             }
           }
         }
@@ -106,22 +110,44 @@ function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Po
     for (let r = 0; r <= BOARD_SIZE - size; r++) {
       for (let c = 0; c < BOARD_SIZE; c++) {
         let valid = true;
+        let overlapsHit = false;
         for (let i = 0; i < size; i++) {
           const state = board[r + i][c].state;
-          if (state === 'miss' || state === 'sunk') {
-            valid = false;
-            break;
-          }
+          if (state === 'miss' || state === 'sunk') { valid = false; break; }
+          if (state === 'hit') overlapsHit = true;
         }
         if (valid) {
+          const weight = overlapsHit ? HIT_OVERLAP_WEIGHT : 1;
           for (let i = 0; i < size; i++) {
             if (!tried.has(posKey(r + i, c))) {
-              density[r + i][c]++;
+              density[r + i][c] += weight;
             }
           }
         }
       }
     }
+  }
+
+  // Penalise cells orthogonally adjacent to sunk ships — ships cannot touch
+  // sunk wrecks in most placements, so these cells are low-value targets.
+  const sunkAdjacentPenalty = new Set<string>();
+  for (let r = 0; r < BOARD_SIZE; r++) {
+    for (let c = 0; c < BOARD_SIZE; c++) {
+      if (board[r][c].state === 'sunk') {
+        for (const adj of getAdjacentCells({ row: r, col: c })) {
+          const adjState = board[adj.row][adj.col].state;
+          if (adjState === 'empty' || adjState === 'ship') {
+            sunkAdjacentPenalty.add(posKey(adj.row, adj.col));
+          }
+        }
+      }
+    }
+  }
+  for (const key of sunkAdjacentPenalty) {
+    const [rs, cs] = key.split(',');
+    const ri = Number(rs);
+    const ci = Number(cs);
+    density[ri][ci] = Math.max(0, Math.floor(density[ri][ci] * 0.25));
   }
 
   let bestScore = -1;

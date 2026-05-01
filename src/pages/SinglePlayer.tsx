@@ -104,6 +104,49 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
 
   const aiName = getAIName(difficulty);
 
+  // Shared game-over handler for both player-win and AI-win paths.
+  const finalizeGame = useCallback((result: 'win' | 'loss', shipsLost: number) => {
+    setPhase('gameover');
+    setWinner(result === 'win' ? 'player' : 'opponent');
+    setMessage(result === 'win' ? 'You win!' : 'You lose!');
+    play(result === 'win' ? 'win' : 'lose');
+    if (result === 'win') { haptics.win(); } else { haptics.lose(); }
+    gameDurationRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
+
+    saveGameResult({
+      mode: 'single',
+      difficulty,
+      result,
+      playerShots: shotCountRef.current,
+      playerHits: hitCountRef.current,
+      opponentName: aiName,
+      durationSeconds: gameDurationRef.current,
+    });
+    clearSavedGame();
+
+    const unlocked = checkAchievements({
+      result,
+      mode: 'single',
+      difficulty,
+      playerShots: shotCountRef.current,
+      playerHits: hitCountRef.current,
+      durationSeconds: gameDurationRef.current,
+      playerShipsLost: shipsLost,
+      totalPlayerShips: SHIPS.length,
+    });
+    if (unlocked.length > 0) setNewAchievements(unlocked);
+
+    setReplayData({
+      playerShipPlacements: playerShipsSnapshotRef.current,
+      opponentShipPlacements: opponentShipsSnapshotRef.current,
+      moves: [...replayMovesRef.current],
+      winner: result === 'win' ? 'player' : 'opponent',
+      difficulty,
+      date: new Date().toISOString(),
+    });
+    isProcessingRef.current = false;
+  }, [difficulty, play, haptics, aiName]);
+
   // Setup opponent board (skip if resuming a saved game)
   useEffect(() => {
     if (resumeState) return;
@@ -213,36 +256,43 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
         return;
       }
 
-      // ── Battle phase: arrows to move cursor, Enter/Space to fire ──
-      if (phase === 'battle' && isPlayerTurn) {
-        switch (e.key) {
-          case 'ArrowUp':
-            e.preventDefault();
-            setShowCursor(true);
-            setCursorPos(p => ({ ...p, row: Math.max(0, p.row - 1) }));
-            break;
-          case 'ArrowDown':
-            e.preventDefault();
-            setShowCursor(true);
-            setCursorPos(p => ({ ...p, row: Math.min(BOARD_MAX_INDEX, p.row + 1) }));
-            break;
-          case 'ArrowLeft':
-            e.preventDefault();
-            setShowCursor(true);
-            setCursorPos(p => ({ ...p, col: Math.max(0, p.col - 1) }));
-            break;
-          case 'ArrowRight':
-            e.preventDefault();
-            setShowCursor(true);
-            setCursorPos(p => ({ ...p, col: Math.min(BOARD_MAX_INDEX, p.col + 1) }));
-            break;
-          case 'Enter':
-          case ' ':
-            e.preventDefault();
-            if (showCursor) {
-              handlePlayerAttackRef.current(cursorPos.row, cursorPos.col);
-            }
-            break;
+      // ── Battle phase: arrows to move cursor, Enter/Space to fire, Tab to switch boards ──
+      if (phase === 'battle') {
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          setMobileBoard(b => b === 'player' ? 'opponent' : 'player');
+          return;
+        }
+        if (isPlayerTurn) {
+          switch (e.key) {
+            case 'ArrowUp':
+              e.preventDefault();
+              setShowCursor(true);
+              setCursorPos(p => ({ ...p, row: Math.max(0, p.row - 1) }));
+              break;
+            case 'ArrowDown':
+              e.preventDefault();
+              setShowCursor(true);
+              setCursorPos(p => ({ ...p, row: Math.min(BOARD_MAX_INDEX, p.row + 1) }));
+              break;
+            case 'ArrowLeft':
+              e.preventDefault();
+              setShowCursor(true);
+              setCursorPos(p => ({ ...p, col: Math.max(0, p.col - 1) }));
+              break;
+            case 'ArrowRight':
+              e.preventDefault();
+              setShowCursor(true);
+              setCursorPos(p => ({ ...p, col: Math.min(BOARD_MAX_INDEX, p.col + 1) }));
+              break;
+            case 'Enter':
+            case ' ':
+              e.preventDefault();
+              if (showCursor) {
+                handlePlayerAttackRef.current(cursorPos.row, cursorPos.col);
+              }
+              break;
+          }
         }
       }
     };
@@ -328,49 +378,16 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
       }
 
       if (allShipsSunk(ships)) {
-        setPhase('gameover');
-        setWinner('player');
-        setMessage('You win!');
-        play('win');
-        haptics.win();
-        gameDurationRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
-        saveGameResult({
-          mode: 'single',
-          difficulty,
-          result: 'win',
-          playerShots: shotCountRef.current,
-          playerHits: hitCountRef.current,
-          opponentName: aiName,
-          durationSeconds: gameDurationRef.current,
-        });
-        clearSavedGame();
-        const playerShipsLost = playerShips.filter(s => s.sunk).length;
-        const unlocked = checkAchievements({
-          result: 'win',
-          mode: 'single',
-          difficulty,
-          playerShots: shotCountRef.current,
-          playerHits: hitCountRef.current,
-          durationSeconds: gameDurationRef.current,
-          playerShipsLost,
-          totalPlayerShips: SHIPS.length,
-        });
-        if (unlocked.length > 0) setNewAchievements(unlocked);
-        setReplayData({
-          playerShipPlacements: playerShipsSnapshotRef.current,
-          opponentShipPlacements: opponentShipsSnapshotRef.current,
-          moves: [...replayMovesRef.current],
-          winner: 'player',
-          difficulty,
-          date: new Date().toISOString(),
-        });
-        isProcessingRef.current = false;
+        finalizeGame('win', playerShips.filter(s => s.sunk).length);
         return;
       }
 
       setIsPlayerTurn(false);
 
       // AI turn after delay — constants from engine/constants.ts
+      // On mobile, flip to the player board so the user sees incoming fire.
+      setMobileBoard('player');
+
       setTimeout(() => {
         setMessage("Opponent's turn...");
 
@@ -430,53 +447,20 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
           }
 
           if (allShipsSunk(aiResult.ships)) {
-            setPhase('gameover');
-            setWinner('opponent');
-            setMessage('You lose!');
-            play('lose');
-            haptics.lose();
-            gameDurationRef.current = Math.floor((Date.now() - gameStartTimeRef.current) / 1000);
-            saveGameResult({
-              mode: 'single',
-              difficulty,
-              result: 'loss',
-              playerShots: shotCountRef.current,
-              playerHits: hitCountRef.current,
-              opponentName: aiName,
-              durationSeconds: gameDurationRef.current,
-            });
-            clearSavedGame();
-            checkAchievements({
-              result: 'loss',
-              mode: 'single',
-              difficulty,
-              playerShots: shotCountRef.current,
-              playerHits: hitCountRef.current,
-              durationSeconds: gameDurationRef.current,
-              playerShipsLost: SHIPS.length,
-              totalPlayerShips: SHIPS.length,
-            });
-            setReplayData({
-              playerShipPlacements: playerShipsSnapshotRef.current,
-              opponentShipPlacements: opponentShipsSnapshotRef.current,
-              moves: [...replayMovesRef.current],
-              winner: 'opponent',
-              difficulty,
-              date: new Date().toISOString(),
-            });
-            isProcessingRef.current = false;
+            finalizeGame('loss', SHIPS.length);
             return;
           }
 
           setIsPlayerTurn(true);
           setTimeout(() => {
             setMessage('Your turn — fire at the enemy grid!');
+            setMobileBoard('opponent');
             isProcessingRef.current = false;
           }, DELAY_AFTER_AI_SHOT_MS);
         }, DELAY_BEFORE_AI_SHOT_MS);
       }, DELAY_BEFORE_AI_LABEL_MS);
     },
-    [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play, haptics, aiName]
+    [phase, isPlayerTurn, opponentBoard, opponentShips, playerBoard, playerShips, difficulty, play, haptics, finalizeGame]
   );
 
   // Keep ref in sync for keyboard handler
@@ -554,6 +538,9 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
 
   const playerHitsOnOpponent = opponentShips.reduce((sum, s) => sum + s.hits, 0);
   const opponentHitsOnPlayer = playerShips.reduce((sum, s) => sum + s.hits, 0);
+  const liveAccuracy = shotCountRef.current > 0
+    ? Math.round((hitCountRef.current / shotCountRef.current) * 100)
+    : undefined;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'radial-gradient(ellipse at center, #141c2b 0%, #0a0e1a 70%)' }}>
@@ -578,6 +565,7 @@ export function SinglePlayer({ difficulty, onBack, resumeState }: SinglePlayerPr
         showStreak={true}
         playerShipsRemaining={playerShips.filter(s => !s.sunk).length}
         opponentShipsRemaining={opponentShips.filter(s => !s.sunk).length}
+        accuracy={phase === 'battle' ? liveAccuracy : undefined}
       />
 
       <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-3 sm:gap-4 lg:gap-8 p-2 sm:p-4">

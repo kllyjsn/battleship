@@ -1,6 +1,11 @@
 import type { Board, Cell, Ship, Position, Orientation, AttackResult, ShipDefinition } from './types';
 import { BOARD_SIZE } from './constants';
 
+/** Deep-copy a board so mutations don't leak to the caller. */
+function cloneBoard(board: Board): Board {
+  return board.map(r => r.map(c => ({ ...c })));
+}
+
 export function createEmptyBoard(): Board {
   const board: Board = [];
   for (let row = 0; row < BOARD_SIZE; row++) {
@@ -56,7 +61,7 @@ export function placeShip(
   if (!canPlaceShip(board, row, col, ship.size, orientation)) return null;
 
   const positions = getShipPositions(row, col, ship.size, orientation);
-  const newBoard = board.map(r => r.map(c => ({ ...c })));
+  const newBoard = cloneBoard(board);
 
   for (const pos of positions) {
     newBoard[pos.row][pos.col] = {
@@ -93,7 +98,7 @@ export function processAttack(
   row: number,
   col: number
 ): { board: Board; ships: Ship[]; result: AttackResult } {
-  const newBoard = board.map(r => r.map(c => ({ ...c })));
+  const newBoard = cloneBoard(board);
   const newShips = ships.map(s => ({ ...s, positions: [...s.positions] }));
   const cell = newBoard[row][col];
 
