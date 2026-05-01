@@ -71,7 +71,7 @@ function HitBanner({ shipName, actor }: { shipName: string; actor: 'player' | 'o
     >
       <Crosshair size={16} className={isPlayer ? 'text-amber-400' : 'text-red-400'} />
       <div>
-        <p className="text-[9px] font-mono-crt tracking-widest uppercase" style={{ color: isPlayer ? 'rgba(255, 176, 0, 0.6)' : 'rgba(255, 60, 60, 0.6)' }}>
+        <p className="text-[11px] font-mono-crt tracking-widest uppercase" style={{ color: isPlayer ? 'rgba(255, 176, 0, 0.6)' : 'rgba(255, 60, 60, 0.6)' }}>
           {isPlayer ? 'HIT CONFIRMED' : 'INCOMING HIT'}
         </p>
         <p className={`text-sm font-bold font-mono-crt ${isPlayer ? 'text-glow-amber' : 'text-glow-red'}`}>
@@ -99,7 +99,7 @@ function SunkBanner({ shipName, actor }: { shipName: string; actor: 'player' | '
     >
       <div className="flex items-center gap-2">
         <Anchor size={18} className={isPlayer ? 'text-amber-400' : 'text-red-400'} style={{ animation: 'sunkIconSpin 0.6s ease-out' }} />
-        <p className="text-[10px] font-mono-crt tracking-[0.2em] uppercase" style={{ color: isPlayer ? 'rgba(255, 176, 0, 0.7)' : 'rgba(255, 60, 60, 0.7)' }}>
+        <p className="text-[11px] font-mono-crt tracking-[0.2em] uppercase" style={{ color: isPlayer ? 'rgba(255, 176, 0, 0.7)' : 'rgba(255, 60, 60, 0.7)' }}>
           {isPlayer ? 'SHIP DESTROYED' : 'SHIP LOST'}
         </p>
         <Anchor size={18} className={isPlayer ? 'text-amber-400' : 'text-red-400'} style={{ animation: 'sunkIconSpin 0.6s ease-out' }} />

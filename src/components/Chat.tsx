@@ -67,6 +67,15 @@ export function Chat({ messages, onSend, onReaction, playerName }: ChatProps) {
     };
   }, [reactionPickerMsgId]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
   const handleSend = () => {
     if (input.trim()) {
       onSend(input.trim());
@@ -120,14 +129,14 @@ export function Chat({ messages, onSend, onReaction, playerName }: ChatProps) {
         <span className="text-sm font-semibold text-green-400 font-mono-crt">COMMS</span>
         <div className="flex items-center gap-2">
           {messages.length > 0 && (
-            <span className="text-[10px] text-slate-500 font-mono-crt">{messages.length} MSG</span>
+            <span className="text-[11px] text-slate-500 font-mono-crt">{messages.length} MSG</span>
           )}
           <button
             onClick={(e) => {
               e.stopPropagation();
               setIsOpen(false);
             }}
-            className="text-slate-500 hover:text-green-400 transition-colors p-0.5"
+            className="text-slate-500 hover:text-green-400 transition-colors p-2"
           >
             <span className="hidden sm:block"><X size={16} /></span>
             <span className="block sm:hidden"><ChevronDown size={18} /></span>
@@ -150,10 +159,10 @@ export function Chat({ messages, onSend, onReaction, playerName }: ChatProps) {
               key={msg.id}
               className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} group`}
             >
-              <span className="text-[10px] sm:text-xs text-slate-600 mb-0.5 font-mono-crt">{msg.sender}</span>
+              <span className="text-[11px] sm:text-xs text-slate-600 mb-0.5 font-mono-crt">{msg.sender}</span>
               <div className="relative max-w-[85%] sm:max-w-[80%]">
                 <div
-                  className={`px-2.5 sm:px-3 py-1.5 rounded text-sm font-mono-crt break-words ${
+                  className={`px-2.5 sm:px-3 py-1.5 rounded text-sm font-mono-crt break-words leading-relaxed ${
                     isOwn
                       ? 'metal-panel-light text-green-300/80 rounded-br-sm'
                       : 'text-slate-300 rounded-bl-sm'
@@ -169,10 +178,10 @@ export function Chat({ messages, onSend, onReaction, playerName }: ChatProps) {
                     e.stopPropagation();
                     setReactionPickerMsgId(reactionPickerMsgId === msg.id ? null : msg.id);
                   }}
-                  className={`absolute -bottom-1 ${isOwn ? '-left-6' : '-right-6'} w-5 h-5 rounded-full flex items-center justify-center text-slate-600 hover:text-green-400 transition-all opacity-0 group-hover:opacity-100 hover:scale-110`}
+                  className={`absolute -bottom-1 ${isOwn ? '-left-8' : '-right-8'} w-7 h-7 rounded-full flex items-center justify-center text-slate-600 hover:text-green-400 transition-all opacity-40 sm:opacity-0 sm:group-hover:opacity-100 hover:scale-110`}
                   title="React"
                 >
-                  <SmilePlus size={12} />
+                  <SmilePlus size={14} />
                 </button>
 
                 {/* Reaction picker */}
@@ -186,7 +195,7 @@ export function Chat({ messages, onSend, onReaction, playerName }: ChatProps) {
                       <button
                         key={emoji}
                         onClick={() => handleReaction(msg.id, emoji)}
-                        className="w-7 h-7 flex items-center justify-center rounded hover:bg-green-500/10 transition-colors text-base"
+                        className="w-9 h-9 flex items-center justify-center rounded hover:bg-green-500/10 active:scale-95 transition-colors text-base"
                       >
                         {emoji}
                       </button>
@@ -213,7 +222,7 @@ export function Chat({ messages, onSend, onReaction, playerName }: ChatProps) {
                       >
                         <span>{emoji}</span>
                         {senders.length > 1 && (
-                          <span className={`font-mono-crt text-[10px] ${iReacted ? 'text-green-400' : 'text-slate-500'}`}>
+                          <span className={`font-mono-crt text-[11px] ${iReacted ? 'text-green-400' : 'text-slate-500'}`}>
                             {senders.length}
                           </span>
                         )}
@@ -246,7 +255,7 @@ export function Chat({ messages, onSend, onReaction, playerName }: ChatProps) {
           <button
             onClick={handleSend}
             disabled={!input.trim()}
-            className="flex-shrink-0 p-2 rounded metal-panel-light text-green-400 hover:text-green-300 transition-colors disabled:opacity-50 active:scale-95"
+            className="flex-shrink-0 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded metal-panel-light text-green-400 hover:text-green-300 transition-colors disabled:opacity-50 active:scale-95"
           >
             <Send size={16} />
           </button>

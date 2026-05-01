@@ -187,7 +187,7 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
           </div>
         </div>
 
-        <p className="mt-5 sm:mt-8 text-[10px] sm:text-xs text-slate-700 font-mono-crt">
+        <p className="mt-5 sm:mt-8 text-[11px] sm:text-xs text-slate-700 font-mono-crt">
           SYSTEM ONLINE // PUBNUB LINK ACTIVE
         </p>
       </div>
@@ -212,7 +212,7 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-green-300 font-mono-crt">RECRUIT</h3>
-                <p className="text-[10px] text-green-500/40 font-mono-crt">EASY MODE</p>
+                <p className="text-[11px] text-green-500/40 font-mono-crt">EASY MODE</p>
               </div>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed font-mono-crt">
@@ -228,7 +228,7 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-amber-300 font-mono-crt">CAPTAIN</h3>
-                <p className="text-[10px] text-amber-500/40 font-mono-crt">MEDIUM MODE</p>
+                <p className="text-[11px] text-amber-500/40 font-mono-crt">MEDIUM MODE</p>
               </div>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed font-mono-crt">
@@ -244,7 +244,7 @@ export function MainMenu({ onStartSinglePlayer, onStartMultiplayer }: MainMenuPr
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-red-300 font-mono-crt">ADMIRAL</h3>
-                <p className="text-[10px] text-red-500/40 font-mono-crt">HARD MODE</p>
+                <p className="text-[11px] text-red-500/40 font-mono-crt">HARD MODE</p>
               </div>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed font-mono-crt">

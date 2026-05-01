@@ -16,6 +16,15 @@ export function BattleLog({ entries }: BattleLogProps) {
   const [seen, setSeen] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
   const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
@@ -63,14 +72,14 @@ export function BattleLog({ entries }: BattleLogProps) {
         <span className="text-sm font-semibold text-amber-400 font-mono-crt">BATTLE LOG</span>
         <div className="flex items-center gap-2">
           {entries.length > 0 && (
-            <span className="text-[10px] text-slate-500 font-mono-crt">{entries.length} MOVES</span>
+            <span className="text-[11px] text-slate-500 font-mono-crt">{entries.length} MOVES</span>
           )}
           <button
             onClick={(e) => {
               e.stopPropagation();
               setIsOpen(false);
             }}
-            className="text-slate-500 hover:text-amber-400 transition-colors p-0.5"
+            className="text-slate-500 hover:text-amber-400 transition-colors p-2"
           >
             <span className="hidden sm:block"><X size={16} /></span>
             <span className="block sm:hidden"><ChevronDown size={18} /></span>
@@ -106,7 +115,7 @@ export function BattleLog({ entries }: BattleLogProps) {
               key={entry.id}
               className="flex items-center gap-1.5 text-xs font-mono-crt py-0.5"
             >
-              <span className="text-slate-600 w-7 text-right shrink-0">#{entry.turn}</span>
+              <span className="text-slate-600 w-7 text-right shrink-0 leading-relaxed">#{entry.turn}</span>
               <span className={entry.player === 'player' ? 'text-green-400' : 'text-amber-400'}>
                 {who}
               </span>

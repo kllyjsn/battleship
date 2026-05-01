@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { X, Map } from 'lucide-react';
 import { BOARD_SIZE, ROW_LABELS, COL_LABELS } from '../engine/constants';
 import type { Board } from '../engine/types';
@@ -9,6 +10,14 @@ interface AttackHeatmapProps {
 }
 
 export function AttackHeatmap({ board, onClose, title = 'TACTICAL MAP' }: AttackHeatmapProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   let hits = 0;
   let misses = 0;
   let total = 0;
@@ -49,7 +58,7 @@ export function AttackHeatmap({ board, onClose, title = 'TACTICAL MAP' }: Attack
           <div className="flex">
             <div className="w-5 h-5" />
             {COL_LABELS.map(label => (
-              <div key={label} className="w-5 h-5 flex items-center justify-center text-[8px] font-mono-crt text-slate-600">
+              <div key={label} className="w-5 h-5 flex items-center justify-center text-[11px] font-mono-crt text-slate-600">
                 {label}
               </div>
             ))}
@@ -58,7 +67,7 @@ export function AttackHeatmap({ board, onClose, title = 'TACTICAL MAP' }: Attack
           {/* Grid rows */}
           {board.map((row, rowIdx) => (
             <div key={rowIdx} className="flex">
-              <div className="w-5 h-5 flex items-center justify-center text-[8px] font-mono-crt text-slate-600">
+              <div className="w-5 h-5 flex items-center justify-center text-[11px] font-mono-crt text-slate-600">
                 {ROW_LABELS[rowIdx]}
               </div>
               {row.map((cell, colIdx) => {
@@ -92,7 +101,7 @@ export function AttackHeatmap({ board, onClose, title = 'TACTICAL MAP' }: Attack
         </div>
 
         {/* Legend */}
-        <div className="flex items-center justify-center gap-3 mt-3 text-[9px] font-mono-crt text-slate-500">
+        <div className="flex items-center justify-center gap-3 mt-3 text-[11px] font-mono-crt text-slate-500">
           <span className="flex items-center gap-1">
             <span className="inline-block w-2.5 h-2.5 rounded-sm bg-red-600/80" /> SUNK
           </span>

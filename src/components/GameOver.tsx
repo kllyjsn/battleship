@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Trophy, Skull, RotateCw, Home, Play, Crosshair, Clock, Target, Ship, Map, ChevronUp } from 'lucide-react';
 import { addLeaderboardEntry } from '../lib/leaderboard';
 import { loadStats } from '../lib/stats';
@@ -38,6 +38,14 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
   const [sessionName, setSessionNameLocal] = useState(getSessionName());
   const [saved, setSaved] = useState(alreadySubmitted);
   const [showHeatmap, setShowHeatmap] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onGoHome();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onGoHome]);
 
   // Rank-up detection
   const { rank: currentRank } = getPlayerRank();
@@ -106,14 +114,14 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
             <div className="metal-panel-light rounded-lg p-2 text-center">
               <div className="flex items-center justify-center gap-1 mb-0.5">
                 <Crosshair size={12} className="text-green-500/60" />
-                <span className="text-[10px] text-green-500/60 font-mono-crt">SHOTS</span>
+                <span className="text-[11px] text-green-500/60 font-mono-crt">SHOTS</span>
               </div>
               <span className="text-lg font-bold text-glow-green font-mono-crt">{gameStats.shots}</span>
             </div>
             <div className="metal-panel-light rounded-lg p-2 text-center">
               <div className="flex items-center justify-center gap-1 mb-0.5">
                 <Target size={12} className="text-green-500/60" />
-                <span className="text-[10px] text-green-500/60 font-mono-crt">ACCURACY</span>
+                <span className="text-[11px] text-green-500/60 font-mono-crt">ACCURACY</span>
               </div>
               <span className="text-lg font-bold text-glow-amber font-mono-crt">
                 {gameStats.shots > 0 ? ((gameStats.hits / gameStats.shots) * 100).toFixed(1) : '0.0'}%
@@ -122,7 +130,7 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
             <div className="metal-panel-light rounded-lg p-2 text-center">
               <div className="flex items-center justify-center gap-1 mb-0.5">
                 <Clock size={12} className="text-green-500/60" />
-                <span className="text-[10px] text-green-500/60 font-mono-crt">DURATION</span>
+                <span className="text-[11px] text-green-500/60 font-mono-crt">DURATION</span>
               </div>
               <span className="text-lg font-bold text-green-300 font-mono-crt">
                 {gameStats.durationSeconds >= 60
@@ -133,7 +141,7 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
             <div className="metal-panel-light rounded-lg p-2 text-center">
               <div className="flex items-center justify-center gap-1 mb-0.5">
                 <Ship size={12} className="text-green-500/60" />
-                <span className="text-[10px] text-green-500/60 font-mono-crt">FLEET</span>
+                <span className="text-[11px] text-green-500/60 font-mono-crt">FLEET</span>
               </div>
               <span className="text-lg font-bold font-mono-crt">
                 <span className="text-glow-green">{totalShips - shipsLost}</span>

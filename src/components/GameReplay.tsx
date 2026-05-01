@@ -47,6 +47,14 @@ export function GameReplay({ replayData, onClose }: GameReplayProps) {
 
   const totalMoves = replayData.moves.length;
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   // Build boards up to currentStep
   const buildBoards = useCallback((step: number) => {
     let playerBoard = placeShipsOnBoard(createEmptyReplayBoard(), replayData.playerShipPlacements);

@@ -170,6 +170,7 @@ export function MultiplayerLobby({
                     onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                     placeholder="ENTER CODE"
                     maxLength={6}
+                    autoCapitalize="characters"
                     className="w-full px-4 py-3 rounded text-center text-2xl tracking-[0.3em] placeholder-slate-600 focus:ring-1 focus:ring-green-500/30 focus:outline-none transition-all uppercase font-mono-crt text-green-300"
                     style={{ background: 'var(--hull-dark)', border: '1px solid var(--steel-border)' }}
                   />
@@ -301,7 +302,8 @@ export function MultiplayerLobby({
 
           {error && (
             <div className="mt-4 p-3 rounded metal-panel-light text-red-400 text-sm text-center font-mono-crt" style={{ borderColor: 'rgba(255, 60, 60, 0.3)' }}>
-              {error}
+              <p>{error}</p>
+              <p className="text-xs text-slate-500 mt-1">Check your connection and verify the room code, then try again.</p>
             </div>
           )}
         </div>
