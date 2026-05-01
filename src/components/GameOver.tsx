@@ -40,12 +40,13 @@ export function GameOver({ winner, onPlayAgain, onGoHome, playerName = 'You', op
   const [showHeatmap, setShowHeatmap] = useState(false);
 
   useEffect(() => {
+    if (showHeatmap) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onGoHome();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onGoHome]);
+  }, [onGoHome, showHeatmap]);
 
   // Rank-up detection
   const { rank: currentRank } = getPlayerRank();

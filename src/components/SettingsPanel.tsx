@@ -18,12 +18,13 @@ export function SettingsPanel({ currentTheme, onSelectTheme, onClose }: Settings
   const themes = getAllThemes();
 
   useEffect(() => {
+    if (confirmAction !== null) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, confirmAction]);
 
   const handleCallsignChange = (value: string) => {
     setCallsign(value);
