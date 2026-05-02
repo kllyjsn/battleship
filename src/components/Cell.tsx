@@ -2,6 +2,13 @@ import { useState, useEffect, useRef, memo } from 'react';
 import { type CellState } from '../engine/types';
 import { ROW_LABELS, COL_LABELS } from '../engine/constants';
 
+/**
+ * Lifetime of one-shot cell animations (hit explosion, miss ripple, sunk
+ * flash). Must be ≥ the longest CSS animation duration referenced in
+ * index.css for those keyframes (currently 0.6s).
+ */
+const CELL_ANIM_DURATION_MS = 600;
+
 interface CellProps {
   row: number;
   col: number;
@@ -18,6 +25,12 @@ interface CellProps {
   hideShipFill?: boolean;
   animating?: 'hit' | 'miss' | 'sunk' | null;
   isCursor?: boolean;
+  /**
+   * If true, the cell becomes the single tab-stop for the grid's roving
+   * tabindex. Page-level keyboard handlers move the cursor with arrow keys,
+   * so only the active cell needs to be tabbable.
+   */
+  isTabStop?: boolean;
 }
 
 const PARTICLE_DIRECTIONS = [
@@ -47,6 +60,7 @@ export const Cell = memo(function Cell({
   hideShipFill = false,
   animating = null,
   isCursor = false,
+  isTabStop = false,
 }: CellProps) {
   const [activeAnim, setActiveAnim] = useState<'hit' | 'miss' | 'sunk' | null>(null);
   const prevStateRef = useRef<CellState>(state);
@@ -54,27 +68,32 @@ export const Cell = memo(function Cell({
   useEffect(() => {
     if (animating) {
       setActiveAnim(animating);
-      const timer = setTimeout(() => setActiveAnim(null), 600);
+      const timer = setTimeout(() => setActiveAnim(null), CELL_ANIM_DURATION_MS);
       return () => clearTimeout(timer);
     }
   }, [animating]);
 
-  // Detect state changes from empty/ship to hit/miss/sunk
+  // Detect state changes from empty/ship to hit/miss/sunk so the cell can
+  // self-trigger the right animation even when the parent doesn't pass an
+  // explicit `animating` prop (e.g. multiplayer attack results that arrive
+  // through a network message).
   useEffect(() => {
     const prev = prevStateRef.current;
     prevStateRef.current = state;
     if ((prev === 'empty' || prev === 'ship') && (state === 'hit' || state === 'miss' || state === 'sunk')) {
       setActiveAnim(state);
-      const timer = setTimeout(() => setActiveAnim(null), 600);
+      const timer = setTimeout(() => setActiveAnim(null), CELL_ANIM_DURATION_MS);
       return () => clearTimeout(timer);
     }
   }, [state]);
 
   const getClassName = () => {
-    // Fluid cell sizing: clamp between 34px–44px on mobile for WCAG touch targets.
-    // sm: 36px, md: 40px.  touch-manipulation avoids 300ms tap delay.
+    // Fluid cell sizing: 38px floor (WCAG 2.5.5 minimum is 24px; Apple HIG &
+    // WCAG 2.5.8 AAA recommend 44px). We can't reach 44px on a 10×10 board at
+    // 320px-wide viewports, so we scale up to 44px wherever the viewport
+    // allows it. `touch-manipulation` removes the 300ms tap delay.
     const base =
-      'w-[clamp(34px,8.8vw,44px)] h-[clamp(34px,8.8vw,44px)] sm:w-9 sm:h-9 md:w-10 md:h-10 border relative transition-all duration-150 select-none overflow-hidden touch-manipulation';
+      'w-[clamp(38px,9.4vw,44px)] h-[clamp(38px,9.4vw,44px)] sm:w-10 sm:h-10 md:w-11 md:h-11 border relative transition-all duration-150 select-none overflow-hidden touch-manipulation';
 
     if (isPreview) {
       return `${base} ${isInvalid ? 'bg-red-500/30 border-red-400/60' : 'bg-green-500/20 border-green-400/50'} cursor-pointer`;
@@ -112,11 +131,19 @@ export const Cell = memo(function Cell({
       onMouseEnter={onHover}
       onDragOver={onDragOver}
       onDrop={onDrop}
-      role={!disabled && onClick ? 'button' : undefined}
-      tabIndex={!disabled && onClick ? 0 : undefined}
+      role={!disabled && onClick ? 'gridcell' : undefined}
+      // Roving tabindex: only the active cursor cell (or one fallback per
+      // grid) is in the tab order. Arrow-key navigation is wired up at the
+      // page level. This keeps the tab sequence sane (≤2 stops per board)
+      // for screen-reader and keyboard-only users.
+      tabIndex={!disabled && onClick ? (isTabStop || isCursor ? 0 : -1) : undefined}
       aria-label={cellLabel}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' && !disabled && onClick) onClick();
+        // Activate on Enter OR Space — both are conventional for ARIA buttons/gridcells
+        if (!disabled && onClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onClick();
+        }
       }}
     >
       {/* Hit explosion particles */}

@@ -34,15 +34,16 @@ function App() {
     applyTheme(themeId);
   }, []);
 
-  // On mount, check for a saved game and prompt the user
+  // On mount, check for a saved game and prompt the user.
+  // Skipped when joining a multiplayer room directly via /join/CODE.
   useEffect(() => {
-    if (initialRoom) return; // Don't interrupt multiplayer join flow
+    if (initialRoom) return;
     const saved = loadSavedGame();
     if (saved) {
       setPendingSave(saved);
       setShowResumePrompt(true);
     }
-  }, []);
+  }, [initialRoom]);
 
   const handleResume = () => {
     if (pendingSave) {
@@ -104,7 +105,12 @@ function App() {
       {showResumePrompt && (
         <ConfirmDialog
           title="RESUME MISSION"
-          message={`A ${pendingSave?.difficulty?.toUpperCase() ?? ''} game in progress was found. Resume where you left off?`}
+          message={(() => {
+            const diff = pendingSave?.difficulty?.toUpperCase() ?? '';
+            return pendingSave?.phase === 'placement'
+              ? `A ${diff} game was paused during fleet placement. Resume where you left off?`
+              : `A ${diff} battle in progress was found. Resume where you left off?`;
+          })()}
           confirmLabel="Resume"
           cancelLabel="New Game"
           onConfirm={handleResume}

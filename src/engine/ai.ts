@@ -72,6 +72,20 @@ function getRandomUntried(board: Board, tried: Set<string>, checkerboard: boolea
   return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
+/**
+ * Probability-density targeting (Admiral AI).
+ *
+ * For each remaining (un-sunk) ship size, count every legal placement on the
+ * board and increment a density score on each covered cell. The cell with the
+ * highest density is the most likely to hide a ship. Ties are broken randomly.
+ *
+ * Cells are treated as "blocking" a hypothetical placement when:
+ *   - 'miss' or 'sunk' (definitively no ship of any kind there), or
+ *   - 'hit' (already occupied by a different, not-yet-sunk ship — no
+ *     remaining ship can also occupy that cell). Treating 'hit' as available
+ *     would inflate density around partial hits and cause the AI to fire at
+ *     cells that can't possibly hold a *new* ship.
+ */
 function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Position | null {
   const density: number[][] = Array.from({ length: BOARD_SIZE }, () =>
     Array(BOARD_SIZE).fill(0)
@@ -81,14 +95,18 @@ function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Po
     ? remainingShips.map(s => s.size)
     : SHIPS.map(s => s.size);
 
+  const isBlocked = (r: number, c: number): boolean => {
+    const state = board[r][c].state;
+    return state === 'miss' || state === 'sunk' || state === 'hit';
+  };
+
   for (const size of shipSizes) {
     // horizontal
     for (let r = 0; r < BOARD_SIZE; r++) {
       for (let c = 0; c <= BOARD_SIZE - size; c++) {
         let valid = true;
         for (let i = 0; i < size; i++) {
-          const state = board[r][c + i].state;
-          if (state === 'miss' || state === 'sunk') {
+          if (isBlocked(r, c + i)) {
             valid = false;
             break;
           }
@@ -107,8 +125,7 @@ function probabilityDensity(board: Board, tried: Set<string>, ships: Ship[]): Po
       for (let c = 0; c < BOARD_SIZE; c++) {
         let valid = true;
         for (let i = 0; i < size; i++) {
-          const state = board[r + i][c].state;
-          if (state === 'miss' || state === 'sunk') {
+          if (isBlocked(r + i, c)) {
             valid = false;
             break;
           }
@@ -164,7 +181,18 @@ export function getAIMove(
     // Easy mode still tracks tried positions to avoid re-attacking the same cell.
     target = getRandomUntried(board, newState.triedPositions, false);
   } else if (newState.mode === 'target' && newState.hitStack.length > 0) {
-    // Target mode: try to sink a ship we've hit
+    // ── Target mode ──
+    // We've scored at least one hit and are now trying to sink the ship.
+    // Strategy:
+    //   1. If orientation is still unknown, probe the 4 cells adjacent to
+    //      the most recent hit. The first additional hit reveals the line.
+    //   2. Once the orientation is known (set by updateAIAfterResult), walk
+    //      outward along that line — past any contiguous 'hit' cells, which
+    //      represent the rest of the same ship — until we find an untried
+    //      cell. We try both directions before giving up on a candidate.
+    //   3. If we exhaust all options around a candidate, pop it from the
+    //      hitStack and try the next one. When the stack empties we fall
+    //      back to hunt mode.
     while (newState.hitStack.length > 0 && !target) {
       const candidate = newState.hitStack[newState.hitStack.length - 1];
 
@@ -176,17 +204,20 @@ export function getAIMove(
         if (validAdj.length > 0) {
           target = validAdj[Math.floor(Math.random() * validAdj.length)];
         } else {
+          // Boxed in by the edge or by misses — abandon this hit.
           newState.hitStack.pop();
         }
       } else {
-        // We know the orientation, try to extend in that direction
         const dirs = newState.orientation === 'horizontal'
           ? [[0, -1], [0, 1]]
           : [[-1, 0], [1, 0]];
 
         let found = false;
         for (const [dr, dc] of dirs) {
-          // Walk along the line from firstHit
+          // Walk along the line from the most recent hit. Skip past
+          // contiguous already-hit cells (same ship) until we find either
+          // an untried cell to fire at or a wall/miss/sunk that closes
+          // off this direction.
           let r = candidate.row + dr;
           let c = candidate.col + dc;
           while (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE) {
@@ -206,6 +237,7 @@ export function getAIMove(
         }
 
         if (!found) {
+          // Both directions exhausted — pop and re-evaluate orientation.
           newState.hitStack.pop();
           newState.orientation = 'unknown';
           newState.firstHit = null;

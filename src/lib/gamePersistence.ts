@@ -1,12 +1,17 @@
-import type { Board, Ship, Difficulty, GamePhase, BattleLogEntry } from '../engine/types';
+import type { Board, Ship, Difficulty, GamePhase, BattleLogEntry, Orientation } from '../engine/types';
 import { STORAGE_KEYS, getSessionName, getApiBase } from './storageKeys';
 
 /**
  * Serialisable snapshot of a single-player game in progress.
- * Stored in localStorage so the player can resume after a page refresh.
+ * Stored in localStorage (and synced to MongoDB) so the player can resume
+ * after a page refresh. Both placement *and* battle phases are persisted —
+ * this means a player who refreshes mid-placement will not lose their
+ * partially-placed fleet.
+ *
+ * Bumping `version` invalidates older saves.
  */
 export interface SavedGameState {
-  version: 1;
+  version: 2;
   timestamp: number;
   difficulty: Difficulty;
   phase: GamePhase;
@@ -20,6 +25,10 @@ export interface SavedGameState {
   hitCount: number;
   turnCount: number;
   battleLog: BattleLogEntry[];
+  /** Selected placing ship (placement phase only). */
+  selectedShipId: string | null;
+  /** Current placement orientation (placement phase only). */
+  orientation: Orientation;
   /** Serialised AI state — the hitStack, mode, etc. */
   aiState: {
     mode: 'hunt' | 'target';
@@ -29,6 +38,22 @@ export interface SavedGameState {
     firstHit: { row: number; col: number } | null;
     orientation: 'unknown' | 'horizontal' | 'vertical';
   };
+}
+
+/** Phases of a single-player game that are eligible to be persisted. */
+const RESUMABLE_PHASES: GamePhase[] = ['placement', 'battle'];
+
+/**
+ * Validate a parsed object as a non-stale SavedGameState. Returns the same
+ * object (now narrowly typed) if valid, otherwise null. Centralising the
+ * check keeps the load/fetch paths in agreement.
+ */
+function isValidSave(parsed: unknown): parsed is SavedGameState {
+  if (!parsed || typeof parsed !== 'object') return false;
+  const s = parsed as Partial<SavedGameState>;
+  if (s.version !== 2) return false;
+  if (!s.phase || !RESUMABLE_PHASES.includes(s.phase)) return false;
+  return true;
 }
 
 /** Persist the current game state to localStorage cache and MongoDB. */
@@ -47,10 +72,8 @@ export function loadSavedGame(): SavedGameState | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.SAVED_GAME);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as SavedGameState;
-    // Basic validation: must have version 1 and be in battle phase
-    if (parsed.version !== 1 || parsed.phase !== 'battle') return null;
-    return parsed;
+    const parsed = JSON.parse(raw) as unknown;
+    return isValidSave(parsed) ? parsed : null;
   } catch {
     return null;
   }
@@ -66,13 +89,10 @@ export async function fetchSavedGame(): Promise<SavedGameState | null> {
   try {
     const resp = await fetch(`${getApiBase()}/game-save?player=${encodeURIComponent(playerName)}`);
     if (!resp.ok) return loadSavedGame();
-    const data = await resp.json() as { gameState: SavedGameState | null };
-    if (data.gameState) {
-      const state = data.gameState;
-      if (state.version === 1 && state.phase === 'battle') {
-        try { localStorage.setItem(STORAGE_KEYS.SAVED_GAME, JSON.stringify(state)); } catch { /* ignore */ }
-        return state;
-      }
+    const data = await resp.json() as { gameState: unknown };
+    if (data.gameState && isValidSave(data.gameState)) {
+      try { localStorage.setItem(STORAGE_KEYS.SAVED_GAME, JSON.stringify(data.gameState)); } catch { /* ignore */ }
+      return data.gameState;
     }
     return loadSavedGame();
   } catch {

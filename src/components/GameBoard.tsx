@@ -7,6 +7,11 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useSwipe } from '../hooks/useSwipe';
 
+/** Duration of the on-sunk screen-shake animation. Mirrors `screenShake` in index.css. */
+const SHAKE_DURATION_MS = 400;
+/** Minimum swipe distance (px) to trigger ship rotation during placement. */
+const SWIPE_ROTATE_THRESHOLD_PX = 40;
+
 interface GameBoardProps {
   board: Board;
   isPlayerBoard: boolean;
@@ -61,11 +66,11 @@ export function GameBoard({
   const [cellSize, setCellSize] = useState({ w: 40, h: 40 });
   const [gridOffset, setGridOffset] = useState({ x: 0, y: 0 });
 
-  // Screen shake on sunk
+  // Screen shake on sunk — duration matches `screenShake` keyframes in index.css.
   useEffect(() => {
     if (lastAttackResult === 'sunk') {
       setShaking(true);
-      const timer = setTimeout(() => setShaking(false), 400);
+      const timer = setTimeout(() => setShaking(false), SHAKE_DURATION_MS);
       return () => clearTimeout(timer);
     }
   }, [lastAttackResult, lastAttackPos]);
@@ -73,7 +78,7 @@ export function GameBoard({
   // Swipe to rotate ship during placement
   const swipeHandlers = useSwipe(() => {
     if (isPlacing && onSwipeRotate) onSwipeRotate();
-  }, 40);
+  }, SWIPE_ROTATE_THRESHOLD_PX);
 
   // Measure cell size and grid offset for ship overlays
   useEffect(() => {
@@ -172,13 +177,13 @@ export function GameBoard({
           }
         }}
       >
-        {/* Column headers */}
+        {/* Column headers — sized to match cell widths (must stay in sync with Cell.tsx) */}
         <div className="flex" role="row" aria-hidden="true">
           <div className="w-5 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
           {COL_LABELS.map((label) => (
             <div
               key={label}
-              className="w-[clamp(34px,8.8vw,44px)] h-6 sm:w-9 sm:h-7 md:w-10 md:h-8 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt"
+              className="w-[clamp(38px,9.4vw,44px)] h-6 sm:w-10 sm:h-7 md:w-11 md:h-8 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt"
               role="columnheader"
               style={{ color: 'var(--text-secondary)' }}
             >
@@ -190,16 +195,21 @@ export function GameBoard({
         {/* Rows */}
         {board.map((row, rowIdx) => (
           <div key={rowIdx} className="flex" role="row">
-            <div className="w-5 h-[clamp(34px,8.8vw,44px)] sm:w-7 sm:h-9 md:w-8 md:h-10 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt" role="rowheader" style={{ color: 'var(--text-secondary)' }}>
+            <div className="w-5 h-[clamp(38px,9.4vw,44px)] sm:w-7 sm:h-10 md:w-8 md:h-11 flex items-center justify-center text-[10px] sm:text-xs font-mono-crt" role="rowheader" style={{ color: 'var(--text-secondary)' }}>
               {ROW_LABELS[rowIdx]}
             </div>
             {row.map((cell, colIdx) => {
               const key = `${rowIdx},${colIdx}`;
               const isPreview = previewCells.has(key);
               const isValid = previewCells.get(key) ?? true;
+              const isCursor = showCursor && cursorRow === rowIdx && cursorCol === colIdx;
+              // Roving tabindex: pick exactly one cell to be the tab stop. We
+              // prefer the active cursor cell; otherwise (0,0) is the fallback
+              // so screen-reader / Tab users can always enter the grid.
+              const isTabStop = !showCursor && rowIdx === 0 && colIdx === 0;
 
               return (
-                <div key={key} ref={rowIdx === 0 && colIdx === 0 ? cellRef : undefined} role="gridcell">
+                <div key={key} ref={rowIdx === 0 && colIdx === 0 ? cellRef : undefined}>
                   <Cell
                     row={rowIdx}
                     col={colIdx}
@@ -223,7 +233,8 @@ export function GameBoard({
                         ? lastAttackResult
                         : null
                     }
-                    isCursor={showCursor && cursorRow === rowIdx && cursorCol === colIdx}
+                    isCursor={isCursor}
+                    isTabStop={isTabStop}
                   />
                 </div>
               );
